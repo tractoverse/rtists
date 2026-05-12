@@ -6,7 +6,7 @@
 \alias{rtists-package}
 \title{rtists: R for Tissue Integrity Superimposed on Tractography Streamlines}
 \description{
-What the package does (one paragraph).
+Provides interactive 3-D visualisation of tractography streamlines and bundles defined in the 'riot' package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation.
 }
 \seealso{
 Useful links:
@@ -18,6 +18,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Aymeric Stamm \email{aymeric.stamm@math.cnrs.fr} (\href{https://orcid.org/0000-0002-8725-3654}{ORCID})
+
+Authors:
+\itemize{
+  \item Aymeric Stamm \email{aymeric.stamm@math.cnrs.fr} (\href{https://orcid.org/0000-0002-8725-3654}{ORCID})
+}
 
 }
 \keyword{internal}
