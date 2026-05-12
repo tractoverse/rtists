@@ -1,7 +1,7 @@
 # rtists: R for Tissue Integrity Superimposed on Tractography Streamlines
 
 Provides interactive 3-D visualisation of tractography streamlines and
-bundles defined in the 'riot' package. Aesthetics such as line colour
+bundles defined in the 'fiber' package. Aesthetics such as line colour
 can be mapped to per-point, per-streamline, or per-bundle metadata, or
 derived from the local fibre orientation.
 
@@ -10,6 +10,8 @@ derived from the local fibre orientation.
 Useful links:
 
 - <https://github.com/astamm/rtists>
+
+- <https://astamm.github.io/rtists/>
 
 - Report bugs at <https://github.com/astamm/rtists/issues>
 

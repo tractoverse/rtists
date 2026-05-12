@@ -3,23 +3,23 @@
 ``` r
 
 library(rtists)
-library(riot)
+library(fiber)
 ```
 
 ## Overview
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography
-data defined in the [riot](https://github.com/astamm/riot) package. The
-central function is
+data defined in the [fiber](https://github.com/astamm/fiber) package.
+The central function is
 [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md), a
 [S7](https://rconsortium.github.io/S7/) generic with methods for the two
-core riot classes:
+core fiber classes:
 
 | Class | Description |
 |----|----|
-| [`riot::streamline`](https://astamm.github.io/riot/reference/streamline.html) | A single fibre tract — an ordered sequence of 3-D points plus optional metadata. |
-| [`riot::bundle`](https://astamm.github.io/riot/reference/bundle.html) | An ordered collection of streamlines representing a white-matter bundle. |
+| [`fiber::streamline`](https://astamm.github.io/fiber/reference/streamline.html) | A single fibre tract — an ordered sequence of 3-D points plus optional metadata. |
+| [`fiber::bundle`](https://astamm.github.io/fiber/reference/bundle.html) | An ordered collection of streamlines representing a white-matter bundle. |
 
 The interactive figures are produced by [plotly](https://plotly.com/r/),
 so they can be panned, rotated, and zoomed directly in the browser or
@@ -72,7 +72,7 @@ sl
 ```
 
 A bundle is just a list of streamlines wrapped by
-[`new_bundle()`](https://astamm.github.io/riot/reference/new_bundle.html):
+[`new_bundle()`](https://astamm.github.io/fiber/reference/new_bundle.html):
 
 ``` r
 

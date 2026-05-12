@@ -3,14 +3,14 @@
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography
 streamlines and bundles defined in the
-[riot](https://github.com/astamm/riot) package.
+[fiber](https://github.com/astamm/fiber) package.
 
 The main function is
 [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md), an
 [S7](https://rconsortium.github.io/S7/) generic with methods for both
-[`riot::streamline`](https://astamm.github.io/riot/reference/streamline.html)
+[`fiber::streamline`](https://astamm.github.io/fiber/reference/streamline.html)
 and
-[`riot::bundle`](https://astamm.github.io/riot/reference/bundle.html)
+[`fiber::bundle`](https://astamm.github.io/fiber/reference/bundle.html)
 objects. Figures are rendered by [plotly](https://plotly.com/r/) and are
 fully interactive (pan, rotate, zoom).
 
@@ -27,12 +27,12 @@ pak::pak("astamm/rtists")
 
 ## Usage
 
-### Build some riot objects
+### Build some fiber objects
 
 ``` r
 
 library(rtists)
-library(riot)
+library(fiber)
 
 pts <- matrix(
   c(
@@ -78,8 +78,6 @@ using the standard DTI convention (left–right = red, anterior–posterior
 plot3d(bun)
 ```
 
-![](reference/figures/README-orientation-1.png)
-
 #### Colour by per-point metadata
 
 Pass any key from `@point_data` to map a continuous scalar to a colour
@@ -89,8 +87,6 @@ scale:
 
 plot3d(bun, color = "FA", palette = "Viridis")
 ```
-
-![](reference/figures/README-point-fa-1.png)
 
 #### Colour by per-streamline metadata
 
@@ -102,8 +98,6 @@ streamline, giving every tract a single uniform colour:
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```
 
-![](reference/figures/README-streamline-fa-1.png)
-
 #### Fixed colour
 
 Any CSS colour name or hex code colours all lines identically:
@@ -112,8 +106,6 @@ Any CSS colour name or hex code colours all lines identically:
 
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 ```
-
-![](reference/figures/README-fixed-1.png)
 
 ## Colour modes at a glance
 

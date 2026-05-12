@@ -1,9 +1,9 @@
 # Interactive 3D line plot for tractography streamlines and bundles
 
 Produce an interactive 3D line plot of a
-[streamline](https://astamm.github.io/riot/reference/streamline.html) or
-[bundle](https://astamm.github.io/riot/reference/bundle.html) object
-from the riot package using plotly.
+[streamline](https://astamm.github.io/fiber/reference/streamline.html)
+or [bundle](https://astamm.github.io/fiber/reference/bundle.html) object
+from the fiber package using plotly.
 
 ## Usage
 
@@ -23,8 +23,8 @@ plot3d(
 - x:
 
   A
-  [streamline](https://astamm.github.io/riot/reference/streamline.html)
-  or [bundle](https://astamm.github.io/riot/reference/bundle.html)
+  [streamline](https://astamm.github.io/fiber/reference/streamline.html)
+  or [bundle](https://astamm.github.io/fiber/reference/bundle.html)
   object.
 
 - color:
@@ -82,14 +82,14 @@ bundles.
 
 ## See also
 
-[streamline](https://astamm.github.io/riot/reference/streamline.html),
-[bundle](https://astamm.github.io/riot/reference/bundle.html)
+[streamline](https://astamm.github.io/fiber/reference/streamline.html),
+[bundle](https://astamm.github.io/fiber/reference/bundle.html)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-library(riot)
+library(fiber)
 
 # --- minimal streamline example -------------------------------------------
 pts <- matrix(
