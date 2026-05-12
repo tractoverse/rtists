@@ -2,7 +2,8 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^data-raw$
-^README\.Rmd$
+^README\.qmd$
+^README\.html$
 ^\.github$
 ^codecov\.yml$
 ^vignettes/\.quarto$
