@@ -7,12 +7,12 @@ pts <- matrix(
   ncol = 3, byrow = TRUE,
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
-sl <- riot::new_streamline(
+sl <- fiber::new_streamline(
   points          = pts,
   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6, 0.4)),
   streamline_data = list(mean_FA = 0.5)
 )
-bun <- riot::new_bundle(list(sl, sl))
+bun <- fiber::new_bundle(list(sl, sl))
 
 # ---- .streamline_to_df ------------------------------------------------------
 

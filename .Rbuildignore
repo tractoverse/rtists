@@ -4,6 +4,7 @@
 ^data-raw$
 ^README\.qmd$
 ^README\.html$
+^README_files$
 ^\.github$
 ^codecov\.yml$
 ^vignettes/\.quarto$

@@ -14,8 +14,8 @@ plot3d(
 )
 }
 \arguments{
-\item{x}{A \link[riot:streamline]{streamline} or
-\link[riot:bundle]{bundle} object.}
+\item{x}{A \link[fiber:streamline]{streamline} or
+\link[fiber:bundle]{bundle} object.}
 
 \item{color}{Controls how streamline colours are assigned.  Accepted values:
 \describe{
@@ -49,8 +49,8 @@ An interactive \pkg{plotly} htmlwidget.
 }
 \description{
 Produce an interactive 3D line plot of a
-\link[riot:streamline]{streamline} or \link[riot:bundle]{bundle} object
-from the \pkg{riot} package using \pkg{plotly}.
+\link[fiber:streamline]{streamline} or \link[fiber:bundle]{bundle} object
+from the \pkg{fiber} package using \pkg{plotly}.
 }
 \details{
 All streamlines are rendered as a single \code{scatter3d} trace separated by
@@ -59,7 +59,7 @@ bundles.
 }
 \examples{
 \dontrun{
-library(riot)
+library(fiber)
 
 # --- minimal streamline example -------------------------------------------
 pts <- matrix(
@@ -92,5 +92,5 @@ plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 }
 }
 \seealso{
-\link[riot:streamline]{streamline}, \link[riot:bundle]{bundle}
+\link[fiber:streamline]{streamline}, \link[fiber:bundle]{bundle}
 }

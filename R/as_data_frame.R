@@ -1,4 +1,4 @@
-# S7 class names include the package prefix (e.g. "riot::streamline"), so S3
+# S7 class names include the package prefix (e.g. "fiber::streamline"), so S3
 # dispatch does NOT find methods registered under the bare name.  These are
 # therefore plain internal helpers called directly by plot3d().
 

@@ -1,6 +1,7 @@
 ---
 format: gfm
 default-image-extension: ""
+prefer-html: true
 ---
 
 <!-- README.md is generated from README.qmd. Please edit that file -->
@@ -26,10 +27,10 @@ knitr::opts_chunk$set(
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography Streamlines*)
 provides interactive 3-D visualisation of tractography streamlines and bundles
-defined in the [riot](https://github.com/astamm/riot) package.
+defined in the [fiber](https://github.com/astamm/fiber) package.
 
 The main function is `plot3d()`, an [S7](https://rconsortium.github.io/S7/)
-generic with methods for both `riot::streamline` and `riot::bundle` objects.
+generic with methods for both `fiber::streamline` and `fiber::bundle` objects.
 Figures are rendered by [plotly](https://plotly.com/r/) and are fully
 interactive (pan, rotate, zoom).
 
@@ -44,12 +45,12 @@ pak::pak("astamm/rtists")
 
 ## Usage
 
-### Build some riot objects
+### Build some fiber objects
 
 ```{r}
 #| label: create-objects
 library(rtists)
-library(riot)
+library(fiber)
 
 pts <- matrix(
   c(

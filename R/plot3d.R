@@ -66,6 +66,18 @@
   # ---- NA separators so all streamlines share one trace ----------------------
   df <- .add_na_separators(df)
 
+  # ---- fix NA colour values introduced by the separator rows -----------------
+  # plotly scatter3d silently drops the whole trace when the line$color array
+  # contains NA.  Replace NA placeholders with a transparent/neutral value that
+  # has no visual effect (the x/y/z NAs already break the line segment).
+  if (".color" %in% names(df)) {
+    if (is.character(df[[".color"]])) {
+      df[[".color"]][is.na(df[[".color"]])] <- "rgba(0,0,0,0)"
+    } else {
+      df[[".color"]][is.na(df[[".color"]])] <- 0
+    }
+  }
+
   # ---- hover text from available metadata ------------------------------------
   visible_keys <- intersect(meta_keys, names(df))
   if (length(visible_keys) > 0L) {
@@ -109,15 +121,15 @@
 #' Interactive 3D line plot for tractography streamlines and bundles
 #'
 #' Produce an interactive 3D line plot of a
-#' \link[riot:streamline]{streamline} or \link[riot:bundle]{bundle} object
-#' from the \pkg{riot} package using \pkg{plotly}.
+#' \link[fiber:streamline]{streamline} or \link[fiber:bundle]{bundle} object
+#' from the \pkg{fiber} package using \pkg{plotly}.
 #'
 #' All streamlines are rendered as a single `scatter3d` trace separated by
 #' `NA` break-points, which keeps the widget lightweight even for large
 #' bundles.
 #'
-#' @param x A \link[riot:streamline]{streamline} or
-#'   \link[riot:bundle]{bundle} object.
+#' @param x A \link[fiber:streamline]{streamline} or
+#'   \link[fiber:bundle]{bundle} object.
 #' @param color Controls how streamline colours are assigned.  Accepted values:
 #'   \describe{
 #'     \item{`"orientation"` (default)}{Per-point RGB colour derived from the
@@ -142,12 +154,12 @@
 #'   \code{\link[plotly]{layout}()}, e.g. `title = "My bundle"`.
 #'
 #' @return An interactive \pkg{plotly} htmlwidget.
-#' @seealso \link[riot:streamline]{streamline}, \link[riot:bundle]{bundle}
+#' @seealso \link[fiber:streamline]{streamline}, \link[fiber:bundle]{bundle}
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' library(riot)
+#' library(fiber)
 #'
 #' # --- minimal streamline example -------------------------------------------
 #' pts <- matrix(
@@ -189,7 +201,7 @@ plot3d <- S7::new_generic(
 
 # ---- S7 methods --------------------------------------------------------------
 
-S7::method(plot3d, riot::streamline) <- function(
+S7::method(plot3d, fiber::streamline) <- function(
     x,
     color     = "orientation",
     palette   = "Viridis",
@@ -207,7 +219,7 @@ S7::method(plot3d, riot::streamline) <- function(
   )
 }
 
-S7::method(plot3d, riot::bundle) <- function(
+S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
     palette   = "Viridis",
