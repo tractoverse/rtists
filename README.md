@@ -6,10 +6,9 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/astamm/rtists/workflows/R-CMD-check/badge.svg)](https://github.com/astamm/rtists/actions)
-[![test-coverage](https://github.com/astamm/rtists/workflows/test-coverage/badge.svg)](https://github.com/astamm/rtists/actions)
+[![R-CMD-check](https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/astamm/rtists/branch/master/graph/badge.svg)](https://app.codecov.io/gh/astamm/rtists?branch=master)
+coverage](https://codecov.io/gh/astamm/rtists/graph/badge.svg)](https://app.codecov.io/gh/astamm/rtists)
 [![pkgdown](https://github.com/astamm/rtists/workflows/pkgdown/badge.svg)](https://github.com/astamm/rtists/actions)
 <!-- badges: end -->
 
