@@ -1,7 +1,6 @@
 ---
 format: gfm
 default-image-extension: ""
-prefer-html: true
 ---
 
 <!-- README.md is generated from README.qmd. Please edit that file -->
@@ -13,7 +12,8 @@ knitr::opts_chunk$set(
   comment = "#>",
   message = FALSE,
   warning = FALSE,
-  fig.path = "man/figures/README-"
+  fig.path = "man/figures/README-",
+  fig.retina = 2
 )
 ```
 
@@ -85,6 +85,8 @@ bun <- new_bundle(lapply(seq_len(6), function(i) {
 
 ### `plot3d()` — colour modes
 
+All the following examples only display a static figure, but the actual output of `plot3d()` is an interactive widget. You might want to run the code yourself to see the full effect or take a look at the vignette for interactive 3D examples.
+
 #### Default: orientation colours
 
 Each point is coloured by the direction of the local tangent vector using the
@@ -93,7 +95,14 @@ superior–inferior = blue):
 
 ```{r}
 #| label: orientation
+#| eval: false
 plot3d(bun)
+```
+
+```{r}
+#| label: orientation-fig
+#| echo: false
+knitr::include_graphics("man/figures/README-orientation-1.png")
 ```
 
 #### Colour by per-point metadata
@@ -102,7 +111,14 @@ Pass any key from `@point_data` to map a continuous scalar to a colour scale:
 
 ```{r}
 #| label: point-fa
+#| eval: false
 plot3d(bun, color = "FA", palette = "Viridis")
+```
+
+```{r}
+#| label: point-fa-fig
+#| echo: false
+knitr::include_graphics("man/figures/README-point-fa-1.png")
 ```
 
 #### Colour by per-streamline metadata
@@ -112,7 +128,14 @@ giving every tract a single uniform colour:
 
 ```{r}
 #| label: streamline-fa
+#| eval: false
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
+```
+
+```{r}
+#| label: streamline-fa-fig
+#| echo: false
+knitr::include_graphics("man/figures/README-streamline-fa-1.png")
 ```
 
 #### Fixed colour
@@ -121,7 +144,14 @@ Any CSS colour name or hex code colours all lines identically:
 
 ```{r}
 #| label: fixed
+#| eval: false
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
+```
+
+```{r}
+#| label: fixed-fig
+#| echo: false
+knitr::include_graphics("man/figures/README-fixed-1.png")
 ```
 
 ## Colour modes at a glance
