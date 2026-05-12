@@ -2,8 +2,12 @@
 
 ``` r
 
-library(rtists)
-library(fiber)
+if (!requireNamespace("rtists", quietly = TRUE)) {
+  knitr::opts_chunk$set(eval = FALSE)
+} else {
+  library(rtists)
+  library(fiber)
+}
 ```
 
 ## Overview
