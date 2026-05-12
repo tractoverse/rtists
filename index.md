@@ -67,6 +67,12 @@ bun <- new_bundle(lapply(seq_len(6), function(i) {
 
 ### `plot3d()` — colour modes
 
+All the following examples only display a static figure, but the actual
+output of
+[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) is an
+interactive widget. You might want to run the code yourself to see the
+full effect or take a look at the vignette for interactive 3D examples.
+
 #### Default: orientation colours
 
 Each point is coloured by the direction of the local tangent vector
@@ -78,6 +84,8 @@ using the standard DTI convention (left–right = red, anterior–posterior
 plot3d(bun)
 ```
 
+![](reference/figures/README-orientation-1.png)
+
 #### Colour by per-point metadata
 
 Pass any key from `@point_data` to map a continuous scalar to a colour
@@ -87,6 +95,8 @@ scale:
 
 plot3d(bun, color = "FA", palette = "Viridis")
 ```
+
+![](reference/figures/README-point-fa-1.png)
 
 #### Colour by per-streamline metadata
 
@@ -98,6 +108,8 @@ streamline, giving every tract a single uniform colour:
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```
 
+![](reference/figures/README-streamline-fa-1.png)
+
 #### Fixed colour
 
 Any CSS colour name or hex code colours all lines identically:
@@ -106,6 +118,8 @@ Any CSS colour name or hex code colours all lines identically:
 
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 ```
+
+![](reference/figures/README-fixed-1.png)
 
 ## Colour modes at a glance
 
