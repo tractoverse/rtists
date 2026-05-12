@@ -4,101 +4,179 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>R for Tissue Integrity Superimposed on Tractography Streamlines • rtists</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="bootstrap-toc.css">
-<script src="bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
-<script src="pkgdown.js"></script><meta property="og:title" content="R for Tissue Integrity Superimposed on Tractography Streamlines">
-<meta property="og:description" content="What the package does (one paragraph).">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="R for Tissue Integrity Superimposed on Tractography Streamlines">
+<meta name="description" content="Provides interactive 3-D visualisation of tractography streamlines and bundles defined in the riot package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation.">
+<meta property="og:description" content="Provides interactive 3-D visualisation of tractography streamlines and bundles defined in the riot package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation.">
 </head>
-<body data-spy="scroll" data-target="#toc">
-    
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
-    <div class="container template-home">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="index.html">rtists</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.0.9000</span>
-      </span>
-    </div>
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="articles/rtists.html">Get started</a>
-</li>
-<li>
-  <a href="reference/index.html">Reference</a>
-</li>
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+
+    <a class="navbar-brand me-2" href="index.html">rtists</a>
+
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="articles/rtists.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/astamm/rtists/" class="external-link">
-    <span class="fab fa-github fa-lg"></span>
-     
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/astamm/rtists/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
-
-      
-
-      </header><div class="row">
-  <div class="contents col-md-9">
-<div class="section level1">
-<div class="page-header"><h1 id="rtists">
-<code>rtists</code><a class="anchor" aria-label="anchor" href="#rtists"></a>
+</nav><div class="container template-home">
+<div class="row">
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="rtists-">rtists <a href="https://astamm.github.io/rtists/"><img src="reference/figures/logo.png" align="right" height="138" alt="rtists website"></a>
+<a class="anchor" aria-label="anchor" href="#rtists-"></a>
 </h1></div>
 <!-- badges: start -->
 
-<!-- badges: end -->
-<p>The goal of <code>rtists</code> is to provide visualization tools for tissue integrity superimposed on tractography streamlines.</p>
+<p><strong>rtists</strong> (<em>R for Tissue Integrity Superimposed on Tractography Streamlines</em>) provides interactive 3-D visualisation of tractography streamlines and bundles defined in the <a href="https://github.com/astamm/riot" class="external-link">riot</a> package.</p>
+<p>The main function is <code><a href="reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for both <code><a href="https://astamm.github.io/riot/reference/streamline.html" class="external-link">riot::streamline</a></code> and <code><a href="https://astamm.github.io/riot/reference/bundle.html" class="external-link">riot::bundle</a></code> objects. Figures are rendered by <a href="https://plotly.com/r/" class="external-link">plotly</a> and are fully interactive (pan, rotate, zoom).</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of <code>rtists</code> from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<p>Install the development version from <a href="https://github.com/astamm/rtists" class="external-link">GitHub</a>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># install.packages("devtools")</span>
-<span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"astamm/rtists"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"astamm/rtists"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>The following code generates a basic 3D visualisation of the left uncinate fasciculus:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rtists)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(future)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plan</span>(multisession)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> autoplotly<span class="sc">::</span><span class="fu">autoplotly</span>(uf_left)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>ℹ Displaying <span class="dv">2042</span> streamlines...</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>ℹ Coloring streamlines by orientation...</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plan</span>(sequential)</span></code></pre></div>
-<p><a href="https://astamm.github.io/rtists/articles/rtists.html" class="external-link"><img src="reference/figures/README-unnamed-chunk-2-1.png"></a></p>
+<div class="section level3">
+<h3 id="build-some-riot-objects">Build some riot objects<a class="anchor" aria-label="anchor" href="#build-some-riot-objects"></a>
+</h3>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/astamm/rtists" class="external-link">rtists</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/astamm/riot" class="external-link">riot</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>,</span>
+<span>    <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span>,</span>
+<span>    <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">3</span>,</span>
+<span>    <span class="fl">3</span>, <span class="fl">3</span>, <span class="fl">5</span>,</span>
+<span>    <span class="fl">4</span>, <span class="fl">2</span>, <span class="fl">6</span>,</span>
+<span>    <span class="fl">5</span>, <span class="fl">1</span>, <span class="fl">7</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  ncol <span class="op">=</span> <span class="fl">3</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://astamm.github.io/riot/reference/new_streamline.html" class="external-link">new_streamline</a></span><span class="op">(</span></span>
+<span>  points          <span class="op">=</span> <span class="va">pts</span>,</span>
+<span>  point_data      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.40</span>, <span class="fl">0.65</span>, <span class="fl">0.70</span>, <span class="fl">0.55</span>, <span class="fl">0.30</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  streamline_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_FA <span class="op">=</span> <span class="fl">0.475</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">bun</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://astamm.github.io/riot/reference/new_bundle.html" class="external-link">new_bundle</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pts</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span>, sd <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">noise</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://astamm.github.io/riot/reference/new_streamline.html" class="external-link">new_streamline</a></span><span class="op">(</span></span>
+<span>    points          <span class="op">=</span> <span class="va">pts</span> <span class="op">+</span> <span class="va">noise</span>,</span>
+<span>    point_data      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">sl</span><span class="op">@</span><span class="va">point_data</span><span class="op">$</span><span class="va">FA</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">6</span>, sd <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    streamline_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">sl</span><span class="op">@</span><span class="va">point_data</span><span class="op">$</span><span class="va">FA</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="plot3d--colour-modes">
+<code>plot3d()</code> — colour modes<a class="anchor" aria-label="anchor" href="#plot3d--colour-modes"></a>
+</h3>
+<div class="section level4">
+<h4 id="default-orientation-colours">Default: orientation colours<a class="anchor" aria-label="anchor" href="#default-orientation-colours"></a>
+</h4>
+<p>Each point is coloured by the direction of the local tangent vector using the standard DTI convention (left–right = red, anterior–posterior = green, superior–inferior = blue):</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-orientation-1.png"></p>
+</div>
+<div class="section level4">
+<h4 id="colour-by-per-point-metadata">Colour by per-point metadata<a class="anchor" aria-label="anchor" href="#colour-by-per-point-metadata"></a>
+</h4>
+<p>Pass any key from <code>@point_data</code> to map a continuous scalar to a colour scale:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"FA"</span>, palette <span class="op">=</span> <span class="st">"Viridis"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-point-fa-1.png"></p>
+</div>
+<div class="section level4">
+<h4 id="colour-by-per-streamline-metadata">Colour by per-streamline metadata<a class="anchor" aria-label="anchor" href="#colour-by-per-streamline-metadata"></a>
+</h4>
+<p>Keys from <code>@streamline_data</code> are broadcast to all points of each streamline, giving every tract a single uniform colour:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"mean_FA"</span>, palette <span class="op">=</span> <span class="st">"RdYlBu"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-streamline-fa-1.png"></p>
+</div>
+<div class="section level4">
+<h4 id="fixed-colour">Fixed colour<a class="anchor" aria-label="anchor" href="#fixed-colour"></a>
+</h4>
+<p>Any CSS colour name or hex code colours all lines identically:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"steelblue"</span>, opacity <span class="op">=</span> <span class="fl">0.7</span>, linewidth <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-fixed-1.png"></p>
 </div>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-    <div class="links">
+</div>
+<div class="section level2">
+<h2 id="colour-modes-at-a-glance">Colour modes at a glance<a class="anchor" aria-label="anchor" href="#colour-modes-at-a-glance"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>
+<code>color</code> value</th>
+<th>Behaviour</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+<code>"orientation"</code> (default)</td>
+<td>Per-point RGB from local fibre direction</td>
+</tr>
+<tr>
+<td>Name of a <code>@point_data</code> key</td>
+<td>Continuous or categorical scale per point</td>
+</tr>
+<tr>
+<td>Name of a <code>@streamline_data</code> key</td>
+<td>Uniform colour per streamline</td>
+</tr>
+<tr>
+<td>CSS / hex string (e.g. <code>"steelblue"</code>)</td>
+<td>Fixed colour for all lines</td>
+</tr>
+</tbody>
+</table>
+<p>Additional arguments (<code>palette</code>, <code>linewidth</code>, <code>opacity</code>, <code>...</code>) are documented in <code><a href="reference/plot3d.html">?plot3d</a></code>.</p>
+</div>
+</div>
+  </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/astamm/rtists/" class="external-link">Browse source code</a></li>
@@ -125,42 +203,37 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Aymeric Stamm <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-8725-3654" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
+<li>Aymeric Stamm <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-8725-3654" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/astamm/rtists/actions" class="external-link"><img src="https://github.com/astamm/rtists/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://github.com/astamm/rtists/actions" class="external-link"><img src="https://github.com/astamm/rtists/workflows/test-coverage/badge.svg" alt="test-coverage"></a></li>
-<li><a href="https://app.codecov.io/gh/astamm/rtists?branch=master" class="external-link"><img src="https://codecov.io/gh/astamm/rtists/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/astamm/rtists" class="external-link"><img src="https://codecov.io/gh/astamm/rtists/graph/badge.svg" alt="Codecov test coverage"></a></li>
 <li><a href="https://github.com/astamm/rtists/actions" class="external-link"><img src="https://github.com/astamm/rtists/workflows/pkgdown/badge.svg" alt="pkgdown"></a></li>
-<li><a href="https://CRAN.R-project.org/package=rtists" class="external-link"><img src="https://www.r-pkg.org/badges/version/rtists" alt="CRAN status"></a></li>
 </ul>
 </div>
 
-  </div>
+  </aside>
 </div>
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by Aymeric Stamm.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by Aymeric Stamm.</p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
 
-  
 
 
-  
+
 
   </body>
 </html>

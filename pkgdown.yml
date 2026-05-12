@@ -1,7 +1,9 @@
-pandoc: 2.14.2
-pkgdown: 2.0.2
+pandoc: 3.8.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   rtists: rtists.html
-last_built: 2022-03-23T15:28Z
-
+last_built: 2026-05-12T09:57Z
+urls:
+  reference: https://astamm.github.io/rtists/reference
+  article: https://astamm.github.io/rtists/articles

@@ -1,45 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/rtists.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/autoplotly.maf_df.html</loc>
-  </url>
-  <url>
-    <loc>/reference/figures/README-unnamed-chunk-2-1.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pipe.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot.maf_df.html</loc>
-  </url>
-  <url>
-    <loc>/reference/rtists-package.html</loc>
-  </url>
-  <url>
-    <loc>/reference/uf_left.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://astamm.github.io/rtists/404.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/LICENSE-text.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/LICENSE.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/articles/index.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/articles/rtists.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/authors.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/index.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/reference/figures/README-unnamed-chunk-2-1.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/reference/index.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/reference/plot3d.html</loc></url>
+<url><loc>https://astamm.github.io/rtists/reference/rtists-package.html</loc></url>
 </urlset>
+
