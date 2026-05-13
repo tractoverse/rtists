@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   fig.retina = 2
 )
+reticulate::py_require(c("kaleido", "plotly"))
 ```
 
 # rtists <a href="https://astamm.github.io/rtists/"><img src="man/figures/logo.png" align="right" height="138" alt="rtists website" /></a>
@@ -102,6 +103,10 @@ plot3d(bun)
 ```{r}
 #| label: orientation-fig
 #| echo: false
+plotly::save_image(
+  plot3d(bun),
+  file = "man/figures/README-orientation-1.png"
+)
 knitr::include_graphics("man/figures/README-orientation-1.png")
 ```
 
@@ -118,6 +123,10 @@ plot3d(bun, color = "FA", palette = "Viridis")
 ```{r}
 #| label: point-fa-fig
 #| echo: false
+plotly::save_image(
+  plot3d(bun, color = "FA", palette = "Viridis"),
+  file = "man/figures/README-point-fa-1.png"
+)
 knitr::include_graphics("man/figures/README-point-fa-1.png")
 ```
 
@@ -135,6 +144,10 @@ plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```{r}
 #| label: streamline-fa-fig
 #| echo: false
+plotly::save_image(
+   plot3d(bun, color = "mean_FA", palette = "RdYlBu"),
+   file = "man/figures/README-streamline-fa-1.png"
+)
 knitr::include_graphics("man/figures/README-streamline-fa-1.png")
 ```
 
@@ -151,6 +164,10 @@ plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 ```{r}
 #| label: fixed-fig
 #| echo: false
+plotly::save_image(
+  plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3),
+  file = "man/figures/README-fixed-1.png"
+)
 knitr::include_graphics("man/figures/README-fixed-1.png")
 ```
 

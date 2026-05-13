@@ -89,6 +89,8 @@ using the standard DTI convention (left–right = red, anterior–posterior
 plot3d(bun)
 ```
 
+    #> list()
+
 ![](man/figures/README-orientation-1.png)
 
 #### Colour by per-point metadata
@@ -99,6 +101,8 @@ scale:
 ``` r
 plot3d(bun, color = "FA", palette = "Viridis")
 ```
+
+    #> list()
 
 ![](man/figures/README-point-fa-1.png)
 
@@ -111,6 +115,8 @@ streamline, giving every tract a single uniform colour:
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```
 
+    #> list()
+
 ![](man/figures/README-streamline-fa-1.png)
 
 #### Fixed colour
@@ -120,6 +126,8 @@ Any CSS colour name or hex code colours all lines identically:
 ``` r
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 ```
+
+    #> list()
 
 ![](man/figures/README-fixed-1.png)
 
