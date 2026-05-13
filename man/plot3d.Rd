@@ -14,45 +14,47 @@ plot3d(
 )
 }
 \arguments{
-\item{x}{A \link[fiber:streamline]{streamline} or
-\link[fiber:bundle]{bundle} object.}
+\item{x}{A \link[fiber:streamline]{fiber::streamline} or \link[fiber:bundle]{fiber::bundle} object.}
 
-\item{color}{Controls how streamline colours are assigned.  Accepted values:
-\describe{
-\item{\code{"orientation"} (default)}{Per-point RGB colour derived from the
-local fibre direction.  The absolute values of the normalised tangent
-vector \eqn{(|dx|, |dy|, |dz|)} are mapped to the R, G, B channels —
-the standard DTI colour convention (left–right = red,
-anterior–posterior = green, superior–inferior = blue).}
-\item{A \strong{metadata key}}{A string that matches a key in
-\verb{@point_data} (per-point scalar) or \verb{@streamline_data}
-(per-streamline scalar, broadcast to all points).  Numeric values are
-mapped to a continuous colour scale (\code{palette}); character values are
-coloured categorically.}
-\item{A \strong{CSS/hex colour string}}{E.g. \code{"#E69F00"} or \code{"steelblue"}.
-All lines are drawn in that fixed colour.}
+\item{color}{Controls how streamline colours are assigned. Accepted values:
+\itemize{
+\item \code{"orientation"} (default): per-point RGB colour derived from the local
+fibre direction. The absolute values of the normalised tangent vector
+\eqn{(|dx|, |dy|, |dz|)} are mapped to the R, G, B channels — the
+standard DTI colour convention (left-right = red, anterior-posterior =
+green, superior-inferior = blue).
+\item A \strong{metadata key}: a string matching a key in \verb{@point_data}
+(per-point scalar) or \verb{@streamline_data} (per-streamline scalar,
+broadcast to all points). Numeric values are mapped to a continuous
+colour scale (\code{palette}); character values are coloured categorically.
+\item A \strong{CSS/hex colour string}: e.g. \code{"#E69F00"} or \code{"steelblue"}. All
+lines are drawn in that fixed colour.
 }}
 
-\item{palette}{A \pkg{plotly} / ColorBrewer colour scale name applied when
-\code{color} is a numeric metadata key.  Defaults to \code{"Viridis"}.}
+\item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
+\code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
 
-\item{linewidth}{Numeric.  Width of the plotted lines.  Defaults to \code{2}.}
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}.}
 
-\item{opacity}{Numeric in [0, 1].  Global line opacity.  Defaults to
-\code{0.5}.}
+\item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
-\item{...}{Additional named arguments forwarded to
-\code{\link[plotly]{layout}()}, e.g. \code{title = "My bundle"}.}
+\item{...}{Additional named arguments forwarded to \code{\link[plotly:layout]{plotly::layout()}},
+e.g. \code{title = "My bundle"}.}
 }
 \value{
-An interactive \pkg{plotly} htmlwidget.
+An interactive \link[plotly:plotly]{plotly} htmlwidget.
 }
 \description{
-Produce an interactive 3D line plot of a
-\link[fiber:streamline]{streamline} or \link[fiber:bundle]{bundle} object
-from the \pkg{fiber} package using \pkg{plotly}.
+\code{plot3d()} is an S7 generic that produces an interactive 3D line plot of
+tractography objects from the \href{https://astamm.github.io/fiber/}{fiber}
+package using \link[plotly:plotly]{plotly}.
+Methods are available for the following classes:
+
+\itemize{
+\item \code{\link[=plot3d-fiber-bundle-method]{fiber::bundle}}
+\item \code{\link[=plot3d-fiber-streamline-method]{fiber::streamline}}
 }
-\details{
+
 All streamlines are rendered as a single \code{scatter3d} trace separated by
 \code{NA} break-points, which keeps the widget lightweight even for large
 bundles.
@@ -92,5 +94,5 @@ plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 }
 }
 \seealso{
-\link[fiber:streamline]{streamline}, \link[fiber:bundle]{bundle}
+\link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}
 }

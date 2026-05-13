@@ -26,7 +26,7 @@
   dz[n] <- dz[n - 1L]
   norm       <- sqrt(dx^2 + dy^2 + dz^2)
   norm[norm == 0 | is.na(norm)] <- 1
-  rgb(abs(dx) / norm, abs(dy) / norm, abs(dz) / norm)
+  grDevices::rgb(abs(dx) / norm, abs(dy) / norm, abs(dz) / norm)
 }
 
 # Build the colour column and the plotly `line` argument list, then call
@@ -120,41 +120,42 @@
 
 #' Interactive 3D line plot for tractography streamlines and bundles
 #'
-#' Produce an interactive 3D line plot of a
-#' \link[fiber:streamline]{streamline} or \link[fiber:bundle]{bundle} object
-#' from the \pkg{fiber} package using \pkg{plotly}.
+#' @description
+#' `plot3d()` is an S7 generic that produces an interactive 3D line plot of
+#' tractography objects from the [fiber](https://astamm.github.io/fiber/)
+#' package using [plotly][plotly::plotly].
+#' Methods are available for the following classes:
+#'
+#' `r doclisting::methods_list("plot3d")`
 #'
 #' All streamlines are rendered as a single `scatter3d` trace separated by
 #' `NA` break-points, which keeps the widget lightweight even for large
 #' bundles.
 #'
-#' @param x A \link[fiber:streamline]{streamline} or
-#'   \link[fiber:bundle]{bundle} object.
-#' @param color Controls how streamline colours are assigned.  Accepted values:
-#'   \describe{
-#'     \item{`"orientation"` (default)}{Per-point RGB colour derived from the
-#'       local fibre direction.  The absolute values of the normalised tangent
-#'       vector \eqn{(|dx|, |dy|, |dz|)} are mapped to the R, G, B channels —
-#'       the standard DTI colour convention (left–right = red,
-#'       anterior–posterior = green, superior–inferior = blue).}
-#'     \item{A **metadata key**}{A string that matches a key in
-#'       `@point_data` (per-point scalar) or `@streamline_data`
-#'       (per-streamline scalar, broadcast to all points).  Numeric values are
-#'       mapped to a continuous colour scale (`palette`); character values are
-#'       coloured categorically.}
-#'     \item{A **CSS/hex colour string**}{E.g. `"#E69F00"` or `"steelblue"`.
-#'       All lines are drawn in that fixed colour.}
-#'   }
-#' @param palette A \pkg{plotly} / ColorBrewer colour scale name applied when
-#'   `color` is a numeric metadata key.  Defaults to `"Viridis"`.
-#' @param linewidth Numeric.  Width of the plotted lines.  Defaults to `2`.
-#' @param opacity Numeric in \[0, 1\].  Global line opacity.  Defaults to
-#'   `0.5`.
-#' @param ... Additional named arguments forwarded to
-#'   \code{\link[plotly]{layout}()}, e.g. `title = "My bundle"`.
+#' @param x A [fiber::streamline] or [fiber::bundle] object.
+#' @param color Controls how streamline colours are assigned. Accepted values:
 #'
-#' @return An interactive \pkg{plotly} htmlwidget.
-#' @seealso \link[fiber:streamline]{streamline}, \link[fiber:bundle]{bundle}
+#'   - `"orientation"` (default): per-point RGB colour derived from the local
+#'     fibre direction. The absolute values of the normalised tangent vector
+#'     \eqn{(|dx|, |dy|, |dz|)} are mapped to the R, G, B channels — the
+#'     standard DTI colour convention (left-right = red, anterior-posterior =
+#'     green, superior-inferior = blue).
+#'   - A **metadata key**: a string matching a key in `@point_data`
+#'     (per-point scalar) or `@streamline_data` (per-streamline scalar,
+#'     broadcast to all points). Numeric values are mapped to a continuous
+#'     colour scale (`palette`); character values are coloured categorically.
+#'   - A **CSS/hex colour string**: e.g. `"#E69F00"` or `"steelblue"`. All
+#'     lines are drawn in that fixed colour.
+#'
+#' @param palette A [plotly] / ColorBrewer colour scale name applied when
+#'   `color` is a numeric metadata key. Defaults to `"Viridis"`.
+#' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`.
+#' @param opacity Numeric in \[0, 1\]. Global line opacity. Defaults to `0.5`.
+#' @param ... Additional named arguments forwarded to [plotly::layout()],
+#'   e.g. `title = "My bundle"`.
+#'
+#' @returns An interactive [plotly] htmlwidget.
+#' @seealso [fiber::streamline], [fiber::bundle]
 #' @export
 #'
 #' @examples
@@ -201,6 +202,17 @@ plot3d <- S7::new_generic(
 
 # ---- S7 methods --------------------------------------------------------------
 
+#' [plot3d()] method for `fiber::streamline` objects
+#'
+#' Renders a single [fiber::streamline] as an interactive 3D line plot. See
+#' [plot3d()] for the full parameter documentation and examples.
+#'
+#' @param x A [fiber::streamline] object.
+#' @inheritParams plot3d
+#' @returns An interactive [plotly] htmlwidget.
+#' @seealso [plot3d()]
+#' @aliases plot3d-fiber-streamline-method
+#' @usage NULL
 S7::method(plot3d, fiber::streamline) <- function(
     x,
     color     = "orientation",
@@ -219,6 +231,17 @@ S7::method(plot3d, fiber::streamline) <- function(
   )
 }
 
+#' [plot3d()] method for `fiber::bundle` objects
+#'
+#' Renders all streamlines in a [fiber::bundle] as a single interactive 3D
+#' line plot. See [plot3d()] for the full parameter documentation and examples.
+#'
+#' @param x A [fiber::bundle] object.
+#' @inheritParams plot3d
+#' @returns An interactive [plotly] htmlwidget.
+#' @seealso [plot3d()]
+#' @aliases plot3d-fiber-bundle-method
+#' @usage NULL
 S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
