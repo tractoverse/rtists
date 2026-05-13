@@ -113,30 +113,34 @@
 <p>Each point is coloured by the direction of the local tangent vector using the standard DTI convention (left–right = red, anterior–posterior = green, superior–inferior = blue):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">#&gt; list()</span></span></code></pre></div>
 <p><img src="reference/figures/README-orientation-1.png"></p>
 </div>
 <div class="section level4">
 <h4 id="colour-by-per-point-metadata">Colour by per-point metadata<a class="anchor" aria-label="anchor" href="#colour-by-per-point-metadata"></a>
 </h4>
 <p>Pass any key from <code>@point_data</code> to map a continuous scalar to a colour scale:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"FA"</span>, palette <span class="op">=</span> <span class="st">"Viridis"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co">#&gt; list()</span></span></code></pre></div>
 <p><img src="reference/figures/README-point-fa-1.png"></p>
 </div>
 <div class="section level4">
 <h4 id="colour-by-per-streamline-metadata">Colour by per-streamline metadata<a class="anchor" aria-label="anchor" href="#colour-by-per-streamline-metadata"></a>
 </h4>
 <p>Keys from <code>@streamline_data</code> are broadcast to all points of each streamline, giving every tract a single uniform colour:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"mean_FA"</span>, palette <span class="op">=</span> <span class="st">"RdYlBu"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co">#&gt; list()</span></span></code></pre></div>
 <p><img src="reference/figures/README-streamline-fa-1.png"></p>
 </div>
 <div class="section level4">
 <h4 id="fixed-colour">Fixed colour<a class="anchor" aria-label="anchor" href="#fixed-colour"></a>
 </h4>
 <p>Any CSS colour name or hex code colours all lines identically:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot3d.html">plot3d</a></span><span class="op">(</span><span class="va">bun</span>, color <span class="op">=</span> <span class="st">"steelblue"</span>, opacity <span class="op">=</span> <span class="fl">0.7</span>, linewidth <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co">#&gt; list()</span></span></code></pre></div>
 <p><img src="reference/figures/README-fixed-1.png"></p>
 </div>
 </div>
