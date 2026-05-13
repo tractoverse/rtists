@@ -1,9 +1,14 @@
 Package: rtists
 Title: R for Tissue Integrity Superimposed on Tractography Streamlines
-Version: 0.0.0.9000
-Authors@R: 
-    person("Aymeric", "Stamm", , "aymeric.stamm@math.cnrs.fr", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-8725-3654"))
+Version: 0.1.0
+Authors@R: c(
+    person(
+        given = "Aymeric",
+        family = "Stamm",
+        role = c("aut", "cre"),
+        email = "aymeric.stamm@cnrs.fr",
+        comment = c(ORCID = "0000-0002-8725-3654")
+    ))
 Description: Provides interactive 3-D visualisation of tractography streamlines
     and bundles defined in the 'fiber' package. Aesthetics such as line colour
     can be mapped to per-point, per-streamline, or per-bundle metadata, or
@@ -12,22 +17,18 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 URL: https://github.com/astamm/rtists, https://astamm.github.io/rtists/
 BugReports: https://github.com/astamm/rtists/issues
-Remotes:
-    astamm/fiber
-Imports:
+Remotes: astamm/fiber
+Imports: 
     cli,
     fiber,
     plotly,
     S7
 Depends: 
     R (>= 4.1.0)
-LazyData: true
 Suggests: 
-    covr,
     knitr,
     quarto,
-    testthat (>= 3.0.0)
+    tinytest
 VignetteBuilder: quarto
-Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
 Config/roxygen2/markdown: TRUE
