@@ -1,9 +1,17 @@
 # Interactive 3D line plot for tractography streamlines and bundles
 
-Produce an interactive 3D line plot of a
-[streamline](https://astamm.github.io/fiber/reference/streamline.html)
-or [bundle](https://astamm.github.io/fiber/reference/bundle.html) object
-from the fiber package using plotly.
+`plot3d()` is an S7 generic that produces an interactive 3D line plot of
+tractography objects from the [fiber](https://astamm.github.io/fiber/)
+package using [plotly](https://rdrr.io/pkg/plotly/man/plotly.html).
+Methods are available for the following classes:
+
+- [`fiber::bundle`](https://astamm.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
+
+- [`fiber::streamline`](https://astamm.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
+
+All streamlines are rendered as a single `scatter3d` trace separated by
+`NA` break-points, which keeps the widget lightweight even for large
+bundles.
 
 ## Usage
 
@@ -23,38 +31,35 @@ plot3d(
 - x:
 
   A
-  [streamline](https://astamm.github.io/fiber/reference/streamline.html)
-  or [bundle](https://astamm.github.io/fiber/reference/bundle.html)
+  [fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html)
+  or
+  [fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html)
   object.
 
 - color:
 
   Controls how streamline colours are assigned. Accepted values:
 
-  `"orientation"` (default)
+  - `"orientation"` (default): per-point RGB colour derived from the
+    local fibre direction. The absolute values of the normalised tangent
+    vector \\(\|dx\|, \|dy\|, \|dz\|)\\ are mapped to the R, G, B
+    channels — the standard DTI colour convention (left-right = red,
+    anterior-posterior = green, superior-inferior = blue).
 
-  :   Per-point RGB colour derived from the local fibre direction. The
-      absolute values of the normalised tangent vector \\(\|dx\|,
-      \|dy\|, \|dz\|)\\ are mapped to the R, G, B channels — the
-      standard DTI colour convention (left–right = red,
-      anterior–posterior = green, superior–inferior = blue).
+  - A **metadata key**: a string matching a key in `@point_data`
+    (per-point scalar) or `@streamline_data` (per-streamline scalar,
+    broadcast to all points). Numeric values are mapped to a continuous
+    colour scale (`palette`); character values are coloured
+    categorically.
 
-  A **metadata key**
-
-  :   A string that matches a key in `@point_data` (per-point scalar) or
-      `@streamline_data` (per-streamline scalar, broadcast to all
-      points). Numeric values are mapped to a continuous colour scale
-      (`palette`); character values are coloured categorically.
-
-  A **CSS/hex colour string**
-
-  :   E.g. `"#E69F00"` or `"steelblue"`. All lines are drawn in that
-      fixed colour.
+  - A **CSS/hex colour string**: e.g. `"#E69F00"` or `"steelblue"`. All
+    lines are drawn in that fixed colour.
 
 - palette:
 
-  A plotly / ColorBrewer colour scale name applied when `color` is a
-  numeric metadata key. Defaults to `"Viridis"`.
+  A [plotly](https://rdrr.io/pkg/plotly/man/plotly.html) / ColorBrewer
+  colour scale name applied when `color` is a numeric metadata key.
+  Defaults to `"Viridis"`.
 
 - linewidth:
 
@@ -66,24 +71,18 @@ plot3d(
 
 - ...:
 
-  Additional named arguments forwarded to
-  [`layout()`](https://rdrr.io/r/graphics/layout.html), e.g.
+  Additional named arguments forwarded to `plotly::layout()`, e.g.
   `title = "My bundle"`.
 
 ## Value
 
-An interactive plotly htmlwidget.
-
-## Details
-
-All streamlines are rendered as a single `scatter3d` trace separated by
-`NA` break-points, which keeps the widget lightweight even for large
-bundles.
+An interactive [plotly](https://rdrr.io/pkg/plotly/man/plotly.html)
+htmlwidget.
 
 ## See also
 
-[streamline](https://astamm.github.io/fiber/reference/streamline.html),
-[bundle](https://astamm.github.io/fiber/reference/bundle.html)
+[fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html),
+[fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html)
 
 ## Examples
 
