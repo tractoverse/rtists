@@ -211,7 +211,8 @@ plot3d <- S7::new_generic(
 #' @inheritParams plot3d
 #' @returns An interactive [plotly] htmlwidget.
 #' @seealso [plot3d()]
-#' @aliases plot3d-fiber-streamline-method
+#' @name plot3d-fiber-streamline-method
+#' @aliases plot3d,fiber::streamline-method
 #' @usage NULL
 S7::method(plot3d, fiber::streamline) <- function(
     x,
@@ -240,7 +241,8 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' @inheritParams plot3d
 #' @returns An interactive [plotly] htmlwidget.
 #' @seealso [plot3d()]
-#' @aliases plot3d-fiber-bundle-method
+#' @name plot3d-fiber-bundle-method
+#' @aliases plot3d,fiber::bundle-method
 #' @usage NULL
 S7::method(plot3d, fiber::bundle) <- function(
     x,
