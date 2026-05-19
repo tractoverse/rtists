@@ -1,28 +1,28 @@
-# rtists [![rtists website](reference/figures/logo.png)](https://astamm.github.io/rtists/)
+# rtists [![rtists website](reference/figures/logo.png)](https://tractoverse.github.io/rtists/)
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography
 streamlines and bundles defined in the
-[fiber](https://github.com/astamm/fiber) package.
+[fiber](https://github.com/tractoverse/fiber) package.
 
 The main function is
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md), an
-[S7](https://rconsortium.github.io/S7/) generic with methods for both
-[`fiber::streamline`](https://astamm.github.io/fiber/reference/streamline.html)
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md),
+an [S7](https://rconsortium.github.io/S7/) generic with methods for both
+[`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
 and
-[`fiber::bundle`](https://astamm.github.io/fiber/reference/bundle.html)
+[`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
 objects. Figures are rendered by [plotly](https://plotly.com/r/) and are
 fully interactive (pan, rotate, zoom).
 
 ## Installation
 
 Install the development version from
-[GitHub](https://github.com/astamm/rtists):
+[GitHub](https://github.com/tractoverse/rtists):
 
 ``` r
 
 # install.packages("pak")
-pak::pak("astamm/rtists")
+pak::pak("tractoverse/rtists")
 ```
 
 ## Usage
@@ -47,17 +47,17 @@ pts <- matrix(
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
 
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.25, 0.40, 0.65, 0.70, 0.55, 0.30)),
   streamline_data = list(mean_FA = 0.475)
 )
 
 set.seed(42)
-bun <- new_bundle(lapply(seq_len(6), function(i) {
+bun <- bundle(lapply(seq_len(6), function(i) {
   noise <- matrix(rnorm(nrow(pts) * 3, sd = 0.2), ncol = 3)
   colnames(noise) <- c("X", "Y", "Z")
-  new_streamline(
+  streamline(
     points          = pts + noise,
     point_data      = list(FA = pmin(pmax(sl@point_data$FA + rnorm(6, sd = 0.05), 0), 1)),
     streamline_data = list(mean_FA = mean(sl@point_data$FA))
@@ -69,9 +69,10 @@ bun <- new_bundle(lapply(seq_len(6), function(i) {
 
 All the following examples only display a static figure, but the actual
 output of
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) is an
-interactive widget. You might want to run the code yourself to see the
-full effect or take a look at the vignette for interactive 3D examples.
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+is an interactive widget. You might want to run the code yourself to see
+the full effect or take a look at the vignette for interactive 3D
+examples.
 
 #### Default: orientation colours
 
@@ -148,4 +149,4 @@ plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 
 Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in
-[`?plot3d`](https://astamm.github.io/rtists/reference/plot3d.md).
+[`?plot3d`](https://tractoverse.github.io/rtists/reference/plot3d.md).

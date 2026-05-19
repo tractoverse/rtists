@@ -14,16 +14,16 @@ if (!requireNamespace("rtists", quietly = TRUE)) {
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography
-data defined in the [fiber](https://github.com/astamm/fiber) package.
-The central function is
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md), a
-[S7](https://rconsortium.github.io/S7/) generic with methods for the two
-core fiber classes:
+data defined in the [fiber](https://github.com/tractoverse/fiber)
+package. The central function is
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md),
+a [S7](https://rconsortium.github.io/S7/) generic with methods for the
+two core fiber classes:
 
 | Class | Description |
 |----|----|
-| [`fiber::streamline`](https://astamm.github.io/fiber/reference/streamline.html) | A single fibre tract — an ordered sequence of 3-D points plus optional metadata. |
-| [`fiber::bundle`](https://astamm.github.io/fiber/reference/bundle.html) | An ordered collection of streamlines representing a white-matter bundle. |
+| [`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html) | A single fibre tract — an ordered sequence of 3-D points plus optional metadata. |
+| [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html) | An ordered collection of streamlines representing a white-matter bundle. |
 
 The interactive figures are produced by [plotly](https://plotly.com/r/),
 so they can be panned, rotated, and zoomed directly in the browser or
@@ -65,7 +65,7 @@ pts <- matrix(
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
 
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.25, 0.40, 0.65, 0.70, 0.55, 0.30)),
   streamline_data = list(mean_FA = 0.475)
@@ -76,7 +76,7 @@ sl
 ```
 
 A bundle is just a list of streamlines wrapped by
-[`new_bundle()`](https://astamm.github.io/fiber/reference/new_bundle.html):
+[`bundle()`](https://tractoverse.github.io/fiber/reference/bundle.html):
 
 ``` r
 
@@ -85,14 +85,14 @@ set.seed(42)
 streamlines <- lapply(seq_len(4), function(i) {
   noise <- matrix(rnorm(nrow(pts) * 3, sd = 0.15), ncol = 3)
   colnames(noise) <- c("X", "Y", "Z")
-  new_streamline(
+  streamline(
     points          = pts + noise,
     point_data      = list(FA = pmin(pmax(sl@point_data$FA + rnorm(6, sd = 0.05), 0), 1)),
     streamline_data = list(mean_FA = mean(sl@point_data$FA))
   )
 })
 
-bun <- new_bundle(streamlines)
+bun <- bundle(streamlines)
 bun
 #> <bundle [4 streamlines | 6–6 pts/streamline] | point: FA | streamline: mean_FA>
 ```

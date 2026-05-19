@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>R for Tissue Integrity Superimposed on Tractography Streamlines • rtists</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="R for Tissue Integrity Superimposed on Tractography Streamlines">
 <meta name="description" content="Provides interactive 3-D visualisation of tractography streamlines and bundles defined in the fiber package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation.">
@@ -39,7 +39,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/astamm/rtists/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/tractoverse/rtists/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -48,20 +48,20 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="rtists-">rtists <a href="https://astamm.github.io/rtists/"><img src="reference/figures/logo.png" align="right" height="138" alt="rtists website"></a>
+<div class="page-header"><h1 id="rtists-">rtists <a href="https://tractoverse.github.io/rtists/"><img src="reference/figures/logo.png" align="right" height="138" alt="rtists website"></a>
 <a class="anchor" aria-label="anchor" href="#rtists-"></a>
 </h1></div>
 <!-- badges: start -->
 
-<p><strong>rtists</strong> (<em>R for Tissue Integrity Superimposed on Tractography Streamlines</em>) provides interactive 3-D visualisation of tractography streamlines and bundles defined in the <a href="https://github.com/astamm/fiber" class="external-link">fiber</a> package.</p>
-<p>The main function is <code><a href="reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for both <code><a href="https://astamm.github.io/fiber/reference/streamline.html" class="external-link">fiber::streamline</a></code> and <code><a href="https://astamm.github.io/fiber/reference/bundle.html" class="external-link">fiber::bundle</a></code> objects. Figures are rendered by <a href="https://plotly.com/r/" class="external-link">plotly</a> and are fully interactive (pan, rotate, zoom).</p>
+<p><strong>rtists</strong> (<em>R for Tissue Integrity Superimposed on Tractography Streamlines</em>) provides interactive 3-D visualisation of tractography streamlines and bundles defined in the <a href="https://github.com/tractoverse/fiber" class="external-link">fiber</a> package.</p>
+<p>The main function is <code><a href="reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for both <code><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">fiber::streamline</a></code> and <code><a href="https://tractoverse.github.io/fiber/reference/bundle.html" class="external-link">fiber::bundle</a></code> objects. Figures are rendered by <a href="https://plotly.com/r/" class="external-link">plotly</a> and are fully interactive (pan, rotate, zoom).</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Install the development version from <a href="https://github.com/astamm/rtists" class="external-link">GitHub</a>:</p>
+<p>Install the development version from <a href="https://github.com/tractoverse/rtists" class="external-link">GitHub</a>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"astamm/rtists"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"tractoverse/rtists"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
@@ -70,8 +70,8 @@
 <h3 id="build-some-fiber-objects">Build some fiber objects<a class="anchor" aria-label="anchor" href="#build-some-fiber-objects"></a>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/astamm/rtists" class="external-link">rtists</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/astamm/fiber" class="external-link">fiber</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tractoverse/rtists" class="external-link">rtists</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tractoverse/fiber" class="external-link">fiber</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -86,17 +86,17 @@
 <span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://astamm.github.io/fiber/reference/new_streamline.html" class="external-link">new_streamline</a></span><span class="op">(</span></span>
+<span><span class="va">sl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">streamline</a></span><span class="op">(</span></span>
 <span>  points          <span class="op">=</span> <span class="va">pts</span>,</span>
 <span>  point_data      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.40</span>, <span class="fl">0.65</span>, <span class="fl">0.70</span>, <span class="fl">0.55</span>, <span class="fl">0.30</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  streamline_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_FA <span class="op">=</span> <span class="fl">0.475</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">bun</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://astamm.github.io/fiber/reference/new_bundle.html" class="external-link">new_bundle</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">bun</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tractoverse.github.io/fiber/reference/bundle.html" class="external-link">bundle</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pts</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span>, sd <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">noise</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://astamm.github.io/fiber/reference/new_streamline.html" class="external-link">new_streamline</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">streamline</a></span><span class="op">(</span></span>
 <span>    points          <span class="op">=</span> <span class="va">pts</span> <span class="op">+</span> <span class="va">noise</span>,</span>
 <span>    point_data      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">sl</span><span class="op">@</span><span class="va">point_data</span><span class="op">$</span><span class="va">FA</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">6</span>, sd <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    streamline_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_FA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">sl</span><span class="op">@</span><span class="va">point_data</span><span class="op">$</span><span class="va">FA</span><span class="op">)</span><span class="op">)</span></span>
@@ -185,8 +185,8 @@
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/astamm/rtists/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/astamm/rtists/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://github.com/tractoverse/rtists/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/tractoverse/rtists/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 
@@ -216,9 +216,9 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://app.codecov.io/gh/astamm/rtists" class="external-link"><img src="https://codecov.io/gh/astamm/rtists/graph/badge.svg" alt="Codecov test coverage"></a></li>
-<li><a href="https://github.com/astamm/rtists/actions/workflows/pkgdown.yaml" class="external-link"><img src="https://github.com/astamm/rtists/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a></li>
+<li><a href="https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/tractoverse/rtists" class="external-link"><img src="https://codecov.io/gh/tractoverse/rtists/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml" class="external-link"><img src="https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a></li>
 </ul>
 </div>
 

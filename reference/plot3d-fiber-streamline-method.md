@@ -1,17 +1,17 @@
-# [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) method for `fiber::streamline` objects
+# [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md) method for `fiber::streamline` objects
 
 Renders a single
-[fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html)
+[fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html)
 as an interactive 3D line plot. See
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) for
-the full parameter documentation and examples.
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+for the full parameter documentation and examples.
 
 ## Arguments
 
 - x:
 
   A
-  [fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html)
+  [fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html)
   object.
 
 - color:
@@ -59,4 +59,4 @@ htmlwidget.
 
 ## See also
 
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md)
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)

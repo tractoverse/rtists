@@ -1,17 +1,17 @@
-# [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) method for `fiber::bundle` objects
+# [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md) method for `fiber::bundle` objects
 
 Renders all streamlines in a
-[fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html) as
-a single interactive 3D line plot. See
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md) for
-the full parameter documentation and examples.
+[fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
+as a single interactive 3D line plot. See
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+for the full parameter documentation and examples.
 
 ## Arguments
 
 - x:
 
   A
-  [fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html)
+  [fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
   object.
 
 - color:
@@ -59,4 +59,4 @@ htmlwidget.
 
 ## See also
 
-[`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md)
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)

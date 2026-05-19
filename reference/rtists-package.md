@@ -9,11 +9,11 @@ derived from the local fibre orientation.
 
 Useful links:
 
-- <https://github.com/astamm/rtists>
+- <https://github.com/tractoverse/rtists>
 
-- <https://astamm.github.io/rtists/>
+- <https://tractoverse.github.io/rtists/>
 
-- Report bugs at <https://github.com/astamm/rtists/issues>
+- Report bugs at <https://github.com/tractoverse/rtists/issues>
 
 ## Author
 

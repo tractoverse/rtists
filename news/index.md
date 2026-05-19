@@ -4,14 +4,14 @@
 
 - Initial CRAN release.
 - Added
-  [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md), an
-  [S7](https://rconsortium.github.io/S7/) generic with methods for
-  [`fiber::streamline`](https://astamm.github.io/fiber/reference/streamline.html)
+  [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md),
+  an [S7](https://rconsortium.github.io/S7/) generic with methods for
+  [`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
   and
-  [`fiber::bundle`](https://astamm.github.io/fiber/reference/bundle.html)
+  [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects.
 - Colour modes supported by
-  [`plot3d()`](https://astamm.github.io/rtists/reference/plot3d.md):
+  [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md):
   - `"orientation"` (default): per-point RGB colour derived from the
     local fibre direction using the standard DTI convention (left–right
     = red, anterior–posterior = green, superior–inferior = blue).

@@ -1,13 +1,14 @@
 # Interactive 3D line plot for tractography streamlines and bundles
 
 `plot3d()` is an S7 generic that produces an interactive 3D line plot of
-tractography objects from the [fiber](https://astamm.github.io/fiber/)
-package using [plotly](https://rdrr.io/pkg/plotly/man/plotly.html).
-Methods are available for the following classes:
+tractography objects from the
+[fiber](https://tractoverse.github.io/fiber/) package using
+[plotly](https://rdrr.io/pkg/plotly/man/plotly.html). Methods are
+available for the following classes:
 
-- [`fiber::bundle`](https://astamm.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
+- [`fiber::bundle`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
 
-- [`fiber::streamline`](https://astamm.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
+- [`fiber::streamline`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
 
 All streamlines are rendered as a single `scatter3d` trace separated by
 `NA` break-points, which keeps the widget lightweight even for large
@@ -31,9 +32,9 @@ plot3d(
 - x:
 
   A
-  [fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html)
+  [fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html)
   or
-  [fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html)
+  [fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
   object.
 
 - color:
@@ -81,8 +82,8 @@ htmlwidget.
 
 ## See also
 
-[fiber::streamline](https://astamm.github.io/fiber/reference/streamline.html),
-[fiber::bundle](https://astamm.github.io/fiber/reference/bundle.html)
+[fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html),
+[fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
 
 ## Examples
 
@@ -99,7 +100,7 @@ pts <- matrix(
   ncol = 3, byrow = TRUE,
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
   streamline_data = list(mean_FA = 0.525)
@@ -115,7 +116,7 @@ plot3d(sl, color = "FA")
 plot3d(sl, color = "steelblue", opacity = 0.8)
 
 # --- bundle example -------------------------------------------------------
-bun <- new_bundle(list(sl, sl))
+bun <- bundle(list(sl, sl))
 plot3d(bun)
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 } # }

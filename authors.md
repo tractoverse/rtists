@@ -8,16 +8,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/astamm/rtists/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/tractoverse/rtists/blob/master/DESCRIPTION)
 
 Stamm A (2026). *rtists: R for Tissue Integrity Superimposed on
 Tractography Streamlines*. R package version 0.1.0,
-<https://github.com/astamm/rtists>.
+<https://github.com/tractoverse/rtists>.
 
     @Manual{,
       title = {rtists: R for Tissue Integrity Superimposed on Tractography Streamlines},
       author = {Aymeric Stamm},
       year = {2026},
       note = {R package version 0.1.0},
-      url = {https://github.com/astamm/rtists},
+      url = {https://github.com/tractoverse/rtists},
     }
