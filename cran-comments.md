@@ -15,6 +15,10 @@
 * [win-builder](https://win-builder.r-project.org/) R release
 * [win-builder](https://win-builder.r-project.org/) R-devel
 
+**macbuilder:**
+* [mac-builder](https://mac.r-project.org/macbuilder/submit.html) R release
+* [mac-builder](https://mac.r-project.org/macbuilder/submit.html) R-devel
+
 **R-Hub**
 * All 34 available platforms except *rchk* since there is no C/C++ code.
 

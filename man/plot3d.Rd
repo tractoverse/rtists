@@ -72,7 +72,7 @@ pts <- matrix(
   ncol = 3, byrow = TRUE,
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
   streamline_data = list(mean_FA = 0.525)
@@ -88,7 +88,7 @@ plot3d(sl, color = "FA")
 plot3d(sl, color = "steelblue", opacity = 0.8)
 
 # --- bundle example -------------------------------------------------------
-bun <- new_bundle(list(sl, sl))
+bun <- bundle(list(sl, sl))
 plot3d(bun)
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 }

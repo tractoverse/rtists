@@ -66,17 +66,17 @@ pts <- matrix(
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
 
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.25, 0.40, 0.65, 0.70, 0.55, 0.30)),
   streamline_data = list(mean_FA = 0.475)
 )
 
 set.seed(42)
-bun <- new_bundle(lapply(seq_len(6), function(i) {
+bun <- bundle(lapply(seq_len(6), function(i) {
   noise <- matrix(rnorm(nrow(pts) * 3, sd = 0.2), ncol = 3)
   colnames(noise) <- c("X", "Y", "Z")
-  new_streamline(
+  streamline(
     points          = pts + noise,
     point_data      = list(FA = pmin(pmax(sl@point_data$FA + rnorm(6, sd = 0.05), 0), 1)),
     streamline_data = list(mean_FA = mean(sl@point_data$FA))

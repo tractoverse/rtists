@@ -71,7 +71,7 @@ pts <- matrix(
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
 
-sl <- new_streamline(
+sl <- streamline(
   points          = pts,
   point_data      = list(FA = c(0.25, 0.40, 0.65, 0.70, 0.55, 0.30)),
   streamline_data = list(mean_FA = 0.475)
@@ -80,7 +80,7 @@ sl <- new_streamline(
 sl
 ```
 
-A bundle is just a list of streamlines wrapped by `new_bundle()`:
+A bundle is just a list of streamlines wrapped by `bundle()`:
 
 ```{r}
 #| label: create-bundle
@@ -89,14 +89,14 @@ set.seed(42)
 streamlines <- lapply(seq_len(4), function(i) {
   noise <- matrix(rnorm(nrow(pts) * 3, sd = 0.15), ncol = 3)
   colnames(noise) <- c("X", "Y", "Z")
-  new_streamline(
+  streamline(
     points          = pts + noise,
     point_data      = list(FA = pmin(pmax(sl@point_data$FA + rnorm(6, sd = 0.05), 0), 1)),
     streamline_data = list(mean_FA = mean(sl@point_data$FA))
   )
 })
 
-bun <- new_bundle(streamlines)
+bun <- bundle(streamlines)
 bun
 ```
 
