@@ -46,7 +46,7 @@ An interactive \link[plotly:plotly]{plotly} htmlwidget.
 }
 \description{
 \code{plot3d()} is an S7 generic that produces an interactive 3D line plot of
-tractography objects from the \href{https://astamm.github.io/fiber/}{fiber}
+tractography objects from the \href{https://tractoverse.github.io/fiber/}{fiber}
 package using \link[plotly:plotly]{plotly}.
 Methods are available for the following classes:
 

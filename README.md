@@ -2,20 +2,20 @@
 
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
-# rtists <a href="https://astamm.github.io/rtists/"><img src="man/figures/logo.png" align="right" height="138" alt="rtists website" /></a>
+# rtists <a href="https://tractoverse.github.io/rtists/"><img src="man/figures/logo.png" align="right" height="138" alt="rtists website" /></a>
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/astamm/rtists/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/astamm/rtists/graph/badge.svg)](https://app.codecov.io/gh/astamm/rtists)
-[![pkgdown](https://github.com/astamm/rtists/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/astamm/rtists/actions/workflows/pkgdown.yaml)
+coverage](https://codecov.io/gh/tractoverse/rtists/graph/badge.svg)](https://app.codecov.io/gh/tractoverse/rtists)
+[![pkgdown](https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml)
 <!-- badges: end -->
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography
 streamlines and bundles defined in the
-[fiber](https://github.com/astamm/fiber) package.
+[fiber](https://github.com/tractoverse/fiber) package.
 
 The main function is `plot3d()`, an
 [S7](https://rconsortium.github.io/S7/) generic with methods for both
@@ -26,11 +26,11 @@ zoom).
 ## Installation
 
 Install the development version from
-[GitHub](https://github.com/astamm/rtists):
+[GitHub](https://github.com/tractoverse/rtists):
 
 ``` r
 # install.packages("pak")
-pak::pak("astamm/rtists")
+pak::pak("tractoverse/rtists")
 ```
 
 ## Usage

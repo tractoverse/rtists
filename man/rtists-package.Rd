@@ -11,9 +11,9 @@ Provides interactive 3-D visualisation of tractography streamlines and bundles d
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/astamm/rtists}
-  \item \url{https://astamm.github.io/rtists/}
-  \item Report bugs at \url{https://github.com/astamm/rtists/issues}
+  \item \url{https://github.com/tractoverse/rtists}
+  \item \url{https://tractoverse.github.io/rtists/}
+  \item Report bugs at \url{https://github.com/tractoverse/rtists/issues}
 }
 
 }

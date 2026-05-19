@@ -122,7 +122,7 @@
 #'
 #' @description
 #' `plot3d()` is an S7 generic that produces an interactive 3D line plot of
-#' tractography objects from the [fiber](https://astamm.github.io/fiber/)
+#' tractography objects from the [fiber](https://tractoverse.github.io/fiber/)
 #' package using [plotly][plotly::plotly].
 #' Methods are available for the following classes:
 #'

@@ -24,7 +24,7 @@ if (!requireNamespace("rtists", quietly = TRUE)) {
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography Streamlines*)
 provides interactive 3-D visualisation of tractography data defined in the
-[fiber](https://github.com/astamm/fiber) package.  The central function is
+[fiber](https://github.com/tractoverse/fiber) package.  The central function is
 `plot3d()`, a [S7](https://rconsortium.github.io/S7/) generic with methods for
 the two core fiber classes:
 
