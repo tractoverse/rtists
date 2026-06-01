@@ -11,6 +11,15 @@
   [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects
 
+- [`plot3d-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
+  [`plot3d,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
+  :
+
+  [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+  method for
+  [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+  objects
+
 - [`plot3d-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
   [`plot3d,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
   :

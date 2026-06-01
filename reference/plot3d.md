@@ -8,6 +8,8 @@ available for the following classes:
 
 - [`fiber::bundle`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
 
+- [`fiber::bundle_set`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
+
 - [`fiber::streamline`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
 
 All streamlines are rendered as a single `scatter3d` trace separated by
@@ -32,9 +34,10 @@ plot3d(
 - x:
 
   A
-  [fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html)
+  [fiber::streamline](https://tractoverse.github.io/fiber/reference/streamline.html),
+  [fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html),
   or
-  [fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
+  [fiber::bundle_set](https://tractoverse.github.io/fiber/reference/bundle_set.html)
   object.
 
 - color:
