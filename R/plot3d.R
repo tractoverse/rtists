@@ -132,7 +132,7 @@
 #' `NA` break-points, which keeps the widget lightweight even for large
 #' bundles.
 #'
-#' @param x A [fiber::streamline] or [fiber::bundle] object.
+#' @param x A [fiber::streamline], [fiber::bundle], or [fiber::bundle_set] object.
 #' @param color Controls how streamline colours are assigned. Accepted values:
 #'
 #'   - `"orientation"` (default): per-point RGB colour derived from the local
@@ -257,6 +257,50 @@ S7::method(plot3d, fiber::bundle) <- function(
   .plot3d_impl(
     df        = df,
     color     = color,
+    palette   = palette,
+    linewidth = linewidth,
+    opacity   = opacity,
+    ...
+  )
+}
+
+#' [plot3d()] method for `fiber::bundle_set` objects
+#'
+#' Renders all bundles in a [fiber::bundle_set] as a single interactive 3D
+#' line plot. Each bundle in the set (typically one per subject or session) can
+#' be coloured uniformly by its bundle name or with the same per-streamline
+#' colouring as [plot3d()] for [fiber::bundle] objects.
+#' See [plot3d()] for the full parameter documentation.
+#'
+#' @param x A [fiber::bundle_set] object.
+#' @inheritParams plot3d
+#' @param color_by_bundle Logical. When `TRUE`, every streamline is coloured
+#'   by its parent bundle name (one distinct colour per entry in the set),
+#'   overriding the `color` argument. When `FALSE` (default), `color` is
+#'   applied as-is, inheriting the same per-streamline colouring behaviour as
+#'   the [fiber::bundle] method.
+#' @returns An interactive [plotly] htmlwidget.
+#' @seealso [plot3d()]
+#' @name plot3d-fiber-bundle_set-method
+#' @aliases plot3d,fiber::bundle_set-method
+#' @usage NULL
+S7::method(plot3d, fiber::bundle_set) <- function(
+    x,
+    color           = "orientation",
+    palette         = "Viridis",
+    linewidth       = 2,
+    opacity         = 0.5,
+    color_by_bundle = FALSE,
+    ...) {
+  n_bundles <- x@n_bundles
+  n_sl      <- sum(vapply(x@bundles, \(b) b@n_streamlines, integer(1L)))
+  cli::cli_alert_info(
+    "Rendering {n_sl} streamline{?s} across {n_bundles} bundle{?s}..."
+  )
+  df <- .bundle_set_to_df(x)
+  .plot3d_impl(
+    df        = df,
+    color     = if (color_by_bundle) "BundleName" else color,
     palette   = palette,
     linewidth = linewidth,
     opacity   = opacity,

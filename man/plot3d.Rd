@@ -14,7 +14,7 @@ plot3d(
 )
 }
 \arguments{
-\item{x}{A \link[fiber:streamline]{fiber::streamline} or \link[fiber:bundle]{fiber::bundle} object.}
+\item{x}{A \link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}, or \link[fiber:bundle_set]{fiber::bundle_set} object.}
 
 \item{color}{Controls how streamline colours are assigned. Accepted values:
 \itemize{
@@ -52,6 +52,7 @@ Methods are available for the following classes:
 
 \itemize{
 \item \code{\link[=plot3d-fiber-bundle-method]{fiber::bundle}}
+\item \code{\link[=plot3d-fiber-bundle_set-method]{fiber::bundle_set}}
 \item \code{\link[=plot3d-fiber-streamline-method]{fiber::streamline}}
 }
 

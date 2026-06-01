@@ -36,3 +36,17 @@
   }
   do.call(rbind, parts)
 }
+
+.bundle_set_to_df <- function(x) {
+  nms       <- names(x@bundles)
+  parts     <- vector("list", length(nms))
+  sl_offset <- 0L
+  for (i in seq_along(nms)) {
+    bdf              <- .bundle_to_df(x@bundles[[i]])
+    bdf$StreamlineId <- bdf$StreamlineId + sl_offset
+    bdf$BundleName   <- nms[[i]]
+    sl_offset        <- sl_offset + x@bundles[[i]]@n_streamlines
+    parts[[i]]       <- bdf
+  }
+  do.call(rbind, parts)
+}
