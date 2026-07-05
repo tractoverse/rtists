@@ -72,7 +72,12 @@ sl <- streamline(
 )
 
 sl
-#> <streamline [6 pts] | point: FA | streamline: mean_FA>
+#> 
+#> ── Object of class `fiber::streamline()` with 6 points. ──
+#> 
+#> • Point attributes: "FA"
+#> • Streamline attributes: "mean_FA"
+#> 
 ```
 
 A bundle is just a list of streamlines wrapped by
@@ -94,7 +99,13 @@ streamlines <- lapply(seq_len(4), function(i) {
 
 bun <- bundle(streamlines)
 bun
-#> <bundle [4 streamlines | 6–6 pts/streamline] | point: FA | streamline: mean_FA>
+#> 
+#> ── Object of class `fiber::bundle()` with 4 streamliness and [6–6] points per streamline. ──
+#> 
+#> • Point attributes: "FA"
+#> • Streamline attributes: "mean_FA"
+#> • Bundle attributes: none
+#> 
 ```
 
 ------------------------------------------------------------------------
