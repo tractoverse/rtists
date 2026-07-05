@@ -29,6 +29,7 @@ Depends:
     R (>= 4.1.0)
 Suggests: 
     doclisting,
+    knitr,
     quarto,
     tinytest
 VignetteBuilder: quarto

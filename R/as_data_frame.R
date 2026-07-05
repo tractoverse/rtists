@@ -24,7 +24,7 @@
   n     <- length(x@streamlines)
   parts <- vector("list", n)
   for (i in seq_len(n)) {
-    sl_df <- .streamline_to_df(x@streamlines[[i]], streamline_id = i)
+    sl_df <- .streamline_to_df(x[[i]], streamline_id = i)
     # Broadcast scalar bundle_data as extra columns
     for (nm in names(x@bundle_data)) {
       val <- x@bundle_data[[nm]]
