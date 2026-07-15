@@ -56,6 +56,8 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+      - name: Install jq (Linux container)
+        run: apt-get update -y && apt-get install -y jq
       - uses: quarto-dev/quarto-actions/setup@v2
       - uses: r-hub/actions/setup-deps@v1
         with:
