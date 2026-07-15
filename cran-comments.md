@@ -1,3 +1,11 @@
+## Resubmission
+
+This is a resubmission that addresses CRAN comments:
+
+- Remove unncessary usage of `\dontrun{}`;
+- Add examples in all exported methods;
+- Drop *R for* from the package title.
+
 ## Test environments
 
 **Local:**
