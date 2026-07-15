@@ -2,7 +2,7 @@
 title: "Getting started with rtists"
 vignette: >
   %\VignetteIndexEntry{Getting started with rtists}
-  %\VignetteEngine{quarto::html}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 knitr:
   opts_chunk:

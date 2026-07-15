@@ -30,8 +30,8 @@ Depends:
 Suggests: 
     doclisting,
     knitr,
-    quarto,
+    rmarkdown,
     tinytest
-VignetteBuilder: quarto
+VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0
 Config/roxygen2/markdown: TRUE
