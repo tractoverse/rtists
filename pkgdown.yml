@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   rtists: rtists.html
-last_built: 2026-07-15T08:45Z
+last_built: 2026-07-15T09:04Z
 urls:
   reference: https://tractoverse.github.io/rtists/reference
   article: https://tractoverse.github.io/rtists/articles
