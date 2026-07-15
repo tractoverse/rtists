@@ -69,14 +69,14 @@ jobs:
         run: |
           QUARTO_VERSION="1.9.38"
           if command -v apt-get &> /dev/null; then
-            wget -q "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb"
-            gdebi --non-interactive "quarto-${QUARTO_VERSION}-linux-amd64.deb"
+            curl -L -o quarto.deb "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb"
+            gdebi --non-interactive quarto.deb
           elif command -v dnf &> /dev/null; then
-            wget -q "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.rpm"
-            dnf install -y "quarto-${QUARTO_VERSION}-linux-amd64.rpm"
+            curl -L -o quarto.rpm "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.rpm"
+            dnf install -y quarto.rpm
           elif command -v yum &> /dev/null; then
-            wget -q "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.rpm"
-            yum install -y "quarto-${QUARTO_VERSION}-linux-amd64.rpm"
+            curl -L -o quarto.rpm "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.rpm"
+            yum install -y quarto.rpm
           fi
       - uses: r-hub/actions/setup-deps@v1
         with:
