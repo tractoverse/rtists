@@ -56,18 +56,18 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
-      - name: Install jq and wget (Linux container)
+      - name: Install wget and gdebi (Linux container)
         run: |
           if command -v apt-get &> /dev/null; then
-            apt-get update -y && apt-get install -y jq wget gdebi-core
+            apt-get update -y && apt-get install -y wget gdebi-core
           elif command -v dnf &> /dev/null; then
-            dnf install -y jq wget
+            dnf install -y wget
           elif command -v yum &> /dev/null; then
-            yum install -y jq wget
+            yum install -y wget
           fi
       - name: Install Quarto (Linux container)
         run: |
-          QUARTO_VERSION=$(wget -qO- https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          QUARTO_VERSION="1.9.38"
           if command -v apt-get &> /dev/null; then
             wget -q "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb"
             gdebi --non-interactive "quarto-${QUARTO_VERSION}-linux-amd64.deb"
