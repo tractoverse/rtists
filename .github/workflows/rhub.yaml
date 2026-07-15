@@ -56,8 +56,15 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
-      - name: Install jq (Linux container)
-        run: apt-get update -y && apt-get install -y jq wget sudo
+      - name: Install jq and wget (Linux container)
+        run: |
+          if command -v apt-get &> /dev/null; then
+            apt-get update -y && apt-get install -y jq wget sudo
+          elif command -v dnf &> /dev/null; then
+            dnf install -y jq wget sudo
+          elif command -v yum &> /dev/null; then
+            yum install -y jq wget sudo
+          fi
       - uses: quarto-dev/quarto-actions/setup@v2
       - uses: r-hub/actions/setup-deps@v1
         with:
