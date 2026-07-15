@@ -60,3 +60,33 @@ htmlwidget.
 ## See also
 
 [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+
+## Examples
+
+``` r
+library(fiber)
+
+# --- minimal streamline example -------------------------------------------
+pts <- matrix(
+  c(0, 0, 0,
+    1, 1, 0,
+    2, 1, 1,
+    3, 2, 1),
+  ncol = 3, byrow = TRUE,
+  dimnames = list(NULL, c("X", "Y", "Z"))
+)
+sl <- streamline(
+  points          = pts,
+  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+  streamline_data = list(mean_FA = 0.525)
+)
+
+bun <- bundle(list(sl, sl))
+plot3d(bun)
+#> ℹ Rendering 2 streamlines...
+
+{"x":{"visdat":{"1aee5ce7005":["function () ","plotlyVisDat"]},"cur_data":"1aee5ce7005","attrs":{"1aee5ce7005":{"x":{},"y":{},"z":{},"mode":"lines","opacity":0.5,"line":{"color":{},"width":2},"text":{},"hoverinfo":"text","alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter3d"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":"X (mm)"},"yaxis":{"title":"Y (mm)"},"zaxis":{"title":"Z (mm)"},"aspectmode":"data"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[0,1,2,3,null,0,1,2,3],"y":[0,1,1,2,null,0,1,1,2],"z":[0,0,1,1,null,0,0,1,1],"mode":"lines","opacity":0.5,"line":{"color":["#B4B400","#B400B4","#B4B400","#B4B400","rgba(0,0,0,0)","#B4B400","#B400B4","#B4B400","#B4B400","rgba(0,0,0,0)"],"width":2},"text":["FA: 0.3<br>mean_FA: 0.525","FA: 0.5<br>mean_FA: 0.525","FA: 0.7<br>mean_FA: 0.525","FA: 0.6<br>mean_FA: 0.525",null,"FA: 0.3<br>mean_FA: 0.525","FA: 0.5<br>mean_FA: 0.525","FA: 0.7<br>mean_FA: 0.525","FA: 0.6<br>mean_FA: 0.525"],"hoverinfo":["text","text","text","text",null,"text","text","text","text"],"type":"scatter3d","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}plot3d(bun, color = "mean_FA", palette = "RdYlBu")
+#> ℹ Rendering 2 streamlines...
+
+{"x":{"visdat":{"1aee298ee049":["function () ","plotlyVisDat"]},"cur_data":"1aee298ee049","attrs":{"1aee298ee049":{"x":{},"y":{},"z":{},"mode":"lines","opacity":0.5,"line":{"color":{},"colorscale":"RdYlBu","colorbar":{"title":"mean_FA"},"width":2},"text":{},"hoverinfo":"text","alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter3d"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":"X (mm)"},"yaxis":{"title":"Y (mm)"},"zaxis":{"title":"Z (mm)"},"aspectmode":"data"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[0,1,2,3,null,0,1,2,3],"y":[0,1,1,2,null,0,1,1,2],"z":[0,0,1,1,null,0,0,1,1],"mode":"lines","opacity":0.5,"line":{"color":[0.52500000000000002,0.52500000000000002,0.52500000000000002,0.52500000000000002,0,0.52500000000000002,0.52500000000000002,0.52500000000000002,0.52500000000000002,0],"colorscale":"RdYlBu","colorbar":{"title":"mean_FA"},"width":2},"text":["FA: 0.3<br>mean_FA: 0.525","FA: 0.5<br>mean_FA: 0.525","FA: 0.7<br>mean_FA: 0.525","FA: 0.6<br>mean_FA: 0.525",null,"FA: 0.3<br>mean_FA: 0.525","FA: 0.5<br>mean_FA: 0.525","FA: 0.7<br>mean_FA: 0.525","FA: 0.6<br>mean_FA: 0.525"],"hoverinfo":["text","text","text","text",null,"text","text","text","text"],"type":"scatter3d","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}
+```

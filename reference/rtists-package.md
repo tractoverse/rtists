@@ -1,4 +1,4 @@
-# rtists: R for Tissue Integrity Superimposed on Tractography Streamlines
+# rtists: Tissue Integrity Superimposed on Tractography Streamlines
 
 Provides interactive 3-D visualisation of tractography streamlines,
 bundles, and bundle sets defined in the 'fiber' package. Aesthetics such
