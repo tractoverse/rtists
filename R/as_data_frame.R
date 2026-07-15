@@ -37,8 +37,16 @@
   do.call(rbind, parts)
 }
 
-.bundle_set_to_df <- function(x) {
-  nms       <- names(x@bundles)
+.bundle_set_to_df <- function(x, bundle_names = NULL) {
+  if (is.null(bundle_names)) {
+    if ("id_from_input_names" %in% x@set_attributes) {
+      nms <- x@set_attributes$id_from_input_names
+    } else {
+      nms <- seq_len(x@n_bundles)
+    }
+  } else {
+    nms <- bundle_names
+  }
   parts     <- vector("list", length(nms))
   sl_offset <- 0L
   for (i in seq_along(nms)) {

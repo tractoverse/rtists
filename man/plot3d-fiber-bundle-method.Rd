@@ -39,6 +39,28 @@ An interactive \link[plotly:plotly]{plotly} htmlwidget.
 Renders all streamlines in a \link[fiber:bundle]{fiber::bundle} as a single interactive 3D
 line plot. See \code{\link[=plot3d]{plot3d()}} for the full parameter documentation and examples.
 }
+\examples{
+library(fiber)
+
+# --- minimal streamline example -------------------------------------------
+pts <- matrix(
+  c(0, 0, 0,
+    1, 1, 0,
+    2, 1, 1,
+    3, 2, 1),
+  ncol = 3, byrow = TRUE,
+  dimnames = list(NULL, c("X", "Y", "Z"))
+)
+sl <- streamline(
+  points          = pts,
+  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+  streamline_data = list(mean_FA = 0.525)
+)
+
+bun <- bundle(list(sl, sl))
+plot3d(bun)
+plot3d(bun, color = "mean_FA", palette = "RdYlBu")
+}
 \seealso{
 \code{\link[=plot3d]{plot3d()}}
 }

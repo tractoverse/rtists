@@ -61,7 +61,6 @@ All streamlines are rendered as a single \code{scatter3d} trace separated by
 bundles.
 }
 \examples{
-\dontrun{
 library(fiber)
 
 # --- minimal streamline example -------------------------------------------
@@ -92,7 +91,6 @@ plot3d(sl, color = "steelblue", opacity = 0.8)
 bun <- bundle(list(sl, sl))
 plot3d(bun)
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-}
 }
 \seealso{
 \link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}

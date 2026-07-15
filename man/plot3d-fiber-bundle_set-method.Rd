@@ -48,6 +48,27 @@ be coloured uniformly by its bundle name or with the same per-streamline
 colouring as \code{\link[=plot3d]{plot3d()}} for \link[fiber:bundle]{fiber::bundle} objects.
 See \code{\link[=plot3d]{plot3d()}} for the full parameter documentation.
 }
+\examples{
+library(fiber)
+
+# --- minimal streamline example -------------------------------------------
+pts <- matrix(
+  c(0, 0, 0,
+    1, 1, 0,
+    2, 1, 1,
+    3, 2, 1),
+  ncol = 3, byrow = TRUE,
+  dimnames = list(NULL, c("X", "Y", "Z"))
+)
+sl <- streamline(
+  points          = pts,
+  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+  streamline_data = list(mean_FA = 0.525)
+)
+bun <- bundle(list(sl, sl))
+bun_set <- bundle_set(list(bun, bun))
+plot3d(bun_set)
+}
 \seealso{
 \code{\link[=plot3d]{plot3d()}}
 }

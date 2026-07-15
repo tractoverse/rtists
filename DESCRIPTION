@@ -1,5 +1,5 @@
 Package: rtists
-Title: R for Tissue Integrity Superimposed on Tractography Streamlines
+Title: Tissue Integrity Superimposed on Tractography Streamlines
 Version: 0.1.0
 Authors@R: c(
     person(

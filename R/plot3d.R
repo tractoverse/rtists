@@ -159,7 +159,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' library(fiber)
 #'
 #' # --- minimal streamline example -------------------------------------------
@@ -190,7 +189,6 @@
 #' bun <- bundle(list(sl, sl))
 #' plot3d(bun)
 #' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#' }
 plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
@@ -214,6 +212,32 @@ plot3d <- S7::new_generic(
 #' @name plot3d-fiber-streamline-method
 #' @aliases plot3d,fiber::streamline-method
 #' @usage NULL
+#' @examples
+#' library(fiber)
+#'
+#' # --- minimal streamline example -------------------------------------------
+#' pts <- matrix(
+#'   c(0, 0, 0,
+#'     1, 1, 0,
+#'     2, 1, 1,
+#'     3, 2, 1),
+#'   ncol = 3, byrow = TRUE,
+#'   dimnames = list(NULL, c("X", "Y", "Z"))
+#' )
+#' sl <- streamline(
+#'   points          = pts,
+#'   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+#'   streamline_data = list(mean_FA = 0.525)
+#' )
+#'
+#' # Default: colour by local fibre orientation
+#' plot3d(sl)
+#'
+#' # Colour by per-point FA (continuous colour scale)
+#' plot3d(sl, color = "FA")
+#'
+#' # Fixed colour
+#' plot3d(sl, color = "steelblue", opacity = 0.8)
 S7::method(plot3d, fiber::streamline) <- function(
     x,
     color     = "orientation",
@@ -244,6 +268,27 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' @name plot3d-fiber-bundle-method
 #' @aliases plot3d,fiber::bundle-method
 #' @usage NULL
+#' @examples
+#' library(fiber)
+#'
+#' # --- minimal streamline example -------------------------------------------
+#' pts <- matrix(
+#'   c(0, 0, 0,
+#'     1, 1, 0,
+#'     2, 1, 1,
+#'     3, 2, 1),
+#'   ncol = 3, byrow = TRUE,
+#'   dimnames = list(NULL, c("X", "Y", "Z"))
+#' )
+#' sl <- streamline(
+#'   points          = pts,
+#'   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+#'   streamline_data = list(mean_FA = 0.525)
+#' )
+#'
+#' bun <- bundle(list(sl, sl))
+#' plot3d(bun)
+#' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
@@ -284,6 +329,26 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' @name plot3d-fiber-bundle_set-method
 #' @aliases plot3d,fiber::bundle_set-method
 #' @usage NULL
+#' @examples
+#' library(fiber)
+#'
+#' # --- minimal streamline example -------------------------------------------
+#' pts <- matrix(
+#'   c(0, 0, 0,
+#'     1, 1, 0,
+#'     2, 1, 1,
+#'     3, 2, 1),
+#'   ncol = 3, byrow = TRUE,
+#'   dimnames = list(NULL, c("X", "Y", "Z"))
+#' )
+#' sl <- streamline(
+#'   points          = pts,
+#'   point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
+#'   streamline_data = list(mean_FA = 0.525)
+#' )
+#' bun <- bundle(list(sl, sl))
+#' bun_set <- bundle_set(list(bun, bun))
+#' plot3d(bun_set)
 S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",
