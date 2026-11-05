@@ -34,7 +34,7 @@
 # plotly backend is only loaded on demand (Suggests): give a clear error
 # if it was not installed rather than failing deep inside plotly:: calls.
 .plot3d_impl <- function(df, color, palette, linewidth, opacity, ...) {
-  if (!requireNamespace("plotly", quietly = TRUE)) {
+  if (!is_installed("plotly")) {
     stop(
       "The plotly backend requires the 'plotly' package; install it with " ,
       "install.packages('plotly') or use the default backend = 'threejs'.",

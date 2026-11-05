@@ -31,6 +31,7 @@ Depends:
 Suggests: 
     doclisting,
     knitr,
+    mockthat,
     plotly,
     quarto,
     shiny,
