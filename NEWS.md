@@ -19,3 +19,17 @@
     mapped to a continuous (`palette`) or categorical colour scale.
   - Fixed colour: any CSS colour name or hex string.
 * Interactive figures support pan, rotate, and zoom.
+
+## Bug fixes
+
+* The static (non-Shiny) htmlwidgets path is fixed: with the three.js backend,
+  the ESM renderer module is imported asynchronously, which can register its
+  widget binding after htmlwidgets' initial `staticRender()` (run once on
+  DOMContentLoaded). The console and Viewer pane therefore produced no canvas
+  and no error. The loader now re-invokes Shiny's binding scan or
+  `HTMLWidgets.staticRender()` once the module is ready. The re-render is
+  idempotent, so other widgets are left untouched.
+* Named bundles are honoured correctly in `plot3d()`: the per-bundle input
+  names recorded by `fiber::bundle_set()` are now read from the right slot
+  (`@bundle_data`), so a `bundle_set` built from a named list keeps its names
+  instead of falling back to sequential indices.
