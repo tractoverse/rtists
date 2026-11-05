@@ -5,7 +5,7 @@ Authors@R: c(
     person(
         given = "Aymeric",
         family = "Stamm",
-        role = c("aut", "cre"),
+        role = c("aut", "cre", "cph"),
         email = "aymeric.stamm@cnrs.fr",
         comment = c(ORCID = "0000-0002-8725-3654")
     ))
@@ -23,15 +23,18 @@ BugReports: https://github.com/tractoverse/rtists/issues
 Imports: 
     cli,
     fiber,
-    plotly,
+    htmlwidgets,
+    jsonlite,
     S7
 Depends: 
     R (>= 4.1.0)
 Suggests: 
     doclisting,
     knitr,
+    plotly,
     quarto,
+    shiny,
     tinytest
 VignetteBuilder: quarto
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
 Config/roxygen2/markdown: TRUE

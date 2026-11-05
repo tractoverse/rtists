@@ -1,0 +1,6 @@
+dependencies:
+  - name: threejs
+    version: 0.186.0
+    src: htmlwidgets/lib/threejs
+    script:
+      - rtists-loader.js

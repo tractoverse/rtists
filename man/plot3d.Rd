@@ -8,8 +8,12 @@ plot3d(
   x,
   color = "orientation",
   palette = "Viridis",
+  backend = c("threejs", "plotly"),
   linewidth = 2,
+  thickness = 0,
+  radius = NULL,
   opacity = 0.5,
+  bg = "#111111",
   ...
 )
 }
@@ -34,20 +38,65 @@ lines are drawn in that fixed colour.
 \item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
 \code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
 
-\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}.}
+\item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
+(default) or \code{"plotly"}. The three.js backend supports real world-space
+line thickness (via \code{thickness}) and object-level depth-sorted
+transparency; the plotly backend is retained as an interim fallback while
+the three.js renderer matures.}
+
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
+three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
+WebGL caps at \code{1} on most platforms; use \code{thickness} for genuinely thick
+fibres.}
+
+\item{thickness}{Numeric radius in world units (three.js backend only). When
+\verb{> 0}, streamlines are drawn as true 3D \code{TubeGeometry} tubes of this constant
+radius instead of lines, which gives genuinely thick fibres and object-level
+depth-sorted transparency (each tube is its own mesh sorted back-to-front).
+Defaults to \code{0} (fast line2 path). This is the legacy knob; prefer \code{radius}.}
+
+\item{radius}{Numeric radius in world units (three.js backend only), a more
+general alternative to \code{thickness}. Accepts:
+\itemize{
+\item A positive \strong{scalar}: every streamline is drawn at this constant world
+width using fast \code{Line2} (world units). Cheaper than tubes and the
+recommended default when the radius is constant.
+\item A \strong{per-streamline vector} (length == number of streamlines): one
+constant radius per line, drawn as \code{TubeGeometry}.
+\item A \strong{per-point vector} (length == total number of points): radius varying
+along each streamline, drawn as \code{TubeGeometry} with radial displacement —
+the most general form.
+}
+
+When \code{radius} is supplied it takes precedence over \code{thickness}. Defaults to
+\code{NULL} (no radius; thin lines).}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
-\item{...}{Additional named arguments forwarded to \code{\link[plotly:layout]{plotly::layout()}},
-e.g. \code{title = "My bundle"}.}
+\item{bg}{Background colour (CSS) of the scene (three.js backend only).
+Defaults to \code{"#111111"}.}
+
+\item{...}{Additional named arguments. Only the plotly backend uses these,
+forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
+three.js backend (default) ignores them.}
 }
 \value{
-An interactive \link[plotly:plotly]{plotly} htmlwidget.
+An interactive htmlwidget.
 }
 \description{
-\code{plot3d()} is an S7 generic that produces an interactive 3D line plot of
+\code{plot3d()} is an S7 generic that produces an interactive 3D plot of
 tractography objects from the \href{https://tractoverse.github.io/fiber/}{fiber}
-package using \link[plotly:plotly]{plotly}.
+package. Two htmlwidget backends are available:
+\itemize{
+\item \code{"threejs"} (default): a self-contained three.js renderer with real
+world-space line thickness (tubes, via \code{thickness}), depth-sorted
+transparency, and a fast single-mesh line mode that scales to large
+bundles.
+\item \code{"plotly"}: a \code{scatter3d} line plot where all streamlines share one trace
+separated by \code{NA} break-points. Retained as an interim fallback while the
+three.js renderer matures.
+}
+
 Methods are available for the following classes:
 
 \itemize{
@@ -55,10 +104,6 @@ Methods are available for the following classes:
 \item \code{\link[=plot3d-fiber-bundle_set-method]{fiber::bundle_set}}
 \item \code{\link[=plot3d-fiber-streamline-method]{fiber::streamline}}
 }
-
-All streamlines are rendered as a single \code{scatter3d} trace separated by
-\code{NA} break-points, which keeps the widget lightweight even for large
-bundles.
 }
 \examples{
 library(fiber)

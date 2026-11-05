@@ -31,7 +31,16 @@
 
 # Build the colour column and the plotly `line` argument list, then call
 # plot_ly on the prepared data frame.
+# plotly backend is only loaded on demand (Suggests): give a clear error
+# if it was not installed rather than failing deep inside plotly:: calls.
 .plot3d_impl <- function(df, color, palette, linewidth, opacity, ...) {
+  if (!requireNamespace("plotly", quietly = TRUE)) {
+    stop(
+      "The plotly backend requires the 'plotly' package; install it with " ,
+      "install.packages('plotly') or use the default backend = 'threejs'.",
+      call. = FALSE
+    )
+  }
   meta_keys <- setdiff(names(df), c("StreamlineId", "PointId", "X", "Y", "Z"))
 
   # ---- resolve colour --------------------------------------------------------
@@ -121,16 +130,21 @@
 #' Interactive 3D line plot for tractography streamlines and bundles
 #'
 #' @description
-#' `plot3d()` is an S7 generic that produces an interactive 3D line plot of
+#' `plot3d()` is an S7 generic that produces an interactive 3D plot of
 #' tractography objects from the [fiber](https://tractoverse.github.io/fiber/)
-#' package using [plotly][plotly::plotly].
+#' package. Two htmlwidget backends are available:
+#'
+#' - `"threejs"` (default): a self-contained three.js renderer with real
+#'   world-space line thickness (tubes, via `thickness`), depth-sorted
+#'   transparency, and a fast single-mesh line mode that scales to large
+#'   bundles.
+#' - `"plotly"`: a `scatter3d` line plot where all streamlines share one trace
+#'   separated by `NA` break-points. Retained as an interim fallback while the
+#'   three.js renderer matures.
+#'
 #' Methods are available for the following classes:
 #'
 #' `r doclisting::methods_list("plot3d")`
-#'
-#' All streamlines are rendered as a single `scatter3d` trace separated by
-#' `NA` break-points, which keeps the widget lightweight even for large
-#' bundles.
 #'
 #' @param x A [fiber::streamline], [fiber::bundle], or [fiber::bundle_set] object.
 #' @param color Controls how streamline colours are assigned. Accepted values:
@@ -149,12 +163,42 @@
 #'
 #' @param palette A [plotly] / ColorBrewer colour scale name applied when
 #'   `color` is a numeric metadata key. Defaults to `"Viridis"`.
-#' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`.
-#' @param opacity Numeric in \[0, 1\]. Global line opacity. Defaults to `0.5`.
-#' @param ... Additional named arguments forwarded to [plotly::layout()],
-#'   e.g. `title = "My bundle"`.
+#' @param backend Character. Which htmlwidget renderer to use: `"threejs"`
+#'   (default) or `"plotly"`. The three.js backend supports real world-space
+#'   line thickness (via `thickness`) and object-level depth-sorted
+#'   transparency; the plotly backend is retained as an interim fallback while
+#'   the three.js renderer matures.
+#' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`. On the
+#'   three.js backend this maps to `THREE.LineBasicMaterial.linewidth`, which
+#'   WebGL caps at `1` on most platforms; use `thickness` for genuinely thick
+#'   fibres.
+#' @param thickness Numeric radius in world units (three.js backend only). When
+#'   `> 0`, streamlines are drawn as true 3D `TubeGeometry` tubes of this constant
+#'   radius instead of lines, which gives genuinely thick fibres and object-level
+#'   depth-sorted transparency (each tube is its own mesh sorted back-to-front).
+#'   Defaults to `0` (fast line2 path). This is the legacy knob; prefer `radius`.
+#' @param radius Numeric radius in world units (three.js backend only), a more
+#'   general alternative to `thickness`. Accepts:
 #'
-#' @returns An interactive [plotly] htmlwidget.
+#'   - A positive **scalar**: every streamline is drawn at this constant world
+#'     width using fast `Line2` (world units). Cheaper than tubes and the
+#'     recommended default when the radius is constant.
+#'   - A **per-streamline vector** (length == number of streamlines): one
+#'     constant radius per line, drawn as `TubeGeometry`.
+#'   - A **per-point vector** (length == total number of points): radius varying
+#'     along each streamline, drawn as `TubeGeometry` with radial displacement —
+#'     the most general form.
+#'
+#'   When `radius` is supplied it takes precedence over `thickness`. Defaults to
+#'   `NULL` (no radius; thin lines).
+#' @param bg Background colour (CSS) of the scene (three.js backend only).
+#'   Defaults to `"#111111"`.
+#' @param opacity Numeric in \[0, 1\]. Global line opacity. Defaults to `0.5`.
+#' @param ... Additional named arguments. Only the plotly backend uses these,
+#'   forwarding them to [plotly::layout()] (e.g. `title = "My bundle"`); the
+#'   three.js backend (default) ignores them.
+#'
+#' @returns An interactive htmlwidget.
 #' @seealso [fiber::streamline], [fiber::bundle]
 #' @export
 #'
@@ -193,7 +237,9 @@ plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
   fun = function(x, color = "orientation", palette = "Viridis",
-                 linewidth = 2, opacity = 0.5, ...) {
+                 backend = c("threejs", "plotly"), linewidth = 2,
+                 thickness = 0, radius = NULL, opacity = 0.5,
+                 bg = "#111111", ...) {
     S7::S7_dispatch()
   }
 )
@@ -207,10 +253,10 @@ plot3d <- S7::new_generic(
 #'
 #' @param x A [fiber::streamline] object.
 #' @inheritParams plot3d
-#' @returns An interactive [plotly] htmlwidget.
+#' @returns An interactive htmlwidget (three.js or plotly, see [`plot3d()`]).
 #' @seealso [plot3d()]
-#' @name plot3d-fiber-streamline-method
-#' @aliases plot3d,fiber::streamline-method
+#' @name plot3d,fiber::streamline-method
+#' @aliases plot3d-fiber-streamline-method
 #' @usage NULL
 #' @examples
 #' library(fiber)
@@ -242,18 +288,37 @@ S7::method(plot3d, fiber::streamline) <- function(
     x,
     color     = "orientation",
     palette   = "Viridis",
+    backend   = c("threejs", "plotly"),
     linewidth = 2,
+    thickness = 0,
+    radius    = NULL,
     opacity   = 0.5,
+    bg        = "#111111",
     ...) {
+  backend <- match.arg(backend)
   df <- .streamline_to_df(x, streamline_id = 1L)
-  .plot3d_impl(
-    df        = df,
-    color     = color,
-    palette   = palette,
-    linewidth = linewidth,
-    opacity   = opacity,
-    ...
-  )
+  if (backend == "threejs") {
+    .plot3d_threejs(
+      df        = df,
+      color     = color,
+      palette   = palette,
+      linewidth = linewidth,
+      thickness = thickness,
+      radius    = radius,
+      opacity   = opacity,
+      bg        = bg,
+      ...
+    )
+  } else {
+    .plot3d_impl(
+      df        = df,
+      color     = color,
+      palette   = palette,
+      linewidth = linewidth,
+      opacity   = opacity,
+      ...
+    )
+  }
 }
 
 #' [plot3d()] method for `fiber::bundle` objects
@@ -263,7 +328,7 @@ S7::method(plot3d, fiber::streamline) <- function(
 #'
 #' @param x A [fiber::bundle] object.
 #' @inheritParams plot3d
-#' @returns An interactive [plotly] htmlwidget.
+#' @returns An interactive htmlwidget (three.js or plotly, see [`plot3d()`]).
 #' @seealso [plot3d()]
 #' @name plot3d-fiber-bundle-method
 #' @aliases plot3d,fiber::bundle-method
@@ -293,20 +358,39 @@ S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
     palette   = "Viridis",
+    backend   = c("threejs", "plotly"),
     linewidth = 2,
+    thickness = 0,
+    radius    = NULL,
     opacity   = 0.5,
+    bg        = "#111111",
     ...) {
+  backend <- match.arg(backend)
   n <- length(x@streamlines)
   cli::cli_alert_info("Rendering {n} streamline{?s}...")
   df <- .bundle_to_df(x)
-  .plot3d_impl(
-    df        = df,
-    color     = color,
-    palette   = palette,
-    linewidth = linewidth,
-    opacity   = opacity,
-    ...
-  )
+  if (backend == "threejs") {
+    .plot3d_threejs(
+      df        = df,
+      color     = color,
+      palette   = palette,
+      linewidth = linewidth,
+      thickness = thickness,
+      radius    = radius,
+      opacity   = opacity,
+      bg        = bg,
+      ...
+    )
+  } else {
+    .plot3d_impl(
+      df        = df,
+      color     = color,
+      palette   = palette,
+      linewidth = linewidth,
+      opacity   = opacity,
+      ...
+    )
+  }
 }
 
 #' [plot3d()] method for `fiber::bundle_set` objects
@@ -324,7 +408,7 @@ S7::method(plot3d, fiber::bundle) <- function(
 #'   overriding the `color` argument. When `FALSE` (default), `color` is
 #'   applied as-is, inheriting the same per-streamline colouring behaviour as
 #'   the [fiber::bundle] method.
-#' @returns An interactive [plotly] htmlwidget.
+#' @returns An interactive htmlwidget (three.js or plotly, see [`plot3d()`]).
 #' @seealso [plot3d()]
 #' @name plot3d-fiber-bundle_set-method
 #' @aliases plot3d,fiber::bundle_set-method
@@ -353,22 +437,42 @@ S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",
     palette         = "Viridis",
+    backend         = c("threejs", "plotly"),
     linewidth       = 2,
+    thickness       = 0,
+    radius          = NULL,
     opacity         = 0.5,
+    bg              = "#111111",
     color_by_bundle = FALSE,
     ...) {
+  backend <- match.arg(backend)
   n_bundles <- x@n_bundles
   n_sl      <- sum(vapply(x@bundles, \(b) b@n_streamlines, integer(1L)))
   cli::cli_alert_info(
     "Rendering {n_sl} streamline{?s} across {n_bundles} bundle{?s}..."
   )
   df <- .bundle_set_to_df(x)
-  .plot3d_impl(
-    df        = df,
-    color     = if (color_by_bundle) "BundleName" else color,
-    palette   = palette,
-    linewidth = linewidth,
-    opacity   = opacity,
-    ...
-  )
+  if (backend == "threejs") {
+    .plot3d_threejs(
+      df              = df,
+      color           = if (color_by_bundle) "BundleName" else color,
+      palette         = palette,
+      linewidth       = linewidth,
+      thickness       = thickness,
+      radius          = radius,
+      opacity         = opacity,
+      bg              = bg,
+      color_by_bundle = color_by_bundle,
+      ...
+    )
+  } else {
+    .plot3d_impl(
+      df        = df,
+      color     = if (color_by_bundle) "BundleName" else color,
+      palette   = palette,
+      linewidth = linewidth,
+      opacity   = opacity,
+      ...
+    )
+  }
 }

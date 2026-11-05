@@ -166,14 +166,15 @@ plot3d(bun, color = "steelblue", opacity = 0.6)
 |---|---|---|
 | `color` | `"orientation"` | Colour mode: `"orientation"`, metadata key, or a CSS/hex string. |
 | `palette` | `"Viridis"` | Plotly / ColorBrewer scale used for continuous numeric metadata. |
-| `linewidth` | `2` | Line width in pixels. |
+| `linewidth` | `2` | Constant line width in world units (three.js `Line2`). |
 | `opacity` | `0.5` | Global line opacity (0–1). |
-| `...` | | Passed to `plotly::layout()`, e.g. `title = "Left CST"`. |
+| `thickness` | `0` | Constant tube radius in world units; when `> 0` streamlines are drawn as true 3D tubes instead of lines. |
+| `radius` | `NULL` | Per-streamline or per-point tube radius in world units. |
 
-Extra `plotly::layout()` arguments can be supplied directly:
+Line width, opacity, and radius are combined freely:
 
 ```{r}
 #| label: fig-layout
-#| fig-cap: "Custom title and increased line width."
-plot3d(bun, color = "FA", linewidth = 4, title = "Example bundle — FA")
+#| fig-cap: "Custom fixed colour, thicker lines, and reduced opacity."
+plot3d(bun, color = "steelblue", linewidth = 4, opacity = 0.6)
 ```
