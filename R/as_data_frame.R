@@ -39,8 +39,10 @@
 
 .bundle_set_to_df <- function(x, bundle_names = NULL) {
   if (is.null(bundle_names)) {
-    if ("id_from_input_names" %in% x@set_attributes) {
-      nms <- x@set_attributes$id_from_input_names
+    # fiber::bundle_set() records per-bundle input names in @bundle_data under
+    # "id_from_input_names" when the bundles were passed as a *named* list.
+    if ("id_from_input_names" %in% names(x@bundle_data)) {
+      nms <- x@bundle_data$id_from_input_names
     } else {
       nms <- seq_len(x@n_bundles)
     }
