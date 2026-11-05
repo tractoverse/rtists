@@ -255,8 +255,8 @@ plot3d <- S7::new_generic(
 #' @inheritParams plot3d
 #' @returns An interactive htmlwidget (three.js or plotly, see [`plot3d()`]).
 #' @seealso [plot3d()]
-#' @name plot3d,fiber::streamline-method
-#' @aliases plot3d-fiber-streamline-method
+#' @name plot3d-fiber-streamline-method
+#' @aliases plot3d,fiber::streamline-method
 #' @usage NULL
 #' @examples
 #' library(fiber)
