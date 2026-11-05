@@ -35,24 +35,40 @@
       console.error('[rtists] failed to load ESM widget module:', err);
     })
     ['then'](function () {
-      // The ESM module registers the htmlwidgets Shiny output binding only once
-      // it finishes loading (dynamic import is asynchronous). Shiny scans for
-      // output bindings once at initialization, so any rtists outputs that were
-      // already in the DOM before the module loaded are skipped and never bound
-      // (they stay empty, no factory call). Re-run Shiny's binding scan here so
-      // those outputs get bound. The scan is idempotent: already-bound outputs
-      // and inputs are skipped. See notes/verify-r186-line2.md.
-      if (typeof window.Shiny !== 'undefined' && window.Shiny.bindAll) {
-        var rebind = function () {
+      // The ESM module registers the htmlwidgets widget binding only when it
+      // finishes loading (dynamic import is asynchronous), which is after
+      // htmlwidgets' initial binding scan:
+      //
+      //   * Shiny  - Shiny scans for output bindings once at app init, so any
+      //              rtists outputs already in the DOM before the module loaded
+      //              are skipped and never bound (they stay empty, no factory
+      //              call). Re-run Shiny's binding scan so they get bound. The
+      //              scan is idempotent: already-bound outputs/inputs are
+      //              skipped.
+      //   * static - the same race affects the static (non-Shiny) htmlwidgets
+      //              path used by the R console / Viewer pane (and pkgdown or
+      //              plain-web renderings): staticRender() runs once on
+      //              DOMContentLoaded and skips any widget whose binding is not
+      //              yet registered, so rtists produced no canvas and no error.
+      //              Re-run it here. It is idempotent per element: already-bound
+      //              elements are skipped via the html-widget-static-bound class,
+      //              so re-rendering leaves every other widget untouched.
+      var rebind = function () {
+        if (typeof window.Shiny !== 'undefined' && window.Shiny.bindAll) {
           window.Shiny.bindAll(document)['catch'](function (err) {
             console.error('[rtists] Shiny re-bind failed:', err);
           });
-        };
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', rebind);
-        } else {
-          rebind();
+        } else if (
+          typeof window.HTMLWidgets !== 'undefined' &&
+          typeof window.HTMLWidgets.staticRender === 'function'
+        ) {
+          window.HTMLWidgets.staticRender();
         }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', rebind);
+      } else {
+        rebind();
       }
     });
 })();
