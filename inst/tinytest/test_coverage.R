@@ -153,33 +153,41 @@ expect_equal(unclass(figz$x$mode), "line2")
 expect_true(is.raw(figz$x$colors))
 expect_length(figz$x$colors, 6L * (nrow(sl_dup@points) - 1L))
 
-# Shiny output / render helpers (no Shiny required to construct)
-o <- rtistsOutput("o1")
-expect_true(inherits(o, "shiny.tag.list"))
-r <- renderRtists(plot3d(sl))
-expect_true(is.function(r))
+# Shiny output / render helpers. rtistsOutput() is a thin wrapper around
+# htmlwidgets::shinyWidgetOutput, which triggers loadNamespace("shiny"); shiny is
+# a Suggests-only dependency, so skip on --no-suggests / minimal containers.
+if (requireNamespace("shiny", quietly = TRUE)) {
+  o <- rtistsOutput("o1")
+  expect_true(inherits(o, "shiny.tag.list"))
+  r <- renderRtists(plot3d(sl))
+  expect_true(is.function(r))
+}
 
 # ================= plot3d.R =================
+# plotly-backend assertions. plotly is a Suggests-only dependency, so skip on
+# platforms that do not carry it (e.g. some R-hub clang/compiler containers);
+# the plotly-not-installed error branch is exercised by the mockthat block below.
+if (requireNamespace("plotly", quietly = TRUE)) {
+  # .plot3d_impl, plotly backend: numeric metadata -> continuous scale (56-64,86)
+  fig <- plot3d(bun, backend = "plotly", color = "mean_FA")
+  expect_inherits(fig, "plotly")
+  expect_true("colorscale" %in% names(fig$x$attrs[[1L]]$line))
 
-# .plot3d_impl, plotly backend: numeric metadata -> continuous scale (56-64,86)
-fig <- plot3d(bun, backend = "plotly", color = "mean_FA")
-expect_inherits(fig, "plotly")
-expect_true("colorscale" %in% names(fig$x$attrs[[1L]]$line))
+  # fixed CSS colour (72)
+  fig <- plot3d(sl, backend = "plotly", color = "steelblue")
+  expect_inherits(fig, "plotly")
 
-# fixed CSS colour (72)
-fig <- plot3d(sl, backend = "plotly", color = "steelblue")
-expect_inherits(fig, "plotly")
+  # char metadata -> discrete (67)
+  slc <- fiber::streamline(points = pts,
+                           streamline_data = list(group = "tractA"))
+  fig <- plot3d(slc, backend = "plotly", color = "group")
+  expect_inherits(fig, "plotly")
 
-# char metadata -> discrete (67)
-slc <- fiber::streamline(points = pts,
-                         streamline_data = list(group = "tractA"))
-fig <- plot3d(slc, backend = "plotly", color = "group")
-expect_inherits(fig, "plotly")
-
-# no metadata -> hoverinfo "none" (98-99)
-sl2 <- fiber::streamline(points = pts)
-fig <- plot3d(sl2, backend = "plotly")
-expect_inherits(fig, "plotly")
+  # no metadata -> hoverinfo "none" (98-99)
+  sl2 <- fiber::streamline(points = pts)
+  fig <- plot3d(sl2, backend = "plotly")
+  expect_inherits(fig, "plotly")
+}
 
 # bundle_set S7 method: threejs (default) + colour-by-bundle (448-476)
 bs1 <- fiber::bundle_set(list(bun, bun))
@@ -187,11 +195,13 @@ fig <- plot3d(bs1)
 expect_inherits(fig, "rtists")
 fig <- plot3d(bs1, color_by_bundle = TRUE)
 expect_inherits(fig, "rtists")
-# bundle_set S7 method, plotly backend
-fig <- plot3d(bs1, backend = "plotly")
-expect_inherits(fig, "plotly")
-fig <- plot3d(bs1, backend = "plotly", color_by_bundle = TRUE)
-expect_inherits(fig, "plotly")
+# bundle_set S7 method, plotly backend (guard as above)
+if (requireNamespace("plotly", quietly = TRUE)) {
+  fig <- plot3d(bs1, backend = "plotly")
+  expect_inherits(fig, "plotly")
+  fig <- plot3d(bs1, backend = "plotly", color_by_bundle = TRUE)
+  expect_inherits(fig, "plotly")
+}
 
 # ================= run-example.R =================
 # .rtists_source_root() and runDemo() are only meaningful from a real source
