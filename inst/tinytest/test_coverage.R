@@ -194,38 +194,33 @@ fig <- plot3d(bs1, backend = "plotly", color_by_bundle = TRUE)
 expect_inherits(fig, "plotly")
 
 # ================= run-example.R =================
-
-# .rtists_source_root: resolves the source tree from the repo root
-old <- getwd()
-on.exit(setwd(old), add = TRUE)
-setwd("/Users/stamm-a/Softs/rtists")
-expect_identical(rtists:::.rtists_source_root(), "/Users/stamm-a/Softs/rtists")
-
-# .rtists_source_root: errors when no rtists DESCRIPTION is found above cwd
-old <- getwd()
-on.exit(setwd(old), add = TRUE)
-setwd(tempdir())
-expect_error(rtists:::.rtists_source_root(), "Could not locate")
-
-# runExample: unknown demo name errors (demo not found), before any Shiny call
-old2 <- getwd()
-on.exit(setwd(old2), add = TRUE)
-setwd("/Users/stamm-a/Softs/rtists")
-expect_error(rtists::runExample("does-not-exist"), "Demo app not found")
-
-# runExample: happy path reaches shiny::runApp() (lines 72-73). demo/ is
-# Rbuildignored (source-checkout only), so we need a source checkout AND Shiny.
-if (file.exists("/Users/stamm-a/Softs/rtists/demo/line2/app.R") &&
-    requireNamespace("shiny", quietly = TRUE)) {
+# .rtists_source_root() and runExample() are only meaningful from a real source
+# checkout: the `demo/` folder they launch is Rbuildignored and never installed,
+# so the resolve can only succeed (and `demo/line2/app.R` can only exist) when
+# running locally after devtools::load_all(). On R CMD check / CI, where neither
+# holds, this whole block is skipped instead of erroring on a developer's
+# hard-coded absolute path.
+src_root <- tryCatch(rtists:::.rtists_source_root(), error = function(e) NA_character_)
+if (!is.na(src_root) && file.exists(file.path(src_root, "demo", "line2", "app.R"))) {
+  # .rtists_source_root: resolves the source tree from the repo root
   old <- getwd(); on.exit(setwd(old), add = TRUE)
-  setwd("/Users/stamm-a/Softs/rtists")
-  # Replace shiny::runApp with a no-op so the launcher returns without
-  # launching a live app or opening a browser; restore afterwards.
-  orig_runApp <- get("runApp", envir = asNamespace("shiny"))
-  on.exit(assignInNamespace("runApp", orig_runApp, ns = "shiny"), add = TRUE)
-  fake_run <- function(appDir, ...) invisible(NULL)
-  assignInNamespace("runApp", fake_run, ns = "shiny")
-  expect_identical(withVisible(rtists::runExample("line2"))$value, TRUE)
+  setwd(src_root)
+  expect_identical(rtists:::.rtists_source_root(), src_root)
+
+  # runExample: unknown demo name errors (demo not found), before any Shiny call
+  expect_error(rtists::runExample("does-not-exist"), "Demo app not found")
+
+  # runExample: happy path reaches shiny::runApp() (lines 72-73). Shiny is a
+  # Suggests-only dependency, hence the guard.
+  if (requireNamespace("shiny", quietly = TRUE)) {
+    # Replace shiny::runApp with a no-op so the launcher returns without
+    # launching a live app or opening a browser; restore afterwards.
+    orig_runApp <- get("runApp", envir = asNamespace("shiny"))
+    on.exit(assignInNamespace("runApp", orig_runApp, ns = "shiny"), add = TRUE)
+    fake_run <- function(appDir, ...) invisible(NULL)
+    assignInNamespace("runApp", fake_run, ns = "shiny")
+    expect_identical(withVisible(rtists::runExample("line2"))$value, TRUE)
+  }
 }
 
 # .onLoad registers S7 methods and must not error (zzz.R:9); it returns NULL
@@ -237,8 +232,7 @@ expect_null(rtists:::.onLoad(NULL, "rtists"))
 # is locked so it cannot be rebound directly. The check therefore lives behind
 # the package-owned helper is_installed() (R/utils.R), which mockthat can mock
 # in-process; being in-process, covr tallies lines 38-42.
-if (file.exists("/Users/stamm-a/Softs/rtists/DESCRIPTION")) {
-  requireNamespace("mockthat", quietly = TRUE)
+if (requireNamespace("mockthat", quietly = TRUE)) {
   pts <- cbind(X = c(0, 1, 2), Y = c(0, 1, 1), Z = c(0, 0, 1))
   sl  <- fiber::streamline(points = pts)
   msg <- mockthat::with_mock(
@@ -248,4 +242,3 @@ if (file.exists("/Users/stamm-a/Softs/rtists/DESCRIPTION")) {
   )
   expect_true(grepl("plotly backend requires", msg))
 }
-
