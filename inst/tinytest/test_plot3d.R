@@ -118,3 +118,42 @@ expect_equal(
 
 # invalid radius forms are rejected
 expect_error(plot3d(sl, radius = c(0.1, 0.2)), "radius")
+
+# ---- per-bundle no-overlap cap (3js) ----------------------------------------
+# A bundle_set flattens all streamlines, but the no-overlap cap is computed
+# WITHIN each bundle ("groups" = bundle id per streamline), so distinct bundles
+# that legitimately share space may overlap without being shaved down.
+# bundle 1: a single streamline (no intra-bundle collision -> cap is Inf)
+# bundle 2: two coincident streamlines (min separation 0 -> cap is 0)
+bs_mixed <- fiber::bundle_set(list(
+  fiber::bundle(list(sl)),
+  fiber::bundle(list(sl, sl))
+))
+sls_mixed <- rtists:::.df_to_streamlines(rtists:::.bundle_set_to_df(bs_mixed))
+expect_length(sls_mixed, 3L)
+groups <- c(1L, 2L, 2L)
+cap <- rtists:::.threejs_overlap_cap(sls_mixed, border = 0.008, groups = groups)
+expect_equal(cap$max_radius[1], Inf)              # bundle 1: single streamline
+expect_true(all(cap$max_radius[2:3] == 0))        # bundle 2: coincident -> 0
+
+# .threejs_group_sep mirrors the single-group cap: Inf for one id, finite later
+expect_equal(rtists:::.threejs_group_sep(sls_mixed, c(1L)), Inf)
+expect_true(rtists:::.threejs_group_sep(sls_mixed, c(2L, 3L)) < Inf)
+
+# Without groups (single bundle), all streamlines share one cap.
+cap_all <- rtists:::.threejs_overlap_cap(sls_mixed, border = 0.008)
+expect_equal(cap_all$max_radius, rep(0, 3L))
+
+# Integration: two coincident SINGLE-streamline bundles. Within each bundle
+# there is nothing to collide (group size 1), so the tubes keep their requested
+# thickness even though the two bundles overlap each other; only intra-bundle
+# spacing would cap them. Decode the per-point float32 radii.
+bunA <- fiber::bundle(list(sl))
+bunB <- fiber::bundle(list(sl))
+bs_same <- fiber::bundle_set(list(bunA, bunB))
+fig <- plot3d(bs_same, thickness = 0.08)
+expect_equal(unclass(fig$x$mode), "tube")
+radii <- readBin(fig$x$radii, numeric(), size = 4L,
+                 n = length(fig$x$radii) / 4L)
+expect_true(max(radii) > 0)                        # no intra-bundle collision
+expect_true(all(abs(radii - 0.08) < 1e-5))         # radii left at request

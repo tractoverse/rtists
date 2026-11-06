@@ -141,10 +141,56 @@
 # per-streamline CSS/hex character vector (recycled). `mode` is "line2" (fast
 # world-width lines, the default) or "tube" (per-streamline `TubeGeometry` with
 # per-point radius via radial displacement).
+
+# Scene radius: half the largest spatial extent of all streamlines. Used to
+# express the outline width (`border` x scene radius) in world units and to
+# size the overlap cap.
+.threejs_scene_radius <- function(streamlines) {
+  all <- do.call(rbind, streamlines)
+  ext <- vapply(c("X", "Y", "Z"), function(ax) {
+    diff(range(all[, ax]))
+  }, numeric(1L))
+  max(0.5 * max(ext), 1e-6)
+}
+
+# Maximum radius that keeps a filled tube (radius + any optional outline) clear
+# tubes. Returns NULL when there is only one streamline (nothing to collide).
+.threejs_group_sep <- function(streamlines, ids) {
+  if (length(ids) < 2L) return(Inf)
+  sep <- Inf
+  for (a in seq_along(ids)) {
+    for (b in seq_along(ids)) {
+      if (a >= b) next
+      sep <- min(sep, .min_sep_two(streamlines[[ids[a]]], streamlines[[ids[b]]]))
+    }
+  }
+  sep
+}
+
+.threejs_overlap_cap <- function(streamlines, border, groups = NULL) {
+  m <- length(streamlines)
+  if (m < 2L) return(NULL)
+  dw <- border * .threejs_scene_radius(streamlines)
+  # 0.9 leaves 10% clearance between nearest tubes; subtract any outline width.
+  cap_of <- function(ids) {
+    if (length(ids) < 2L) return(Inf)
+    max(0, 0.9 * (.threejs_group_sep(streamlines, ids) / 2) - dw)
+  }
+  if (is.null(groups)) {
+    return(list(max_radius = rep(cap_of(seq_len(m)), m)))
+  }
+  caps <- numeric(m)
+  for (g in unique(groups)) {
+    ids <- which(groups == g)
+    caps[ids] <- cap_of(ids)
+  }
+  list(max_radius = caps)
+}
+
 .threejs_widget <- function(streamlines, color = "orientation",
                             linewidth = 1, thickness = 0, radius = NULL,
-                            opacity = 1, bg = "#111111", border = 0.15,
-                            elementId = NULL) {
+                            opacity = 1, bg = "#111111", border = 0,
+                            groups = NULL, elementId = NULL) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
@@ -155,6 +201,29 @@
   tube_mode <- identical(rinfo$mode, "tube")
 
   if (tube_mode) {
+    # Thickness-positive tubes must not overlap: cap every radius (plus the
+    # scene-relative outline width) at a fraction of the nearest approach
+    # between distinct streamlines, emitting a message when a request gets
+    # clamped so the user can tell why the tubes are not as fat as asked.
+    clamp <- .threejs_overlap_cap(streamlines, border, groups)
+    if (!is.null(clamp)) {
+      # Expand the per-streamline cap to every point of that streamline.
+      cap_pp <- rep(clamp$max_radius, times = n_pts)
+      over <- rinfo$radii > cap_pp
+      if (any(over)) {
+        rinfo$radii[over] <- cap_pp[over]
+        # Report the cap(s) actually applied: one per bundle that got clamped.
+        ends <- cumsum(n_pts)
+        starts <- ends - n_pts + 1L
+        over_sl <- vapply(seq_along(n_pts), function(j)
+          any(over[starts[j]:ends[j]]), logical(1L))
+        applied <- unique(sort(clamp$max_radius[over_sl]))
+        cli::cli_inform(
+          "Thickness capped to {.val {applied}} so tubes do not overlap."
+        )
+      }
+    }
+
     # ---- tube mode: per-streamline points + per-point RGB ------------------
     n_pts <- vapply(streamlines, nrow, integer(1L))
     pos   <- numeric(3 * sum(n_pts))
@@ -204,7 +273,7 @@
       radii        = writeBin(rinfo$radii, raw(), size = 4L),  # Float32 base64
       thickness    = jsonlite::unbox(thickness), # scalar (legacy echo)
       linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
-      border       = jsonlite::unbox(border),    # outline as a fraction of radius
+      border       = jsonlite::unbox(border),    # outline as a fraction of scene radius
       opacity      = jsonlite::unbox(opacity),
       bg           = jsonlite::unbox(bg)
     )
@@ -289,6 +358,14 @@
                             opacity = 1, bg = "#111111",
                             color_by_bundle = FALSE, ...) {
   sls <- .df_to_streamlines(df)
+  # For a bundle_set the df carries one `BundleName` per streamline: thread it
+  # through so the no-overlap cap is computed WITHIN each bundle, letting
+  # distinct bundles that legitimately share space overlap without being shaved.
+  groups <- NULL
+  if (!is.null(df$BundleName)) {
+    g <- tapply(as.character(df$BundleName), df$StreamlineId, function(v) v[1L])
+    groups <- as.integer(factor(g, levels = unique(g)))
+  }
   .threejs_widget(
     streamlines = sls,
     color       = .df_resolve_colors(df, color, palette, color_by_bundle),
@@ -297,6 +374,7 @@
     radius      = radius,
     opacity     = opacity,
     bg          = bg,
+    groups      = groups,
     ...
   )
 }

@@ -28,8 +28,8 @@ lines are drawn in that fixed colour.
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
 line thickness (via \code{thickness}) and object-level depth-sorted
-transparency; the plotly backend is retained as an interim fallback while
-the three.js renderer matures.}
+transparency; the plotly backend is an opt-in alternative for interactive
+plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
 three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which

@@ -56,7 +56,14 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+      # Pin a specific Quarto release (instead of the action default "release",
+      # which fetches https://quarto.org/docs/download/_download.json on every
+      # run). That manifest fetch is flaky on the containerized rhub platforms
+      # (cURL write failures -> exit 127), so pinning a version skips it and
+      # downloads a fixed release deterministically.
       - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.11.9'
       - uses: r-hub/actions/setup-deps@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
@@ -86,7 +93,14 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+      # Pin a specific Quarto release (instead of the action default "release",
+      # which fetches https://quarto.org/docs/download/_download.json on every
+      # run). That manifest fetch is flaky on the containerized rhub platforms
+      # (cURL write failures -> exit 127), so pinning a version skips it and
+      # downloads a fixed release deterministically.
       - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.11.9'
       - uses: r-hub/actions/setup-deps@v1
         with:
           job-config: ${{ matrix.config.job-config }}

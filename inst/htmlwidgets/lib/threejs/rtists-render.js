@@ -44,6 +44,20 @@ function b64ToU8F32(b64) {
   return out;
 }
 
+// Half the largest extent of a packed xyz positions array; used to size the
+// scene-relative tube outline so it stays visible regardless of tube radius.
+function sceneRadius(pos) {
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < pos.length; i += 3) {
+    const x = pos[i], y = pos[i+1], z = pos[i+2];
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+  }
+  return 0.5 * Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-6);
+}
+
 HTMLWidgets.widget({
 
   name: 'rtists',
@@ -179,12 +193,17 @@ HTMLWidgets.widget({
       const col = b64ToU8F32(x.colors);    // per-point rgb (0-1)
       const rad = b64ToF32(x.radii);       // per-point radius
       const off = x.tubeOffsets; // cumulative point index
-      // Thickness-positive streams get a black outline: a slightly inflated
-      // black hull is drawn behind the coloured tube, so the fill colour sits
-      // inside a visible black border. The border is a fraction of the local
-      // radius (proportional), so it scales with per-point thickness. Pass a
-      // `border` scalar in the payload to tune it; 0 disables the outline.
-      const border = (typeof x.border === 'number' && x.border >= 0) ? x.border : 0.15;
+      // Tubes are distinguished by per-streamline fill colour plus a baked
+      // flat-facet shade (see displaceTubes) that reads as three.js
+      // FlatShading, so densely-packed tubes stay legible without an opaque
+      // border masking the fill. An optional slim outline is still available:
+      // `border` is a fraction of the scene radius (a CONSTANT pixel width
+      // that does not vanish on thin strands), drawn as an OPAQUE black tube
+      // at radius + dw (built first) so the rim survives transparent-object
+      // sorting. It defaults to 0 (off); set it positive in the payload to
+      // enable a border.
+      const border = (typeof x.border === 'number' && x.border >= 0) ? x.border : 0;
+      const dw = border * sceneRadius(pos);
 
       for (let t = 0; t < off.length - 1; t++) {
         const a = off[t], b = off[t + 1];
@@ -204,21 +223,17 @@ HTMLWidgets.widget({
           depthWrite:   false
         });
 
-        if (border > 0) {
-          // Black hull: same radial displacement inflated by (1 + border). It
-          // is drawn first (behind), so the border peeks out around the fill.
+        if (dw > 0) {
+          // Opaque black outline hull: same radial displacement, offset by +dw.
           const outer = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
-          displaceTubes(outer, radial, tubular, pos, col, rad, a, n, 1 + border, [0, 0, 0]);
+          displaceTubes(outer, radial, tubular, pos, col, rad, a, n, dw, [0, 0, 0]);
           group.add(new THREE.Mesh(outer, new THREE.MeshBasicMaterial({
-            color:       0x000000,
-            transparent: transparent,
-            opacity:     Math.min(1, x.opacity + 0.15),
-            depthWrite:  false
+            color: 0x000000
           })));
         }
 
         const geo = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
-        displaceTubes(geo, radial, tubular, pos, col, rad, a, n, 1, null);
+        displaceTubes(geo, radial, tubular, pos, col, rad, a, n, 0, null);
         group.add(new THREE.Mesh(geo, fillMat));
       }
       return group;
@@ -231,13 +246,19 @@ HTMLWidgets.widget({
     // and colour are linearly interpolated between the two polyline points that
     // bracket that arc length, so a per-point `x.radii` array displaces smoothly
     // instead of stepping point-to-point (nearest-ring).
-    function displaceTubes(geo, radial, tubular, pos, col, rad, a, n, scale, solidColor) {
+    function displaceTubes(geo, radial, tubular, pos, col, rad, a, n, extra, solidColor) {
       const posArr = geo.attributes.position.array;
       const ringSize = radial + 1;
       const nRings = tubular + 1;
       const colorArr = new Float32Array(posArr.length); // 3 per vertex
       const center = new THREE.Vector3();
       const off    = new THREE.Vector3();
+      const off2   = new THREE.Vector3();
+      // Fixed light-ish reference for the baked flat shade of the fill tube.
+      // Uniform RGB modulation below preserves hue, so DTI orientation colours
+      // stay meaningful while tube facets read as shading (phantomas-style
+      // FlatShading). The opaque outline hull (solidColor) is not shaded.
+      const light = new THREE.Vector3(1, 1, 1).normalize();
 
       // Cumulative arc length along the polyline points [a, a+n-1].
       const arc = new Float64Array(n);
@@ -267,10 +288,10 @@ HTMLWidgets.widget({
         const q   = p + 1;
 
         // Lerp radius and colour between the two bracketing polyline points.
-        // `scale` optionally inflates the radius (black outline hull); `solidColor`
-        // (when non-null) overrides the per-point fill colour with a constant
-        // rgb triple so the hull is monochrome.
-        const radius = scale * (rad[a + p] + (rad[a + q] - rad[a + p]) * t);
+        // `extra` adds a constant world offset to the radius (black outline
+        // hull); `solidColor` (when non-null) overrides the per-point fill
+        // colour with a constant rgb triple so the hull is monochrome.
+        const radius = extra + (rad[a + p] + (rad[a + q] - rad[a + p]) * t);
         const ci = 3 * (a + p), cj = 3 * (a + q);
         let cr, cg, cb;
         if (solidColor) {
@@ -287,7 +308,18 @@ HTMLWidgets.widget({
           posArr[k]   = center.x + off.x * radius;
           posArr[k+1] = center.y + off.y * radius;
           posArr[k+2] = center.z + off.z * radius;
-          colorArr[k] = cr; colorArr[k+1] = cg; colorArr[k+2] = cb;
+          if (solidColor) {
+            colorArr[k] = cr; colorArr[k+1] = cg; colorArr[k+2] = cb;
+          } else {
+            // Baked flat-facet shade: darken each vertex by how much its
+            // outward normal faces away from `light`. Multiplying all three
+            // channels by the same factor keeps the stem colour's hue.
+            off2.copy(off).normalize();
+            const fac = 0.62 + 0.38 * Math.max(0, off2.dot(light));
+            colorArr[k]   = cr * fac;
+            colorArr[k+1] = cg * fac;
+            colorArr[k+2] = cb * fac;
+          }
         }
       }
       geo.attributes.position.needsUpdate = true;

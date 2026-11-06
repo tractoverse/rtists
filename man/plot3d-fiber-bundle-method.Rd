@@ -28,8 +28,8 @@ lines are drawn in that fixed colour.
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
 line thickness (via \code{thickness}) and object-level depth-sorted
-transparency; the plotly backend is retained as an interim fallback while
-the three.js renderer matures.}
+transparency; the plotly backend is an opt-in alternative for interactive
+plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
 three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
@@ -96,10 +96,13 @@ sl <- streamline(
 
 strand <- function(i) {
   t <- seq(0, 4 * pi, length.out = 200)
+  # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
+  # apart in Y, well beyond its meander, so the filled tubes (plus their
+  # black outline) stay clear of one another at a visible thickness.
   pts <- cbind(
     X = seq_len(200) * 0.1,
-    Y = 0.5 * sin(t + 1.3 * i) + (i - 3.5) * 0.35,
-    Z = 0.5 * cos(t) + (i - 3.5) * 0.35
+    Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
+    Z = 0.25 * cos(t) + (i - 3.5) * 0.15
   )
   streamline(
     pts,
@@ -110,7 +113,7 @@ strand <- function(i) {
 bun <- bundle(lapply(seq_len(6), strand))
 plot3d(bun)
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-plot3d(bun, thickness = 0.02)
+plot3d(bun, thickness = 0.08)
 }
 \seealso{
 \code{\link[=plot3d]{plot3d()}}

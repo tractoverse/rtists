@@ -139,8 +139,8 @@
 #'   transparency, and a fast single-mesh line mode that scales to large
 #'   bundles.
 #' - `"plotly"`: a `scatter3d` line plot where all streamlines share one trace
-#'   separated by `NA` break-points. Retained as an interim fallback while the
-#'   three.js renderer matures.
+#'   separated by `NA` break-points. A deliberately opt-in alternative renderer
+#'   for when you prefer an interactive plotly surface.
 #'
 #' Methods are available for the following classes:
 #'
@@ -166,8 +166,8 @@
 #' @param backend Character. Which htmlwidget renderer to use: `"threejs"`
 #'   (default) or `"plotly"`. The three.js backend supports real world-space
 #'   line thickness (via `thickness`) and object-level depth-sorted
-#'   transparency; the plotly backend is retained as an interim fallback while
-#'   the three.js renderer matures.
+#'   transparency; the plotly backend is an opt-in alternative for interactive
+#'   plotly-style charts.
 #' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`. On the
 #'   three.js backend this maps to `THREE.LineBasicMaterial.linewidth`, which
 #'   WebGL caps at `1` on most platforms; use `thickness` for genuinely thick
@@ -234,10 +234,13 @@
 #' # --- bundle example -------------------------------------------------------
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
+#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
+#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
+#'   # black outline) stay clear of one another at a visible thickness.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
-#'     Y = 0.5 * sin(t + 1.3 * i) + (i - 3.5) * 0.35,
-#'     Z = 0.5 * cos(t) + (i - 3.5) * 0.35
+#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
+#'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
 #'   )
 #'   streamline(
 #'     pts,
@@ -248,7 +251,7 @@
 #' bun <- bundle(lapply(seq_len(6), strand))
 #' plot3d(bun)
 #' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#' plot3d(bun, thickness = 0.02)
+#' plot3d(bun, thickness = 0.08)
 plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
@@ -373,10 +376,13 @@ S7::method(plot3d, fiber::streamline) <- function(
 #'
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
+#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
+#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
+#'   # black outline) stay clear of one another at a visible thickness.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
-#'     Y = 0.5 * sin(t + 1.3 * i) + (i - 3.5) * 0.35,
-#'     Z = 0.5 * cos(t) + (i - 3.5) * 0.35
+#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
+#'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
 #'   )
 #'   streamline(
 #'     pts,
@@ -387,7 +393,7 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' bun <- bundle(lapply(seq_len(6), strand))
 #' plot3d(bun)
 #' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#' plot3d(bun, thickness = 0.02)
+#' plot3d(bun, thickness = 0.08)
 S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
@@ -468,10 +474,13 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' )
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
+#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
+#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
+#'   # black outline) stay clear of one another at a visible thickness.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
-#'     Y = 0.5 * sin(t + 1.3 * i) + (i - 3.5) * 0.35,
-#'     Z = 0.5 * cos(t) + (i - 3.5) * 0.35
+#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
+#'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
 #'   )
 #'   streamline(
 #'     pts,
@@ -483,9 +492,9 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' bun_set <- bundle_set(list(bun, bun))
 #'
 #' # Thickness-positive strands: each tube is filled with a colour and outlined
-#' # in black, and the lateral 0.35 offsets keep the strands clear of one
+#' # in black, and the lateral 1.2 spacing keeps the strands clear of one
 #' # another (no overlap) at this thickness.
-#' plot3d(bun_set, thickness = 0.02)
+#' plot3d(bun_set, thickness = 0.08)
 S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",

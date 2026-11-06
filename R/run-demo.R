@@ -59,9 +59,9 @@
 #' @examples
 #' \dontrun{
 #' # from the repository root or after devtools::load_all()
-#' rtists::runExample("line2")
+#' rtists::runDemo("line2")
 #' }
-runExample <- function(name = "line2", ...) {
+runDemo <- function(name = "line2", ...) {
   root <- .rtists_source_root()
   dir  <- file.path(root, "demo", name)
   if (!file.exists(file.path(dir, "app.R"))) {

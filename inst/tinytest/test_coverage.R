@@ -194,7 +194,7 @@ fig <- plot3d(bs1, backend = "plotly", color_by_bundle = TRUE)
 expect_inherits(fig, "plotly")
 
 # ================= run-example.R =================
-# .rtists_source_root() and runExample() are only meaningful from a real source
+# .rtists_source_root() and runDemo() are only meaningful from a real source
 # checkout: the `demo/` folder they launch is Rbuildignored and never installed,
 # so the resolve can only succeed (and `demo/line2/app.R` can only exist) when
 # running locally after devtools::load_all(). On R CMD check / CI, where neither
@@ -207,10 +207,10 @@ if (!is.na(src_root) && file.exists(file.path(src_root, "demo", "line2", "app.R"
   setwd(src_root)
   expect_identical(rtists:::.rtists_source_root(), src_root)
 
-  # runExample: unknown demo name errors (demo not found), before any Shiny call
-  expect_error(rtists::runExample("does-not-exist"), "Demo app not found")
+  # runDemo: unknown demo name errors (demo not found), before any Shiny call
+  expect_error(rtists::runDemo("does-not-exist"), "Demo app not found")
 
-  # runExample: happy path reaches shiny::runApp() (lines 72-73). Shiny is a
+  # runDemo: happy path reaches shiny::runApp() (lines 72-73). Shiny is a
   # Suggests-only dependency, hence the guard.
   if (requireNamespace("shiny", quietly = TRUE)) {
     # Replace shiny::runApp with a no-op so the launcher returns without
@@ -219,7 +219,7 @@ if (!is.na(src_root) && file.exists(file.path(src_root, "demo", "line2", "app.R"
     on.exit(assignInNamespace("runApp", orig_runApp, ns = "shiny"), add = TRUE)
     fake_run <- function(appDir, ...) invisible(NULL)
     assignInNamespace("runApp", fake_run, ns = "shiny")
-    expect_identical(withVisible(rtists::runExample("line2"))$value, TRUE)
+    expect_identical(withVisible(rtists::runDemo("line2"))$value, TRUE)
   }
 }
 
