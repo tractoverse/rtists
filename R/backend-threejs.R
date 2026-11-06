@@ -143,7 +143,8 @@
 # per-point radius via radial displacement).
 .threejs_widget <- function(streamlines, color = "orientation",
                             linewidth = 1, thickness = 0, radius = NULL,
-                            opacity = 1, bg = "#111111", elementId = NULL) {
+                            opacity = 1, bg = "#111111", border = 0.15,
+                            elementId = NULL) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
@@ -203,6 +204,7 @@
       radii        = writeBin(rinfo$radii, raw(), size = 4L),  # Float32 base64
       thickness    = jsonlite::unbox(thickness), # scalar (legacy echo)
       linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
+      border       = jsonlite::unbox(border),    # outline as a fraction of radius
       opacity      = jsonlite::unbox(opacity),
       bg           = jsonlite::unbox(bg)
     )

@@ -481,7 +481,11 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' }
 #' bun <- bundle(lapply(seq_len(6), strand))
 #' bun_set <- bundle_set(list(bun, bun))
-#' plot3d(bun_set)
+#'
+#' # Thickness-positive strands: each tube is filled with a colour and outlined
+#' # in black, and the lateral 0.35 offsets keep the strands clear of one
+#' # another (no overlap) at this thickness.
+#' plot3d(bun_set, thickness = 0.02)
 S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",

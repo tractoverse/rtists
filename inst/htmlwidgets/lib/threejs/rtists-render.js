@@ -179,6 +179,12 @@ HTMLWidgets.widget({
       const col = b64ToU8F32(x.colors);    // per-point rgb (0-1)
       const rad = b64ToF32(x.radii);       // per-point radius
       const off = x.tubeOffsets; // cumulative point index
+      // Thickness-positive streams get a black outline: a slightly inflated
+      // black hull is drawn behind the coloured tube, so the fill colour sits
+      // inside a visible black border. The border is a fraction of the local
+      // radius (proportional), so it scales with per-point thickness. Pass a
+      // `border` scalar in the payload to tune it; 0 disables the outline.
+      const border = (typeof x.border === 'number' && x.border >= 0) ? x.border : 0.15;
 
       for (let t = 0; t < off.length - 1; t++) {
         const a = off[t], b = off[t + 1];
@@ -191,16 +197,29 @@ HTMLWidgets.widget({
         // tubular segments ~ one per point (capped) so rings align with points;
         // unit radius, displaced below.
         const tubular = Math.min(64, Math.max(8, n));
-        const geo = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
-        displaceTubes(geo, radial, tubular, pos, col, rad, a, n);
-
-        const mat = new THREE.MeshBasicMaterial({
+        const fillMat = new THREE.MeshBasicMaterial({
           vertexColors: true,
           transparent:  transparent,
           opacity:      x.opacity,
           depthWrite:   false
         });
-        group.add(new THREE.Mesh(geo, mat));
+
+        if (border > 0) {
+          // Black hull: same radial displacement inflated by (1 + border). It
+          // is drawn first (behind), so the border peeks out around the fill.
+          const outer = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
+          displaceTubes(outer, radial, tubular, pos, col, rad, a, n, 1 + border, [0, 0, 0]);
+          group.add(new THREE.Mesh(outer, new THREE.MeshBasicMaterial({
+            color:       0x000000,
+            transparent: transparent,
+            opacity:     Math.min(1, x.opacity + 0.15),
+            depthWrite:  false
+          })));
+        }
+
+        const geo = new THREE.TubeGeometry(curve, tubular, 1, radial, false);
+        displaceTubes(geo, radial, tubular, pos, col, rad, a, n, 1, null);
+        group.add(new THREE.Mesh(geo, fillMat));
       }
       return group;
     }
@@ -212,7 +231,7 @@ HTMLWidgets.widget({
     // and colour are linearly interpolated between the two polyline points that
     // bracket that arc length, so a per-point `x.radii` array displaces smoothly
     // instead of stepping point-to-point (nearest-ring).
-    function displaceTubes(geo, radial, tubular, pos, col, rad, a, n) {
+    function displaceTubes(geo, radial, tubular, pos, col, rad, a, n, scale, solidColor) {
       const posArr = geo.attributes.position.array;
       const ringSize = radial + 1;
       const nRings = tubular + 1;
@@ -248,11 +267,19 @@ HTMLWidgets.widget({
         const q   = p + 1;
 
         // Lerp radius and colour between the two bracketing polyline points.
-        const radius = rad[a + p] + (rad[a + q] - rad[a + p]) * t;
+        // `scale` optionally inflates the radius (black outline hull); `solidColor`
+        // (when non-null) overrides the per-point fill colour with a constant
+        // rgb triple so the hull is monochrome.
+        const radius = scale * (rad[a + p] + (rad[a + q] - rad[a + p]) * t);
         const ci = 3 * (a + p), cj = 3 * (a + q);
-        const cr = col[ci]   + (col[cj]   - col[ci])   * t;
-        const cg = col[ci+1] + (col[cj+1] - col[ci+1]) * t;
-        const cb = col[ci+2] + (col[cj+2] - col[ci+2]) * t;
+        let cr, cg, cb;
+        if (solidColor) {
+          cr = solidColor[0]; cg = solidColor[1]; cb = solidColor[2];
+        } else {
+          cr = col[ci]   + (col[cj]   - col[ci])   * t;
+          cg = col[ci+1] + (col[cj+1] - col[ci+1]) * t;
+          cb = col[ci+2] + (col[cj+2] - col[ci+2]) * t;
+        }
 
         for (let j = 0; j < ringSize; j++) {
           const k = 3 * (r * ringSize + j);
