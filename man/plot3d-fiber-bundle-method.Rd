@@ -27,36 +27,31 @@ lines are drawn in that fixed colour.
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
-line thickness (via \code{thickness}) and object-level depth-sorted
+line thickness (true 3D tubes) and object-level depth-sorted
 transparency; the plotly backend is an opt-in alternative for interactive
 plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
 three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
-WebGL caps at \code{1} on most platforms; use \code{thickness} for genuinely thick
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
 fibres.}
 
-\item{thickness}{Numeric radius in world units (three.js backend only). When
-\verb{> 0}, streamlines are drawn as true 3D \code{TubeGeometry} tubes of this constant
-radius instead of lines, which gives genuinely thick fibres and object-level
-depth-sorted transparency (each tube is its own mesh sorted back-to-front).
-Defaults to \code{0} (fast line2 path). This is the legacy knob; prefer \code{radius}.}
-
-\item{radius}{Numeric radius in world units (three.js backend only), a more
-general alternative to \code{thickness}. Accepts:
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+Accepts:
 \itemize{
-\item A positive \strong{scalar}: every streamline is drawn at this constant world
-width using fast \code{Line2} (world units). Cheaper than tubes and the
-recommended default when the radius is constant.
+\item \code{NULL} (default): thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
 \item A \strong{per-streamline vector} (length == number of streamlines): one
 constant radius per line, drawn as \code{TubeGeometry}.
 \item A \strong{per-point vector} (length == total number of points): radius varying
 along each streamline, drawn as \code{TubeGeometry} with radial displacement —
 the most general form.
-}
-
-When \code{radius} is supplied it takes precedence over \code{thickness}. Defaults to
-\code{NULL} (no radius; thin lines).}
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
@@ -77,28 +72,10 @@ line plot. See \code{\link[=plot3d]{plot3d()}} for the full parameter documentat
 \examples{
 library(fiber)
 
-# --- a realistic streamline -----------------------------------------------
-# A dense, smoothly meandering 3-D curve advanced in small steps along X,
-# thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-# polyline.
-n  <- 200L
-t  <- seq(0, 4 * pi, length.out = n)
-pts <- cbind(
-  X = seq_len(n) * 0.1,
-  Y = 0.5 * sin(t),
-  Z = 0.5 * cos(t)
-)
-sl <- streamline(
-  points          = pts,
-  point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
-  streamline_data = list(mean_FA = 0.5)
-)
-
+# A bundle of six gently meandering strands, each carrying per-point FA and
+# a per-streamline `region` label (used below for categorical colouring).
 strand <- function(i) {
   t <- seq(0, 4 * pi, length.out = 200)
-  # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-  # apart in Y, well beyond its meander, so the filled tubes (plus their
-  # black outline) stay clear of one another at a visible thickness.
   pts <- cbind(
     X = seq_len(200) * 0.1,
     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
@@ -107,13 +84,45 @@ strand <- function(i) {
   streamline(
     pts,
     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-    streamline_data = list(mean_FA = 0.5)
+    streamline_data = list(mean_FA = 0.5,
+                           region  = if (i \%\% 2) "left" else "right")
   )
 }
 bun <- bundle(lapply(seq_len(6), strand))
+
+# Default: thin lines coloured by local fibre orientation
 plot3d(bun)
+
+# Colour by a per-streamline scalar key on a continuous palette
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-plot3d(bun, thickness = 0.08)
+
+# Colour by a per-streamline character key (categorical)
+plot3d(bun, color = "region")
+
+# A constant world radius: every strand becomes a true 3D tube with a black
+# outline (Phong flat shaded), the densest, most brain-like rendering.
+plot3d(bun, radius = 0.08)
+
+# Per-streamline variable radius: one tube radius per line (TubeGeometry).
+# A length-n vector picks a different radius for each of the 6 strands.
+plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
+
+# Per-point variable radius: a vector as long as the total point count gives
+# a radius that varies along each strand (the most general form).
+n_pts <- sum(vapply(bun@streamlines, function(s) nrow(s@points), integer(1)))
+plot3d(bun, radius = rep(c(0.04, 0.10), length.out = n_pts))
+
+# Transparency: fade the bundle to overlay it on other geometry
+plot3d(bun, opacity = 0.3)
+
+# Prune to a spread-out subset whose fat tubes do not overlap. The 6 strands
+# packed 1.2 units apart overlap at radius 1, so prune keeps the 2 strands
+# that stay clear of one another.
+pruned <- prune(bun, radius = 1)
+length(pruned@streamlines)
+
+# Plot the pruned bundle at the same fat radius as the prune test.
+plot3d(pruned, radius = 1)
 }
 \seealso{
 \code{\link[=plot3d]{plot3d()}}

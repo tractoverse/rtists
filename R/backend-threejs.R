@@ -73,51 +73,42 @@
 
 # Resolve the radius request into a render mode and a per-point radius vector.
 #
-# Two knobs are supported to preserve backward compatibility while generalising
-# to per-point radius:
-#   * `thickness` (legacy scalar): when > 0 each streamline is drawn as a
-#     `TubeGeometry` of this constant world radius. Retained so existing calls
-#     and tests that passed `thickness` keep producing tube payloads.
-#   * `radius` (new): accepts a positive scalar (constant world width, drawn as
-#     `Line2` with `worldUnits: true`), a per-streamline vector (one constant
-#     radius per line, `TubeGeometry`), or a per-point vector (variable radius,
-#     `TubeGeometry` + radial displacement).
+# `radius` accepts any of:
+#   * `NULL` / empty: no radius, the fast `Line2` path at `linewidth` (default).
+#   * a scalar `0`: fast flat `Line2` at `linewidth` (the "user prefers fast
+#     lines" signal; nothing needs a tube).
+#   * a positive scalar: every streamline is drawn as a true 3D `TubeGeometry`
+#     of this constant world radius (per-point radii, Phong FlatShading).
+#   * a per-streamline vector (length == number of streamlines): one constant
+#     radius per line, expanded to per-point `TubeGeometry`.
+#   * a per-point vector (length == total points): radius varying along each
+#     streamline, `TubeGeometry` with radial displacement (most general form).
 #
 # Returns a list: `mode` ("line2" | "tube"), `radii` (per-point numeric vector,
 # NULL when no radius is requested) and `linewidth` (world-units width to use in
-# line2 mode). `prefer_line2` selects the fast Line2 path for constant radius.
-.threejs_radius <- function(linewidth, thickness, radius, n_pts) {
+# line2 mode).
+.threejs_radius <- function(linewidth, radius, n_pts) {
   total <- sum(n_pts)
 
-  # Which knob is in use? Explicit `radius` supersedes the legacy `thickness`.
-  if (!is.null(radius) && length(radius) > 0L) {
-    r <- radius
-    prefer_line2 <- TRUE          # new API: constant radius -> cheap Line2
-  } else if (length(thickness) == 1L && thickness > 0) {
-    r <- thickness                # legacy API: keep tube behaviour
-    prefer_line2 <- FALSE
-  } else {
+  if (is.null(radius) || length(radius) == 0L) {
+    # No radius: default thin line2 at the requested linewidth.
     return(list(mode = "line2", radii = NULL, linewidth = linewidth))
   }
 
-  if (length(r) == 1L) {
-    if (r <= 0) {
+  if (length(radius) == 1L) {
+    if (is.na(radius) || radius <= 0) {
+      # Scalar 0 (or NA, or negative clamped) -> fast flat Line2.
       return(list(mode = "line2", radii = NULL, linewidth = linewidth))
     }
-    rpp <- rep(r, total)
-    if (prefer_line2) {
-      # constant world radius -> Line2 with worldUnits (cheap, single draw call)
-      return(list(mode = "line2", radii = NULL, linewidth = r))
-    }
-    # legacy thickness -> constant-radius tube
-    return(list(mode = "tube", radii = rpp, linewidth = linewidth))
+    # Positive scalar -> true constant-radius 3D tube (per-point radii).
+    return(list(mode = "tube", radii = rep(radius, total), linewidth = linewidth))
   }
 
-  if (length(r) == length(n_pts)) {
-    # per-streamline constant radius -> expand to per-point
-    rpp <- unlist(Map(\(k, v) rep(v, k), n_pts, r), use.names = FALSE)
-  } else if (length(r) == total) {
-    rpp <- r                        # per-point (most general)
+  if (length(radius) == length(n_pts)) {
+    # Per-streamline constant radius -> expand to per-point.
+    rpp <- unlist(Map(\(k, v) rep(v, k), n_pts, radius), use.names = FALSE)
+  } else if (length(radius) == total) {
+    rpp <- radius                   # per-point (most general)
   } else {
     stop(
       "`radius` must be a positive scalar, a per-streamline vector ",
@@ -126,12 +117,8 @@
       call. = FALSE
     )
   }
-  if (any(rpp <= 0)) {
+  if (anyNA(rpp) || any(rpp <= 0)) {
     stop("`radius` values must be positive.", call. = FALSE)
-  }
-  if (min(rpp) == max(rpp) && prefer_line2) {
-    # effectively constant per-point radius -> fast Line2 world width
-    return(list(mode = "line2", radii = NULL, linewidth = rpp[1L]))
   }
   list(mode = "tube", radii = rpp, linewidth = linewidth)
 }
@@ -188,7 +175,7 @@
 }
 
 .threejs_widget <- function(streamlines, color = "orientation",
-                            linewidth = 1, thickness = 0, radius = NULL,
+                            linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111", border = 0,
                             groups = NULL, elementId = NULL) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
@@ -197,7 +184,7 @@
   streamlines <- lapply(streamlines, as.matrix)
   n_pts <- vapply(streamlines, nrow, integer(1L))
 
-  rinfo <- .threejs_radius(linewidth, thickness, radius, n_pts)
+  rinfo <- .threejs_radius(linewidth, radius, n_pts)
   tube_mode <- identical(rinfo$mode, "tube")
 
   if (tube_mode) {
@@ -219,7 +206,7 @@
           any(over[starts[j]:ends[j]]), logical(1L))
         applied <- unique(sort(clamp$max_radius[over_sl]))
         cli::cli_inform(
-          "Thickness capped to {.val {applied}} so tubes do not overlap."
+          "Radius capped to {.val {applied}} so tubes do not overlap."
         )
       }
     }
@@ -260,7 +247,6 @@
         ci <- ci + 3 * k
       }
     }
-    # Legacy scalar thickness is echoed back for backwards compatibility.
     # Positions/radii are packed as little-endian IEEE float32 and colors as
     # 8-bit channels (0-255); htmlwidgets base64-encodes the raw vectors into
     # compact strings instead of emitting ~17 decimal floats per point, and the
@@ -271,7 +257,6 @@
       colors       = as.raw(pmin(255L, round(colors * 255))),  # Uint8 base64
       tubeOffsets  = tubeOffsets,                # cumulative point index
       radii        = writeBin(rinfo$radii, raw(), size = 4L),  # Float32 base64
-      thickness    = jsonlite::unbox(thickness), # scalar (legacy echo)
       linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
       border       = jsonlite::unbox(border),    # outline as a fraction of scene radius
       opacity      = jsonlite::unbox(opacity),
@@ -349,12 +334,12 @@
   )
 }
 
-# Shared dispatch for the three.js backend: a long df -> widget.
-# `thickness` > 0 activates the legacy constant-radius tube mode. The newer
-# `radius` argument accepts a scalar (Line2 world-width), per-streamline, or
-# per-point vector (radial-displacement tubes). `bg` is the scene background.
+# Shared dispatch for the three.js backend: a long df -> widget. `radius`
+# accepts a positive scalar (true 3D tube), a scalar 0 (fast flat Line2), a
+# per-streamline, or a per-point vector (radial-displacement tubes). `bg` is
+# the scene background.
 .plot3d_threejs <- function(df, color = "orientation", palette = "Viridis",
-                            linewidth = 1, thickness = 0, radius = NULL,
+                            linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111",
                             color_by_bundle = FALSE, ...) {
   sls <- .df_to_streamlines(df)
@@ -370,7 +355,6 @@
     streamlines = sls,
     color       = .df_resolve_colors(df, color, palette, color_by_bundle),
     linewidth   = linewidth,
-    thickness   = thickness,
     radius      = radius,
     opacity     = opacity,
     bg          = bg,

@@ -10,7 +10,6 @@ plot3d(
   palette = "Viridis",
   backend = c("threejs", "plotly"),
   linewidth = 2,
-  thickness = 0,
   radius = NULL,
   opacity = 0.5,
   bg = "#111111",
@@ -40,36 +39,31 @@ lines are drawn in that fixed colour.
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
-line thickness (via \code{thickness}) and object-level depth-sorted
+line thickness (true 3D tubes) and object-level depth-sorted
 transparency; the plotly backend is an opt-in alternative for interactive
 plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
 three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
-WebGL caps at \code{1} on most platforms; use \code{thickness} for genuinely thick
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
 fibres.}
 
-\item{thickness}{Numeric radius in world units (three.js backend only). When
-\verb{> 0}, streamlines are drawn as true 3D \code{TubeGeometry} tubes of this constant
-radius instead of lines, which gives genuinely thick fibres and object-level
-depth-sorted transparency (each tube is its own mesh sorted back-to-front).
-Defaults to \code{0} (fast line2 path). This is the legacy knob; prefer \code{radius}.}
-
-\item{radius}{Numeric radius in world units (three.js backend only), a more
-general alternative to \code{thickness}. Accepts:
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+Accepts:
 \itemize{
-\item A positive \strong{scalar}: every streamline is drawn at this constant world
-width using fast \code{Line2} (world units). Cheaper than tubes and the
-recommended default when the radius is constant.
+\item \code{NULL} (default): thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
 \item A \strong{per-streamline vector} (length == number of streamlines): one
 constant radius per line, drawn as \code{TubeGeometry}.
 \item A \strong{per-point vector} (length == total number of points): radius varying
 along each streamline, drawn as \code{TubeGeometry} with radial displacement —
 the most general form.
-}
-
-When \code{radius} is supplied it takes precedence over \code{thickness}. Defaults to
-\code{NULL} (no radius; thin lines).}
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
@@ -89,7 +83,7 @@ tractography objects from the \href{https://tractoverse.github.io/fiber/}{fiber}
 package. Two htmlwidget backends are available:
 \itemize{
 \item \code{"threejs"} (default): a self-contained three.js renderer with real
-world-space line thickness (tubes, via \code{thickness}), depth-sorted
+world-space line thickness (true 3D tubes), depth-sorted
 transparency, and a fast single-mesh line mode that scales to large
 bundles.
 \item \code{"plotly"}: a \code{scatter3d} line plot where all streamlines share one trace
@@ -138,8 +132,8 @@ plot3d(sl, color = "steelblue", opacity = 0.8)
 strand <- function(i) {
   t <- seq(0, 4 * pi, length.out = 200)
   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-  # apart in Y, well beyond its meander, so the filled tubes (plus their
-  # black outline) stay clear of one another at a visible thickness.
+  # apart in Y, well beyond its meander, so filled tubes (plus their black
+  # outline) stay clear of one another at a visible radius.
   pts <- cbind(
     X = seq_len(200) * 0.1,
     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
@@ -152,10 +146,56 @@ strand <- function(i) {
   )
 }
 bun <- bundle(lapply(seq_len(6), strand))
+
+# Thin lines coloured by local fibre orientation (default)
 plot3d(bun)
+
+# Colour by a per-streamline scalar key on a continuous palette
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-plot3d(bun, thickness = 0.08)
+
+# True 3D tubes via a constant world radius, then a per-streamline radius:
+# a vector with one entry per streamline gives each a different tube radius.
+plot3d(bun, radius = 0.08)
+plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
+
+# Fade the whole bundle with transparency
+plot3d(bun, opacity = 0.3)
+
+# Prune to a spread-out subset whose fat tubes do not overlap. Pruning
+# uses the tube radius; here 6 strands packed 1.2 units apart overlap at
+# radius 1, so prune keeps just the 2 that stay clear of one another.
+pruned <- prune(bun, radius = 1)
+length(pruned@streamlines)
+
+# Plot the pruned set at the same fat radius so the non-overlap is visible.
+plot3d(pruned, radius = 1)
+
+# --- bundle set example -------------------------------------------------
+# A second bundle that crosses the first: its strands meander up and down
+# with a growing Y amplitude, sweeping through the first bundle's parallel
+# set so the two fibre populations interleave.
+strand2 <- function(i) {
+  t   <- seq(0, 4 * pi, length.out = 200)
+  amp <- 1.0 + 0.35 * i
+  pts <- cbind(
+    X = seq_len(200) * 0.1,
+    Y = amp * sin(t + 1.3 * i),
+    Z = 0.25 * cos(t + 0.7 * i) + (i - 3.5) * 0.15
+  )
+  streamline(
+    pts,
+    point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
+    streamline_data = list(mean_FA = 0.5)
+  )
+}
+bun_cross  <- bundle(lapply(seq_len(6), strand2))
+bun_set <- bundle_set(list(bun, bun_cross))
+
+# Colour the two crossing bundles distinctly, or draw them as fat
+# transparent tubes on top of other geometry.
+plot3d(bun_set, color_by_bundle = TRUE)
+plot3d(bun_set, radius = 0.08, opacity = 0.4)
 }
 \seealso{
-\link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}
+\link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}, \link[fiber:bundle_set]{fiber::bundle_set}
 }

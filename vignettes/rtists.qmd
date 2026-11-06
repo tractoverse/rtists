@@ -168,8 +168,7 @@ plot3d(bun, color = "steelblue", opacity = 0.6)
 | `palette` | `"Viridis"` | Plotly / ColorBrewer scale used for continuous numeric metadata. |
 | `linewidth` | `2` | Constant line width in world units (three.js `Line2`). |
 | `opacity` | `0.5` | Global line opacity (0–1). |
-| `thickness` | `0` | Constant tube radius in world units; when `> 0` streamlines are drawn as true 3D tubes instead of lines. |
-| `radius` | `NULL` | Per-streamline or per-point tube radius in world units. |
+| `radius` | `NULL` | Tube radius: a positive scalar draws each streamline as a true 3D tube; `0` (or `NULL`) draws flat `Line2`. Per-streamline or per-point vectors give variable radii. |
 
 Line width, opacity, and radius are combined freely:
 

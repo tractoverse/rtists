@@ -77,10 +77,19 @@ HTMLWidgets.widget({
     const controls = new OrbitControls(camera, renderer.domElement);
 
     // ---- lighting -----------------------------------------------------------
+    // Phantomas-style illumination for the FlatShading fill tubes: a dim
+    // ambient plus directional lights from several octants so tube facets
+    // read from any viewing angle (densely-packed bundles stay legible).
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const dir = new THREE.DirectionalLight(0xffffff, 0.6);
     dir.position.set(1, 1, 1);
     scene.add(dir);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    dir2.position.set(-1, 1, -1);
+    scene.add(dir2);
+    const dir3 = new THREE.DirectionalLight(0xffffff, 0.35);
+    dir3.position.set(-1, -1, 1);
+    scene.add(dir3);
 
     // ---- spatial reference (axes at data origin, in tract units) -----------
     const axes = new THREE.AxesHelper(20);
@@ -193,10 +202,11 @@ HTMLWidgets.widget({
       const col = b64ToU8F32(x.colors);    // per-point rgb (0-1)
       const rad = b64ToF32(x.radii);       // per-point radius
       const off = x.tubeOffsets; // cumulative point index
-      // Tubes are distinguished by per-streamline fill colour plus a baked
-      // flat-facet shade (see displaceTubes) that reads as three.js
-      // FlatShading, so densely-packed tubes stay legible without an opaque
-      // border masking the fill. An optional slim outline is still available:
+      // Tubes are fill tubes shaded with a real Phong material in FlatShading
+      // mode (phantomas-style, see MeshSource.js: FlatShading + DoubleSide),
+      // lit by the scene's ambient + directional lights, so densely-packed
+      // tubes stay legible without an opaque border masking the fill. An
+      // optional slim outline is still available:
       // `border` is a fraction of the scene radius (a CONSTANT pixel width
       // that does not vanish on thin strands), drawn as an OPAQUE black tube
       // at radius + dw (built first) so the rim survives transparent-object
@@ -216,8 +226,10 @@ HTMLWidgets.widget({
         // tubular segments ~ one per point (capped) so rings align with points;
         // unit radius, displaced below.
         const tubular = Math.min(64, Math.max(8, n));
-        const fillMat = new THREE.MeshBasicMaterial({
+        const fillMat = new THREE.MeshPhongMaterial({
           vertexColors: true,
+          flatShading:  true,   // phantomas-style per-facet shading
+          side:         THREE.DoubleSide,
           transparent:  transparent,
           opacity:      x.opacity,
           depthWrite:   false
@@ -253,12 +265,6 @@ HTMLWidgets.widget({
       const colorArr = new Float32Array(posArr.length); // 3 per vertex
       const center = new THREE.Vector3();
       const off    = new THREE.Vector3();
-      const off2   = new THREE.Vector3();
-      // Fixed light-ish reference for the baked flat shade of the fill tube.
-      // Uniform RGB modulation below preserves hue, so DTI orientation colours
-      // stay meaningful while tube facets read as shading (phantomas-style
-      // FlatShading). The opaque outline hull (solidColor) is not shaded.
-      const light = new THREE.Vector3(1, 1, 1).normalize();
 
       // Cumulative arc length along the polyline points [a, a+n-1].
       const arc = new Float64Array(n);
@@ -311,14 +317,9 @@ HTMLWidgets.widget({
           if (solidColor) {
             colorArr[k] = cr; colorArr[k+1] = cg; colorArr[k+2] = cb;
           } else {
-            // Baked flat-facet shade: darken each vertex by how much its
-            // outward normal faces away from `light`. Multiplying all three
-            // channels by the same factor keeps the stem colour's hue.
-            off2.copy(off).normalize();
-            const fac = 0.62 + 0.38 * Math.max(0, off2.dot(light));
-            colorArr[k]   = cr * fac;
-            colorArr[k+1] = cg * fac;
-            colorArr[k+2] = cb * fac;
+            // Base vertex colour only: the Phong FlatShading material applies
+            // the actual light-based shading per facet on the GPU.
+            colorArr[k] = cr; colorArr[k+1] = cg; colorArr[k+2] = cb;
           }
         }
       }

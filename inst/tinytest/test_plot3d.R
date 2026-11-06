@@ -54,9 +54,9 @@ if (requireNamespace("plotly", quietly = TRUE)) {
   expect_inherits(fig, "plotly")
 }
 
-# three.js tube mode (thickness > 0) carries the tube payload
-fig <- plot3d(sl, thickness = 0.25)
-expect_true(all(c("tubeOffsets", "thickness") %in% names(fig$x)))
+# three.js tube mode (radius > 0) carries the tube payload
+fig <- plot3d(sl, radius = 0.25)
+expect_true(all(c("tubeOffsets", "radii") %in% names(fig$x)))
 
 # ---- plot3d: colour modes ----------------------------------------------------
 
@@ -81,22 +81,23 @@ expect_true(is.null(fig$x$tubeOffsets))
 expect_true(is.null(fig$x$radii))
 expect_true(fig$x$linewidth > 0)
 
-# legacy thickness -> tube: per-point radii + tubeOffsets + thickness echo
-fig <- plot3d(sl, thickness = 0.25)
+# scalar radius > 0 -> true 3D tube: per-point constant radii + tubeOffsets,
+# no `thickness` echo
+fig <- plot3d(sl, radius = 0.25)
 expect_equal(unclass(fig$x$mode), "tube")
 # radii are per-point floats packed as IEEE float32 -> 4 raw bytes/float
 expect_true(is.raw(fig$x$positions))
 expect_equal(length(fig$x$positions), 12L * nrow(pts))  # 3 floats x 4 bytes/point
 expect_true(is.raw(fig$x$radii))
 expect_equal(length(fig$x$radii), 4L * nrow(pts))
-expect_equal(unclass(fig$x$thickness), 0.25)
+expect_true(!("thickness" %in% names(fig$x)))
 expect_equal(fig$x$tubeOffsets, c(0L, nrow(pts)))
 expect_true(is.null(fig$x$linewidth) || fig$x$linewidth > 0)
 
-# scalar radius -> line2 world width (fast path), radii dropped
-fig <- plot3d(sl, radius = 0.5)
+# scalar radius == 0 -> fast flat Line2 world width, radii dropped
+fig <- plot3d(sl, radius = 0)
 expect_equal(unclass(fig$x$mode), "line2")
-expect_equal(unclass(fig$x$linewidth), 0.5)
+expect_true(fig$x$linewidth > 0)
 expect_true(is.null(fig$x$radii))
 
 # per-streamline radius -> tube (variable per streamline)
@@ -151,7 +152,7 @@ expect_equal(cap_all$max_radius, rep(0, 3L))
 bunA <- fiber::bundle(list(sl))
 bunB <- fiber::bundle(list(sl))
 bs_same <- fiber::bundle_set(list(bunA, bunB))
-fig <- plot3d(bs_same, thickness = 0.08)
+fig <- plot3d(bs_same, radius = 0.08)
 expect_equal(unclass(fig$x$mode), "tube")
 radii <- readBin(fig$x$radii, numeric(), size = 4L,
                  n = length(fig$x$radii) / 4L)

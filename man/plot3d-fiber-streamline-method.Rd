@@ -27,36 +27,31 @@ lines are drawn in that fixed colour.
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
-line thickness (via \code{thickness}) and object-level depth-sorted
+line thickness (true 3D tubes) and object-level depth-sorted
 transparency; the plotly backend is an opt-in alternative for interactive
 plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
 three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
-WebGL caps at \code{1} on most platforms; use \code{thickness} for genuinely thick
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
 fibres.}
 
-\item{thickness}{Numeric radius in world units (three.js backend only). When
-\verb{> 0}, streamlines are drawn as true 3D \code{TubeGeometry} tubes of this constant
-radius instead of lines, which gives genuinely thick fibres and object-level
-depth-sorted transparency (each tube is its own mesh sorted back-to-front).
-Defaults to \code{0} (fast line2 path). This is the legacy knob; prefer \code{radius}.}
-
-\item{radius}{Numeric radius in world units (three.js backend only), a more
-general alternative to \code{thickness}. Accepts:
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+Accepts:
 \itemize{
-\item A positive \strong{scalar}: every streamline is drawn at this constant world
-width using fast \code{Line2} (world units). Cheaper than tubes and the
-recommended default when the radius is constant.
+\item \code{NULL} (default): thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
 \item A \strong{per-streamline vector} (length == number of streamlines): one
 constant radius per line, drawn as \code{TubeGeometry}.
 \item A \strong{per-point vector} (length == total number of points): radius varying
 along each streamline, drawn as \code{TubeGeometry} with radial displacement —
 the most general form.
-}
-
-When \code{radius} is supplied it takes precedence over \code{thickness}. Defaults to
-\code{NULL} (no radius; thin lines).}
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 

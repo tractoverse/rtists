@@ -113,33 +113,33 @@ colsf <- rtists:::.df_resolve_colors(dfc, "steelblue", "Viridis")
 expect_equal(colsf, rep_len("steelblue", 2L))
 
 # .threejs_radius: scalar radius <= 0 -> thin line2 (104-106)
-sol <- rtists:::.threejs_radius(linewidth = 1, thickness = 0, radius = -1,
+sol <- rtists:::.threejs_radius(linewidth = 1, radius = -1,
                                 n_pts = c(5, 5))
 expect_equal(sol$mode, "line2")
 expect_null(sol$radii)
 
 # .threejs_radius: per-streamline non-positive radius errors (129-130)
 expect_error(
-  rtists:::.threejs_radius(1, 0, c(0.2, -0.3), c(5, 5)),
+  rtists:::.threejs_radius(1, c(0.2, -0.3), c(5, 5)),
   "positive"
 )
 # and wrong-length radius errors (121-126)
 expect_error(
-  rtists:::.threejs_radius(1, 0, c(0.2, 0.3, 0.4), c(5, 5)),
+  rtists:::.threejs_radius(1, c(0.2, 0.3, 0.4), c(5, 5)),
   "radius"
 )
 
-# .threejs_radius: effectively constant per-point -> fast line2 (132-135)
-con <- rtists:::.threejs_radius(1, 0, c(0.5, 0.5, 0.5, 0.5, 0.5), n_pts = 5)
-expect_equal(con$mode, "line2")
-expect_equal(con$linewidth, 0.5)
-expect_null(con$radii)
+# .threejs_radius: per-point vector is always a tube, even when effectively
+# constant in value (radial displacement path; no line2 fast-path collapse)
+con <- rtists:::.threejs_radius(1, c(0.5, 0.5, 0.5, 0.5, 0.5), n_pts = 5)
+expect_equal(con$mode, "tube")
+expect_length(con$radii, 5L)
 
 # .threejs_widget: empty streamlines list errors (147-148)
 expect_error(rtists:::.threejs_widget(list()), "non-empty")
 
 # tube mode with a fixed colour (non-orientation path, 184-190)
-fig <- plot3d(sl, thickness = 0.2, color = "steelblue")
+fig <- plot3d(sl, radius = 0.2, color = "steelblue")
 expect_equal(unclass(fig$x$mode), "tube")
 expect_true(is.raw(fig$x$colors))
 

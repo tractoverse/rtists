@@ -135,7 +135,7 @@
 #' package. Two htmlwidget backends are available:
 #'
 #' - `"threejs"` (default): a self-contained three.js renderer with real
-#'   world-space line thickness (tubes, via `thickness`), depth-sorted
+#'   world-space line thickness (true 3D tubes), depth-sorted
 #'   transparency, and a fast single-mesh line mode that scales to large
 #'   bundles.
 #' - `"plotly"`: a `scatter3d` line plot where all streamlines share one trace
@@ -165,32 +165,28 @@
 #'   `color` is a numeric metadata key. Defaults to `"Viridis"`.
 #' @param backend Character. Which htmlwidget renderer to use: `"threejs"`
 #'   (default) or `"plotly"`. The three.js backend supports real world-space
-#'   line thickness (via `thickness`) and object-level depth-sorted
+#'   line thickness (true 3D tubes) and object-level depth-sorted
 #'   transparency; the plotly backend is an opt-in alternative for interactive
 #'   plotly-style charts.
 #' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`. On the
 #'   three.js backend this maps to `THREE.LineBasicMaterial.linewidth`, which
-#'   WebGL caps at `1` on most platforms; use `thickness` for genuinely thick
+#'   WebGL caps at `1` on most platforms; use `radius` for genuinely thick
 #'   fibres.
-#' @param thickness Numeric radius in world units (three.js backend only). When
-#'   `> 0`, streamlines are drawn as true 3D `TubeGeometry` tubes of this constant
-#'   radius instead of lines, which gives genuinely thick fibres and object-level
-#'   depth-sorted transparency (each tube is its own mesh sorted back-to-front).
-#'   Defaults to `0` (fast line2 path). This is the legacy knob; prefer `radius`.
-#' @param radius Numeric radius in world units (three.js backend only), a more
-#'   general alternative to `thickness`. Accepts:
+#' @param radius Numeric radius in world units (three.js backend only). This is
+#'   the knob for **true 3D tubes**; there is no separate `thickness` argument.
+#'   Accepts:
 #'
-#'   - A positive **scalar**: every streamline is drawn at this constant world
-#'     width using fast `Line2` (world units). Cheaper than tubes and the
-#'     recommended default when the radius is constant.
+#'   - `NULL` (default): thin lines (fast `Line2` at `linewidth`).
+#'   - A scalar `0`: fast flat `Line2` at `linewidth` (nothing needs a tube).
+#'   - A positive **scalar**: every streamline is drawn as a real 3D
+#'     `TubeGeometry` tube of this constant world radius, with genuine thickness,
+#'     Phong flat shading, and object-level depth-sorted transparency (each tube
+#'     is its own mesh sorted back-to-front).
 #'   - A **per-streamline vector** (length == number of streamlines): one
 #'     constant radius per line, drawn as `TubeGeometry`.
 #'   - A **per-point vector** (length == total number of points): radius varying
 #'     along each streamline, drawn as `TubeGeometry` with radial displacement —
 #'     the most general form.
-#'
-#'   When `radius` is supplied it takes precedence over `thickness`. Defaults to
-#'   `NULL` (no radius; thin lines).
 #' @param bg Background colour (CSS) of the scene (three.js backend only).
 #'   Defaults to `"#111111"`.
 #' @param opacity Numeric in \[0, 1\]. Global line opacity. Defaults to `0.5`.
@@ -199,7 +195,7 @@
 #'   three.js backend (default) ignores them.
 #'
 #' @returns An interactive htmlwidget.
-#' @seealso [fiber::streamline], [fiber::bundle]
+#' @seealso [fiber::streamline], [fiber::bundle], [fiber::bundle_set]
 #' @export
 #'
 #' @examples
@@ -235,8 +231,8 @@
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
 #'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
-#'   # black outline) stay clear of one another at a visible thickness.
+#'   # apart in Y, well beyond its meander, so filled tubes (plus their black
+#'   # outline) stay clear of one another at a visible radius.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
 #'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
@@ -249,15 +245,61 @@
 #'   )
 #' }
 #' bun <- bundle(lapply(seq_len(6), strand))
+#'
+#' # Thin lines coloured by local fibre orientation (default)
 #' plot3d(bun)
+#'
+#' # Colour by a per-streamline scalar key on a continuous palette
 #' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#' plot3d(bun, thickness = 0.08)
+#'
+#' # True 3D tubes via a constant world radius, then a per-streamline radius:
+#' # a vector with one entry per streamline gives each a different tube radius.
+#' plot3d(bun, radius = 0.08)
+#' plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
+#'
+#' # Fade the whole bundle with transparency
+#' plot3d(bun, opacity = 0.3)
+#'
+#' # Prune to a spread-out subset whose fat tubes do not overlap. Pruning
+#' # uses the tube radius; here 6 strands packed 1.2 units apart overlap at
+#' # radius 1, so prune keeps just the 2 that stay clear of one another.
+#' pruned <- prune(bun, radius = 1)
+#' length(pruned@streamlines)
+#'
+#' # Plot the pruned set at the same fat radius so the non-overlap is visible.
+#' plot3d(pruned, radius = 1)
+#'
+#' # --- bundle set example -------------------------------------------------
+#' # A second bundle that crosses the first: its strands meander up and down
+#' # with a growing Y amplitude, sweeping through the first bundle's parallel
+#' # set so the two fibre populations interleave.
+#' strand2 <- function(i) {
+#'   t   <- seq(0, 4 * pi, length.out = 200)
+#'   amp <- 1.0 + 0.35 * i
+#'   pts <- cbind(
+#'     X = seq_len(200) * 0.1,
+#'     Y = amp * sin(t + 1.3 * i),
+#'     Z = 0.25 * cos(t + 0.7 * i) + (i - 3.5) * 0.15
+#'   )
+#'   streamline(
+#'     pts,
+#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
+#'     streamline_data = list(mean_FA = 0.5)
+#'   )
+#' }
+#' bun_cross  <- bundle(lapply(seq_len(6), strand2))
+#' bun_set <- bundle_set(list(bun, bun_cross))
+#'
+#' # Colour the two crossing bundles distinctly, or draw them as fat
+#' # transparent tubes on top of other geometry.
+#' plot3d(bun_set, color_by_bundle = TRUE)
+#' plot3d(bun_set, radius = 0.08, opacity = 0.4)
 plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
   fun = function(x, color = "orientation", palette = "Viridis",
                  backend = c("threejs", "plotly"), linewidth = 2,
-                 thickness = 0, radius = NULL, opacity = 0.5,
+                 radius = NULL, opacity = 0.5,
                  bg = "#111111", ...) {
     S7::S7_dispatch()
   }
@@ -311,7 +353,6 @@ S7::method(plot3d, fiber::streamline) <- function(
     palette   = "Viridis",
     backend   = c("threejs", "plotly"),
     linewidth = 2,
-    thickness = 0,
     radius    = NULL,
     opacity   = 0.5,
     bg        = "#111111",
@@ -324,7 +365,6 @@ S7::method(plot3d, fiber::streamline) <- function(
       color     = color,
       palette   = palette,
       linewidth = linewidth,
-      thickness = thickness,
       radius    = radius,
       opacity   = opacity,
       bg        = bg,
@@ -357,28 +397,10 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' @examples
 #' library(fiber)
 #'
-#' # --- a realistic streamline -----------------------------------------------
-#' # A dense, smoothly meandering 3-D curve advanced in small steps along X,
-#' # thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-#' # polyline.
-#' n  <- 200L
-#' t  <- seq(0, 4 * pi, length.out = n)
-#' pts <- cbind(
-#'   X = seq_len(n) * 0.1,
-#'   Y = 0.5 * sin(t),
-#'   Z = 0.5 * cos(t)
-#' )
-#' sl <- streamline(
-#'   points          = pts,
-#'   point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
-#'   streamline_data = list(mean_FA = 0.5)
-#' )
-#'
+#' # A bundle of six gently meandering strands, each carrying per-point FA and
+#' # a per-streamline `region` label (used below for categorical colouring).
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
-#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
-#'   # black outline) stay clear of one another at a visible thickness.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
 #'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
@@ -387,20 +409,51 @@ S7::method(plot3d, fiber::streamline) <- function(
 #'   streamline(
 #'     pts,
 #'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5)
+#'     streamline_data = list(mean_FA = 0.5,
+#'                            region  = if (i %% 2) "left" else "right")
 #'   )
 #' }
 #' bun <- bundle(lapply(seq_len(6), strand))
+#'
+#' # Default: thin lines coloured by local fibre orientation
 #' plot3d(bun)
+#'
+#' # Colour by a per-streamline scalar key on a continuous palette
 #' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#' plot3d(bun, thickness = 0.08)
+#'
+#' # Colour by a per-streamline character key (categorical)
+#' plot3d(bun, color = "region")
+#'
+#' # A constant world radius: every strand becomes a true 3D tube with a black
+#' # outline (Phong flat shaded), the densest, most brain-like rendering.
+#' plot3d(bun, radius = 0.08)
+#'
+#' # Per-streamline variable radius: one tube radius per line (TubeGeometry).
+#' # A length-n vector picks a different radius for each of the 6 strands.
+#' plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
+#'
+#' # Per-point variable radius: a vector as long as the total point count gives
+#' # a radius that varies along each strand (the most general form).
+#' n_pts <- sum(vapply(bun@streamlines, function(s) nrow(s@points), integer(1)))
+#' plot3d(bun, radius = rep(c(0.04, 0.10), length.out = n_pts))
+#'
+#' # Transparency: fade the bundle to overlay it on other geometry
+#' plot3d(bun, opacity = 0.3)
+#'
+#' # Prune to a spread-out subset whose fat tubes do not overlap. The 6 strands
+#' # packed 1.2 units apart overlap at radius 1, so prune keeps the 2 strands
+#' # that stay clear of one another.
+#' pruned <- prune(bun, radius = 1)
+#' length(pruned@streamlines)
+#'
+#' # Plot the pruned bundle at the same fat radius as the prune test.
+#' plot3d(pruned, radius = 1)
 S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
     palette   = "Viridis",
     backend   = c("threejs", "plotly"),
     linewidth = 2,
-    thickness = 0,
     radius    = NULL,
     opacity   = 0.5,
     bg        = "#111111",
@@ -415,7 +468,6 @@ S7::method(plot3d, fiber::bundle) <- function(
       color     = color,
       palette   = palette,
       linewidth = linewidth,
-      thickness = thickness,
       radius    = radius,
       opacity   = opacity,
       bg        = bg,
@@ -476,7 +528,7 @@ S7::method(plot3d, fiber::bundle) <- function(
 #'   t <- seq(0, 4 * pi, length.out = 200)
 #'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
 #'   # apart in Y, well beyond its meander, so the filled tubes (plus their
-#'   # black outline) stay clear of one another at a visible thickness.
+#'   # black outline) stay clear of one another at a visible radius.
 #'   pts <- cbind(
 #'     X = seq_len(200) * 0.1,
 #'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
@@ -488,20 +540,54 @@ S7::method(plot3d, fiber::bundle) <- function(
 #'     streamline_data = list(mean_FA = 0.5)
 #'   )
 #' }
+#' # A first bundle of six parallel strands.
 #' bun <- bundle(lapply(seq_len(6), strand))
-#' bun_set <- bundle_set(list(bun, bun))
 #'
-#' # Thickness-positive strands: each tube is filled with a colour and outlined
-#' # in black, and the lateral 1.2 spacing keeps the strands clear of one
-#' # another (no overlap) at this thickness.
-#' plot3d(bun_set, thickness = 0.08)
+#' # A second bundle that crosses the first: its strands meander up and down
+#' # (large Y amplitude) so they sweep through the first bundle's parallel set,
+#' # interleaving the region instead of staying in a separate lane.
+#' strand2 <- function(i) {
+#'   t <- seq(0, 4 * pi, length.out = 200)
+#'   # Amplitudes grow with the strand index so each crosses the full height of
+#'   # the first bundle, giving clearly interleaved, crossing streamlines.
+#'   amp <- 1.0 + 0.35 * i
+#'   pts <- cbind(
+#'     X = seq_len(200) * 0.1,
+#'     Y = amp * sin(t + 1.3 * i),
+#'     Z = 0.25 * cos(t + 0.7 * i) + (i - 3.5) * 0.15
+#'   )
+#'   streamline(
+#'     pts,
+#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
+#'     streamline_data = list(mean_FA = 0.5)
+#'   )
+#' }
+#' bun_cross <- bundle(lapply(seq_len(6), strand2))
+#'
+#' # A bundle set of the two crossing bundles.
+#' bun_set <- bundle_set(list(bun, bun_cross))
+#'
+#' # Default: each streamline coloured by its local fibre orientation.
+#' plot3d(bun_set)
+#'
+#' # Colour the two whole bundles distinctly (`color_by_bundle = TRUE`), so the
+#' # crossing sets stand out against one another.
+#' plot3d(bun_set, color_by_bundle = TRUE)
+#'
+#' # Fat tubes with object-level transparency, overlaid on other geometry.
+#' plot3d(bun_set, radius = 0.08, opacity = 0.4)
+#'
+#' # Prune each bundle to a spread-out subset of non-overlapping tubes, then
+#' # plot the pruned set at the same fat radius as the prune test.
+#' pruned_set <- prune(bun_set, radius = 1)
+#' length(pruned_set@bundles)
+#' plot3d(pruned_set, radius = 1)
 S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",
     palette         = "Viridis",
     backend         = c("threejs", "plotly"),
     linewidth       = 2,
-    thickness       = 0,
     radius          = NULL,
     opacity         = 0.5,
     bg              = "#111111",
@@ -520,7 +606,6 @@ S7::method(plot3d, fiber::bundle_set) <- function(
       color           = if (color_by_bundle) "BundleName" else color,
       palette         = palette,
       linewidth       = linewidth,
-      thickness       = thickness,
       radius          = radius,
       opacity         = opacity,
       bg              = bg,
