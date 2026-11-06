@@ -38,9 +38,15 @@ fibres.}
 
 \item{radius}{Numeric radius in world units (three.js backend only). This is
 the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
-Accepts:
+radius is treated as data carried on the object: when \code{radius} is \code{NULL}
+(the default), a \code{radius} key in the streamlines' \verb{@point_data} (per-point)
+or \verb{@streamline_data} (per-streamline) is picked up and rendered as real
+3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+overlap between neighbouring fibres (overlap is the generator's business,
+not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
 \itemize{
-\item \code{NULL} (default): thin lines (fast \code{Line2} at \code{linewidth}).
+\item \code{NULL} (default): draw at the object's own radius data if present,
+otherwise thin lines (fast \code{Line2} at \code{linewidth}).
 \item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
 \item A positive \strong{scalar}: every streamline is drawn as a real 3D
 \code{TubeGeometry} tube of this constant world radius, with genuine thickness,
@@ -72,14 +78,11 @@ Renders a single \link[fiber:streamline]{fiber::streamline} as an interactive 3D
 \examples{
 library(fiber)
 
-# --- a realistic streamline -----------------------------------------------
-# A dense, smoothly meandering 3-D curve advanced in small steps along X,
-# thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-# polyline.
-n  <- 200L
-t  <- seq(0, 4 * pi, length.out = n)
+# A single fibre curving through 3-D space, sampled densely into small
+# steps, thin like a real DTI tract rather than a coarse polyline.
+t   <- seq(0, 4 * pi, length.out = 200)
 pts <- cbind(
-  X = seq_len(n) * 0.1,
+  X = seq_len(200) * 0.1,
   Y = 0.5 * sin(t),
   Z = 0.5 * cos(t)
 )
@@ -89,13 +92,10 @@ sl <- streamline(
   streamline_data = list(mean_FA = 0.5)
 )
 
-# Default: colour by local fibre orientation
+# Colour by local fibre orientation (default), by per-point FA, or by a
+# fixed hue.
 plot3d(sl)
-
-# Colour by per-point FA (continuous colour scale)
 plot3d(sl, color = "FA")
-
-# Fixed colour
 plot3d(sl, color = "steelblue", opacity = 0.8)
 }
 \seealso{

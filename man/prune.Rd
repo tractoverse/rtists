@@ -27,15 +27,20 @@ bundle independently, and empty bundles are dropped from the returned set.
 \description{
 \code{prune()} thins a \link[fiber:bundle]{fiber::bundle} (or a \link[fiber:bundle_set]{fiber::bundle_set}) down to a
 subset of streamlines that can be rendered as fat non-overlapping tubes.
-It is useful when a bundle carries no per-point or per-streamline radius:
-you choose a single tube \code{radius}, and \code{prune()} keeps as many streamlines
-as possible such that:
+Use it when \emph{you} build the tubes yourself, from streamlines that carry no
+per-point or per-streamline radius: you choose a single tube \code{radius}, and
+\code{prune()} keeps as many streamlines as possible such that:
 \itemize{
 \item any two kept tubes (radius plus \code{overlap_margin} clearance) stay clear of
 each other, and
 \item the kept tubes still cover the whole convex hull of the original bundle
 (every point lies within \code{radius} of a kept tube).
 }
+
+\code{\link[=plot3d]{plot3d()}} never shrinks tubes or drops streamlines on its own; it renders
+whatever radius the object carries. So \code{prune()} is the tool to reach for
+when you fabricate fat tubes from line-only data and want to make sure the
+overlap was not introduced by you.
 
 The selection is greedy and deterministic, preferring streamlines that sit
 farthest from the already-kept tubes so the retained set spreads across the

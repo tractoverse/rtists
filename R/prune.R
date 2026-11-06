@@ -1,17 +1,26 @@
 # ---- prune(): keep a non-overlapping, hull-covering subset ------------------
 #
-# A [fiber::bundle] (or [fiber::bundle_set]) may hold streamlines that carry
-# no per-point or per-streamline radius at all. `plot3d()` then draws thin
-# lines, and the user has no way to fatten them into tubes without them
-# overlapping. `prune()` addresses that: given a single tube `radius`, it
-# returns a bundle that keeps as many streamlines as possible subject to two
-# constraints:
+# `plot3d()` renders whatever radius the object carries: if the streamlines
+# hold per-point or per-streamline radius data it draws real 3D tubes at those
+# radii, and if they do not it draws thin lines (or tubes at the `radius`
+# argument you pass). It never shrinks tubes or hides streamlines on its own:
+# if two tubes overlap, that is the tractographer's or the generator's
+# business, not rtists's.
+#
+# `prune()` is the opt-in counterpart to that hands-off philosophy. It is for
+# the case where *you*, the user, fabricate fat tubes from streamlines that
+# were originally generated as thin lines: with no radius data to lean on you
+# pick a single tube `radius`, and `prune()` returns a bundle that keeps as
+# many streamlines as possible subject to two constraints:
 #
 #   1. Non-overlap: any two kept tubes (radius + clearance margin) stay clear
 #      of each other.
 #   2. Coverage: the kept tubes still cover the whole convex hull of the
-#      original bundle, i.e. every point of every streamlines sits within
+#      original bundle, i.e. every point of every streamline sits within
 #      `radius` of some kept tube.
+#
+# The point of the utility is precisely to make sure the overlap was not
+# introduced by you when you fattened line-only data into tubes.
 #
 # Algorithm (greedy, deterministic): repeatedly take the kept streamlines in
 # "farthest from the already-kept tubes" order, which spreads the selection
@@ -81,14 +90,19 @@
 #' @description
 #' `prune()` thins a [fiber::bundle] (or a [fiber::bundle_set]) down to a
 #' subset of streamlines that can be rendered as fat non-overlapping tubes.
-#' It is useful when a bundle carries no per-point or per-streamline radius:
-#' you choose a single tube `radius`, and `prune()` keeps as many streamlines
-#' as possible such that:
+#' Use it when *you* build the tubes yourself, from streamlines that carry no
+#' per-point or per-streamline radius: you choose a single tube `radius`, and
+#' `prune()` keeps as many streamlines as possible such that:
 #'
 #' - any two kept tubes (radius plus `overlap_margin` clearance) stay clear of
 #'   each other, and
 #' - the kept tubes still cover the whole convex hull of the original bundle
 #'   (every point lies within `radius` of a kept tube).
+#'
+#' [plot3d()] never shrinks tubes or drops streamlines on its own; it renders
+#' whatever radius the object carries. So `prune()` is the tool to reach for
+#' when you fabricate fat tubes from line-only data and want to make sure the
+#' overlap was not introduced by you.
 #'
 #' The selection is greedy and deterministic, preferring streamlines that sit
 #' farthest from the already-kept tubes so the retained set spreads across the
@@ -134,7 +148,9 @@ prune <- S7::new_generic(
 #' @examples
 #' library(fiber)
 #'
-#' # A bundle of six meandering strands spaced 1.2 units apart laterally.
+#' # Six line-only streamlines in a bundle (no radius data on them). Rendered
+#' # as thin lines by default; if you want to draw them as fat tubes you would
+#' # pick a radius yourself. At radius 1 the six packed strands overlap.
 #' sl  <- streamline(cbind(X = seq_len(200) * 0.1,
 #'                         Y = 0.25 * sin(seq_len(200) / 200 * 4 * pi),
 #'                         Z = 0.25 * cos(seq_len(200) / 200 * 4 * pi)))
@@ -148,8 +164,8 @@ prune <- S7::new_generic(
 #' }
 #' bun <- bundle(lapply(seq_len(6), strand))
 #'
-#' # Thick tubes (radius 1) only fit a spread-out subset that still covers the
-#' # bundle: prune keeps the extreme strands.
+#' # Because the tubes are fabricated by you from line-only data, prune keeps
+#' # a spread-out subset whose fat tubes do not overlap: the extreme strands.
 #' pruned <- prune(bun, radius = 1)
 #' length(pruned@streamlines)
 S7::method(prune, fiber::bundle) <- function(

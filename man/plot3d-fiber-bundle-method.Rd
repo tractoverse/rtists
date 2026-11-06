@@ -38,9 +38,15 @@ fibres.}
 
 \item{radius}{Numeric radius in world units (three.js backend only). This is
 the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
-Accepts:
+radius is treated as data carried on the object: when \code{radius} is \code{NULL}
+(the default), a \code{radius} key in the streamlines' \verb{@point_data} (per-point)
+or \verb{@streamline_data} (per-streamline) is picked up and rendered as real
+3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+overlap between neighbouring fibres (overlap is the generator's business,
+not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
 \itemize{
-\item \code{NULL} (default): thin lines (fast \code{Line2} at \code{linewidth}).
+\item \code{NULL} (default): draw at the object's own radius data if present,
+otherwise thin lines (fast \code{Line2} at \code{linewidth}).
 \item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
 \item A positive \strong{scalar}: every streamline is drawn as a real 3D
 \code{TubeGeometry} tube of this constant world radius, with genuine thickness,
@@ -72,56 +78,54 @@ line plot. See \code{\link[=plot3d]{plot3d()}} for the full parameter documentat
 \examples{
 library(fiber)
 
-# A bundle of six gently meandering strands, each carrying per-point FA and
-# a per-streamline `region` label (used below for categorical colouring).
+# A small pyramidal tract (corticospinal, CST): eight streamlines fanning
+# upward from deep white matter toward the cortex, each carrying its own
+# per-streamline `radius`, `mean_FA` and hemisphere `region`.
+cst_sl <- function(i) {
+  t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+  fan <- (t + 1) / 2                        # 0 at depth, 1 at cortex
+  streamline(
+    cbind(
+      X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+      Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+      Z = 4 * t
+    ),
+    streamline_data = list(
+      radius = 0.05 + 0.05 * (i / 8),
+      mean_FA = 0.4 + 0.08 * i,
+      region  = if (i \%\% 2) "left" else "right"
+    )
+  )
+}
+cst <- bundle(lapply(seq_len(8), cst_sl))
+
+# Tubes at the radii carried in the data, or overridden by one explicit radius.
+plot3d(cst)
+plot3d(cst, radius = 0.08)
+
+# Colour by a per-streamline scalar key (continuous palette) or by a
+# per-streamline character key (categorical).
+plot3d(cst, color = "mean_FA", palette = "RdYlBu")
+plot3d(cst, color = "region")
+
+# Transparency: fade the bundle to overlay it on other geometry.
+plot3d(cst, opacity = 0.3)
+
+# Line-only streamlines (no radius data) draw as thin lines. If you decide
+# to fatten them into tubes yourself, prune() keeps a spread-out subset
+# whose tubes do not overlap, so the overlap is not introduced by you.
 strand <- function(i) {
   t <- seq(0, 4 * pi, length.out = 200)
-  pts <- cbind(
+  streamline(cbind(
     X = seq_len(200) * 0.1,
     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
-  )
-  streamline(
-    pts,
-    point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-    streamline_data = list(mean_FA = 0.5,
-                           region  = if (i \%\% 2) "left" else "right")
-  )
+  ))
 }
-bun <- bundle(lapply(seq_len(6), strand))
-
-# Default: thin lines coloured by local fibre orientation
-plot3d(bun)
-
-# Colour by a per-streamline scalar key on a continuous palette
-plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-
-# Colour by a per-streamline character key (categorical)
-plot3d(bun, color = "region")
-
-# A constant world radius: every strand becomes a true 3D tube with a black
-# outline (Phong flat shaded), the densest, most brain-like rendering.
-plot3d(bun, radius = 0.08)
-
-# Per-streamline variable radius: one tube radius per line (TubeGeometry).
-# A length-n vector picks a different radius for each of the 6 strands.
-plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
-
-# Per-point variable radius: a vector as long as the total point count gives
-# a radius that varies along each strand (the most general form).
-n_pts <- sum(vapply(bun@streamlines, function(s) nrow(s@points), integer(1)))
-plot3d(bun, radius = rep(c(0.04, 0.10), length.out = n_pts))
-
-# Transparency: fade the bundle to overlay it on other geometry
-plot3d(bun, opacity = 0.3)
-
-# Prune to a spread-out subset whose fat tubes do not overlap. The 6 strands
-# packed 1.2 units apart overlap at radius 1, so prune keeps the 2 strands
-# that stay clear of one another.
-pruned <- prune(bun, radius = 1)
+lines <- bundle(lapply(seq_len(6), strand))
+plot3d(lines)
+pruned <- prune(lines, radius = 1)
 length(pruned@streamlines)
-
-# Plot the pruned bundle at the same fat radius as the prune test.
 plot3d(pruned, radius = 1)
 }
 \seealso{

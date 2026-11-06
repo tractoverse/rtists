@@ -174,9 +174,15 @@
 #'   fibres.
 #' @param radius Numeric radius in world units (three.js backend only). This is
 #'   the knob for **true 3D tubes**; there is no separate `thickness` argument.
-#'   Accepts:
+#'   radius is treated as data carried on the object: when `radius` is `NULL`
+#'   (the default), a `radius` key in the streamlines' `@point_data` (per-point)
+#'   or `@streamline_data` (per-streamline) is picked up and rendered as real
+#'   3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+#'   overlap between neighbouring fibres (overlap is the generator's business,
+#'   not rtists's). An explicit `radius` argument overrides any data. Accepts:
 #'
-#'   - `NULL` (default): thin lines (fast `Line2` at `linewidth`).
+#'   - `NULL` (default): draw at the object's own radius data if present,
+#'     otherwise thin lines (fast `Line2` at `linewidth`).
 #'   - A scalar `0`: fast flat `Line2` at `linewidth` (nothing needs a tube).
 #'   - A positive **scalar**: every streamline is drawn as a real 3D
 #'     `TubeGeometry` tube of this constant world radius, with genuine thickness,
@@ -201,14 +207,12 @@
 #' @examples
 #' library(fiber)
 #'
-#' # --- a realistic streamline -----------------------------------------------
-#' # A dense, smoothly meandering 3-D curve advanced in small steps along X,
-#' # thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-#' # polyline.
-#' n  <- 200L
-#' t  <- seq(0, 4 * pi, length.out = n)
+#' # --- a single realistic streamline ---------------------------------------
+#' # A smooth fibre curving through 3-D space, sampled densely into small
+#' # steps, thin like a real DTI tract rather than a coarse polyline.
+#' t   <- seq(0, 4 * pi, length.out = 200)
 #' pts <- cbind(
-#'   X = seq_len(n) * 0.1,
+#'   X = seq_len(200) * 0.1,
 #'   Y = 0.5 * sin(t),
 #'   Z = 0.5 * cos(t)
 #' )
@@ -218,82 +222,64 @@
 #'   streamline_data = list(mean_FA = 0.5)
 #' )
 #'
-#' # Default: colour by local fibre orientation
+#' # Colour by local fibre orientation (default), by per-point FA, or by a
+#' # fixed hue.
 #' plot3d(sl)
-#'
-#' # Colour by per-point FA (continuous colour scale)
 #' plot3d(sl, color = "FA")
-#'
-#' # Fixed colour
 #' plot3d(sl, color = "steelblue", opacity = 0.8)
 #'
-#' # --- bundle example -------------------------------------------------------
-#' strand <- function(i) {
-#'   t <- seq(0, 4 * pi, length.out = 200)
-#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-#'   # apart in Y, well beyond its meander, so filled tubes (plus their black
-#'   # outline) stay clear of one another at a visible radius.
-#'   pts <- cbind(
-#'     X = seq_len(200) * 0.1,
-#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
-#'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
-#'   )
+#' # --- a small bundle carrying its own radius ------------------------------
+#' # Eight streamlines of a pyramidal tract (corticospinal, CST) fanning
+#' # upward toward the cortex. Each one carries a per-streamline `radius` in
+#' # its data, so plot3d draws real 3D tubes straight from the object, with
+#' # no radius argument needed.
+#' cst_sl <- function(i) {
+#'   t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+#'   fan <- (t + 1) / 2                        # 0 at depth, 1 at cortex
 #'   streamline(
-#'     pts,
-#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5)
+#'     cbind(
+#'       X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+#'       Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+#'       Z = 4 * t
+#'     ),
+#'     streamline_data = list(radius = 0.05 + 0.05 * (i / 8))
 #'   )
 #' }
-#' bun <- bundle(lapply(seq_len(6), strand))
+#' cst <- bundle(lapply(seq_len(8), cst_sl))
 #'
-#' # Thin lines coloured by local fibre orientation (default)
-#' plot3d(bun)
+#' # Tubes at the radii carried in the data, or overridden by one explicit radius.
+#' plot3d(cst)
+#' plot3d(cst, radius = 0.08)
 #'
-#' # Colour by a per-streamline scalar key on a continuous palette
-#' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#'
-#' # True 3D tubes via a constant world radius, then a per-streamline radius:
-#' # a vector with one entry per streamline gives each a different tube radius.
-#' plot3d(bun, radius = 0.08)
-#' plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
-#'
-#' # Fade the whole bundle with transparency
-#' plot3d(bun, opacity = 0.3)
-#'
-#' # Prune to a spread-out subset whose fat tubes do not overlap. Pruning
-#' # uses the tube radius; here 6 strands packed 1.2 units apart overlap at
-#' # radius 1, so prune keeps just the 2 that stay clear of one another.
-#' pruned <- prune(bun, radius = 1)
-#' length(pruned@streamlines)
-#'
-#' # Plot the pruned set at the same fat radius so the non-overlap is visible.
-#' plot3d(pruned, radius = 1)
-#'
-#' # --- bundle set example -------------------------------------------------
-#' # A second bundle that crosses the first: its strands meander up and down
-#' # with a growing Y amplitude, sweeping through the first bundle's parallel
-#' # set so the two fibre populations interleave.
-#' strand2 <- function(i) {
-#'   t   <- seq(0, 4 * pi, length.out = 200)
-#'   amp <- 1.0 + 0.35 * i
-#'   pts <- cbind(
-#'     X = seq_len(200) * 0.1,
-#'     Y = amp * sin(t + 1.3 * i),
-#'     Z = 0.25 * cos(t + 0.7 * i) + (i - 3.5) * 0.15
-#'   )
-#'   streamline(
-#'     pts,
-#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5)
-#'   )
+#' # --- a 3-bundle crossing at the centrum semiovale -------------------------
+#' # The pyramidal (CST, vertical), the superior longitudinal fasciculus
+#' # (SLF, anterior-posterior) and the corpus callosum (CC, left-right) all
+#' # run through the centrum semiovale. Drawn at the origin they cross there,
+#' # giving the classic DTI orientation colours: CST blue (superior-inferior),
+#' # SLF green (anterior-posterior), CC red (left-right).
+#' cc_sl <- function(i) {
+#'   t <- seq(-1, 1, length.out = 120)
+#'   streamline(cbind(
+#'     X = 6 * t,
+#'     Y = 0.35 * t * t + (i - 3.5) * 0.18 * (1 + 0.4 * abs(t)),
+#'     Z = 0.3 * sin(pi * t) + (i - 3.5) * 0.12
+#'   ))
 #' }
-#' bun_cross  <- bundle(lapply(seq_len(6), strand2))
-#' bun_set <- bundle_set(list(bun, bun_cross))
+#' slf_sl <- function(i) {
+#'   t <- seq(-1, 1, length.out = 120)
+#'   streamline(cbind(
+#'     X = 0.35 * sin(pi * t) + (i - 3.5) * 0.15,
+#'     Y = 6 * t,
+#'     Z = 0.5 * sin(0.8 * t) + (i - 3.5) * 0.14
+#'   ))
+#' }
+#' cc  <- bundle(lapply(seq_len(8), cc_sl))
+#' slf <- bundle(lapply(seq_len(8), slf_sl))
+#' cs  <- bundle_set(list(CST = cst, CC = cc, SLF = slf))
 #'
-#' # Colour the two crossing bundles distinctly, or draw them as fat
-#' # transparent tubes on top of other geometry.
-#' plot3d(bun_set, color_by_bundle = TRUE)
-#' plot3d(bun_set, radius = 0.08, opacity = 0.4)
+#' plot3d(cs)
+#' plot3d(cs, color_by_bundle = TRUE)
+
 plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
@@ -322,14 +308,11 @@ plot3d <- S7::new_generic(
 #' @examples
 #' library(fiber)
 #'
-#' # --- a realistic streamline -----------------------------------------------
-#' # A dense, smoothly meandering 3-D curve advanced in small steps along X,
-#' # thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-#' # polyline.
-#' n  <- 200L
-#' t  <- seq(0, 4 * pi, length.out = n)
+#' # A single fibre curving through 3-D space, sampled densely into small
+#' # steps, thin like a real DTI tract rather than a coarse polyline.
+#' t   <- seq(0, 4 * pi, length.out = 200)
 #' pts <- cbind(
-#'   X = seq_len(n) * 0.1,
+#'   X = seq_len(200) * 0.1,
 #'   Y = 0.5 * sin(t),
 #'   Z = 0.5 * cos(t)
 #' )
@@ -339,14 +322,12 @@ plot3d <- S7::new_generic(
 #'   streamline_data = list(mean_FA = 0.5)
 #' )
 #'
-#' # Default: colour by local fibre orientation
+#' # Colour by local fibre orientation (default), by per-point FA, or by a
+#' # fixed hue.
 #' plot3d(sl)
-#'
-#' # Colour by per-point FA (continuous colour scale)
 #' plot3d(sl, color = "FA")
-#'
-#' # Fixed colour
 #' plot3d(sl, color = "steelblue", opacity = 0.8)
+
 S7::method(plot3d, fiber::streamline) <- function(
     x,
     color     = "orientation",
@@ -397,57 +378,56 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' @examples
 #' library(fiber)
 #'
-#' # A bundle of six gently meandering strands, each carrying per-point FA and
-#' # a per-streamline `region` label (used below for categorical colouring).
+#' # A small pyramidal tract (corticospinal, CST): eight streamlines fanning
+#' # upward from deep white matter toward the cortex, each carrying its own
+#' # per-streamline `radius`, `mean_FA` and hemisphere `region`.
+#' cst_sl <- function(i) {
+#'   t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+#'   fan <- (t + 1) / 2                        # 0 at depth, 1 at cortex
+#'   streamline(
+#'     cbind(
+#'       X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+#'       Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+#'       Z = 4 * t
+#'     ),
+#'     streamline_data = list(
+#'       radius = 0.05 + 0.05 * (i / 8),
+#'       mean_FA = 0.4 + 0.08 * i,
+#'       region  = if (i %% 2) "left" else "right"
+#'     )
+#'   )
+#' }
+#' cst <- bundle(lapply(seq_len(8), cst_sl))
+#'
+#' # Tubes at the radii carried in the data, or overridden by one explicit radius.
+#' plot3d(cst)
+#' plot3d(cst, radius = 0.08)
+#'
+#' # Colour by a per-streamline scalar key (continuous palette) or by a
+#' # per-streamline character key (categorical).
+#' plot3d(cst, color = "mean_FA", palette = "RdYlBu")
+#' plot3d(cst, color = "region")
+#'
+#' # Transparency: fade the bundle to overlay it on other geometry.
+#' plot3d(cst, opacity = 0.3)
+#'
+#' # Line-only streamlines (no radius data) draw as thin lines. If you decide
+#' # to fatten them into tubes yourself, prune() keeps a spread-out subset
+#' # whose tubes do not overlap, so the overlap is not introduced by you.
 #' strand <- function(i) {
 #'   t <- seq(0, 4 * pi, length.out = 200)
-#'   pts <- cbind(
+#'   streamline(cbind(
 #'     X = seq_len(200) * 0.1,
 #'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
 #'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
-#'   )
-#'   streamline(
-#'     pts,
-#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5,
-#'                            region  = if (i %% 2) "left" else "right")
-#'   )
+#'   ))
 #' }
-#' bun <- bundle(lapply(seq_len(6), strand))
-#'
-#' # Default: thin lines coloured by local fibre orientation
-#' plot3d(bun)
-#'
-#' # Colour by a per-streamline scalar key on a continuous palette
-#' plot3d(bun, color = "mean_FA", palette = "RdYlBu")
-#'
-#' # Colour by a per-streamline character key (categorical)
-#' plot3d(bun, color = "region")
-#'
-#' # A constant world radius: every strand becomes a true 3D tube with a black
-#' # outline (Phong flat shaded), the densest, most brain-like rendering.
-#' plot3d(bun, radius = 0.08)
-#'
-#' # Per-streamline variable radius: one tube radius per line (TubeGeometry).
-#' # A length-n vector picks a different radius for each of the 6 strands.
-#' plot3d(bun, radius = c(0.02, 0.06, 0.10, 0.02, 0.06, 0.10))
-#'
-#' # Per-point variable radius: a vector as long as the total point count gives
-#' # a radius that varies along each strand (the most general form).
-#' n_pts <- sum(vapply(bun@streamlines, function(s) nrow(s@points), integer(1)))
-#' plot3d(bun, radius = rep(c(0.04, 0.10), length.out = n_pts))
-#'
-#' # Transparency: fade the bundle to overlay it on other geometry
-#' plot3d(bun, opacity = 0.3)
-#'
-#' # Prune to a spread-out subset whose fat tubes do not overlap. The 6 strands
-#' # packed 1.2 units apart overlap at radius 1, so prune keeps the 2 strands
-#' # that stay clear of one another.
-#' pruned <- prune(bun, radius = 1)
+#' lines <- bundle(lapply(seq_len(6), strand))
+#' plot3d(lines)
+#' pruned <- prune(lines, radius = 1)
 #' length(pruned@streamlines)
-#'
-#' # Plot the pruned bundle at the same fat radius as the prune test.
 #' plot3d(pruned, radius = 1)
+
 S7::method(plot3d, fiber::bundle) <- function(
     x,
     color     = "orientation",
@@ -508,80 +488,51 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' @examples
 #' library(fiber)
 #'
-#' # --- a realistic streamline -----------------------------------------------
-#' # A dense, smoothly meandering 3-D curve advanced in small steps along X,
-#' # thin and elongated like a real DTI tract (spaghetti), not a coarse fat
-#' # polyline.
-#' n  <- 200L
-#' t  <- seq(0, 4 * pi, length.out = n)
-#' pts <- cbind(
-#'   X = seq_len(n) * 0.1,
-#'   Y = 0.5 * sin(t),
-#'   Z = 0.5 * cos(t)
-#' )
-#' sl <- streamline(
-#'   points          = pts,
-#'   point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
-#'   streamline_data = list(mean_FA = 0.5)
-#' )
-#' strand <- function(i) {
-#'   t <- seq(0, 4 * pi, length.out = 200)
-#'   # Each strand meanders gently (amplitude 0.25) but is spaced 1.2 units
-#'   # apart in Y, well beyond its meander, so the filled tubes (plus their
-#'   # black outline) stay clear of one another at a visible radius.
-#'   pts <- cbind(
-#'     X = seq_len(200) * 0.1,
-#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
-#'     Z = 0.25 * cos(t) + (i - 3.5) * 0.15
-#'   )
-#'   streamline(
-#'     pts,
-#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5)
-#'   )
+#' # Three white-matter tracts that all run through the centrum semiovale:
+#' # the pyramidal/corticospinal tract (CST, vertical/fanning), the superior
+#' # longitudinal fasciculus (SLF, anterior-posterior) and the corpus callosum
+#' # (CC, left-right). Drawn to pass through the origin they cross there,
+#' # producing the classic DTI orientation colours: CST blue (superior-
+#' # inferior), SLF green (anterior-posterior), CC red (left-right).
+#' cst_sl <- function(i) {
+#'   t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+#'   fan <- (t + 1) / 2
+#'   streamline(cbind(
+#'     X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+#'     Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+#'     Z = 4 * t
+#'   ))
 #' }
-#' # A first bundle of six parallel strands.
-#' bun <- bundle(lapply(seq_len(6), strand))
-#'
-#' # A second bundle that crosses the first: its strands meander up and down
-#' # (large Y amplitude) so they sweep through the first bundle's parallel set,
-#' # interleaving the region instead of staying in a separate lane.
-#' strand2 <- function(i) {
-#'   t <- seq(0, 4 * pi, length.out = 200)
-#'   # Amplitudes grow with the strand index so each crosses the full height of
-#'   # the first bundle, giving clearly interleaved, crossing streamlines.
-#'   amp <- 1.0 + 0.35 * i
-#'   pts <- cbind(
-#'     X = seq_len(200) * 0.1,
-#'     Y = amp * sin(t + 1.3 * i),
-#'     Z = 0.25 * cos(t + 0.7 * i) + (i - 3.5) * 0.15
-#'   )
-#'   streamline(
-#'     pts,
-#'     point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
-#'     streamline_data = list(mean_FA = 0.5)
-#'   )
+#' cc_sl <- function(i) {
+#'   t <- seq(-1, 1, length.out = 120)
+#'   streamline(cbind(
+#'     X = 6 * t,
+#'     Y = 0.35 * t * t + (i - 3.5) * 0.18 * (1 + 0.4 * abs(t)),
+#'     Z = 0.3 * sin(pi * t) + (i - 3.5) * 0.12
+#'   ))
 #' }
-#' bun_cross <- bundle(lapply(seq_len(6), strand2))
+#' slf_sl <- function(i) {
+#'   t <- seq(-1, 1, length.out = 120)
+#'   streamline(cbind(
+#'     X = 0.35 * sin(pi * t) + (i - 3.5) * 0.15,
+#'     Y = 6 * t,
+#'     Z = 0.5 * sin(0.8 * t) + (i - 3.5) * 0.14
+#'   ))
+#' }
+#' cst <- bundle(lapply(seq_len(8), cst_sl))
+#' cc  <- bundle(lapply(seq_len(8), cc_sl))
+#' slf <- bundle(lapply(seq_len(8), slf_sl))
+#' cs  <- bundle_set(list(CST = cst, CC = cc, SLF = slf))
 #'
-#' # A bundle set of the two crossing bundles.
-#' bun_set <- bundle_set(list(bun, bun_cross))
+#' # Orientation-coloured crossing bundles (the triple-colour crossing).
+#' plot3d(cs)
 #'
-#' # Default: each streamline coloured by its local fibre orientation.
-#' plot3d(bun_set)
+#' # Colour each whole bundle distinctly to separate the three tracts.
+#' plot3d(cs, color_by_bundle = TRUE)
 #'
-#' # Colour the two whole bundles distinctly (`color_by_bundle = TRUE`), so the
-#' # crossing sets stand out against one another.
-#' plot3d(bun_set, color_by_bundle = TRUE)
-#'
-#' # Fat tubes with object-level transparency, overlaid on other geometry.
-#' plot3d(bun_set, radius = 0.08, opacity = 0.4)
-#'
-#' # Prune each bundle to a spread-out subset of non-overlapping tubes, then
-#' # plot the pruned set at the same fat radius as the prune test.
-#' pruned_set <- prune(bun_set, radius = 1)
-#' length(pruned_set@bundles)
-#' plot3d(pruned_set, radius = 1)
+#' # Fat transparent tubes overlaid on other geometry.
+#' plot3d(cs, radius = 0.08, opacity = 0.4)
+
 S7::method(plot3d, fiber::bundle_set) <- function(
     x,
     color           = "orientation",

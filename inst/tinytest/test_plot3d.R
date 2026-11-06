@@ -120,41 +120,86 @@ expect_equal(
 # invalid radius forms are rejected
 expect_error(plot3d(sl, radius = c(0.1, 0.2)), "radius")
 
-# ---- per-bundle no-overlap cap (3js) ----------------------------------------
-# A bundle_set flattens all streamlines, but the no-overlap cap is computed
-# WITHIN each bundle ("groups" = bundle id per streamline), so distinct bundles
-# that legitimately share space may overlap without being shaved down.
-# bundle 1: a single streamline (no intra-bundle collision -> cap is Inf)
-# bundle 2: two coincident streamlines (min separation 0 -> cap is 0)
-bs_mixed <- fiber::bundle_set(list(
-  fiber::bundle(list(sl)),
-  fiber::bundle(list(sl, sl))
+# ---- radius carried on the streamline objects (3js) -------------------------
+# rtists relies on a `radius` key the generator stored in @point_data (per
+# point) or @streamline_data (per streamline) whenever the caller does not pass
+# an explicit `radius`. See the @radius doc on plot3d().
+
+# per-streamline radius in @streamline_data -> one tube radius per fibre.
+bun_r <- fiber::bundle(list(
+  fiber::streamline(pts, streamline_data = list(radius = 0.2)),
+  fiber::streamline(pts + 1, streamline_data = list(radius = 0.8))
 ))
-sls_mixed <- rtists:::.df_to_streamlines(rtists:::.bundle_set_to_df(bs_mixed))
-expect_length(sls_mixed, 3L)
-groups <- c(1L, 2L, 2L)
-cap <- rtists:::.threejs_overlap_cap(sls_mixed, border = 0.008, groups = groups)
-expect_equal(cap$max_radius[1], Inf)              # bundle 1: single streamline
-expect_true(all(cap$max_radius[2:3] == 0))        # bundle 2: coincident -> 0
+fig <- plot3d(bun_r)
+expect_equal(unclass(fig$x$mode), "tube")
+radii <- readBin(fig$x$radii, numeric(), size = 4L,
+                 n = length(fig$x$radii) / 4L)
+expect_equal(radii, rep(c(0.2, 0.8), each = nrow(pts)), tolerance = 1e-6)
 
-# .threejs_group_sep mirrors the single-group cap: Inf for one id, finite later
-expect_equal(rtists:::.threejs_group_sep(sls_mixed, c(1L)), Inf)
-expect_true(rtists:::.threejs_group_sep(sls_mixed, c(2L, 3L)) < Inf)
+# per-point radius in @point_data -> radius varying along the fibre.
+sl_pp <- fiber::streamline(pts, point_data = list(radius = seq(0.1, 0.5, 0.1)))
+fig <- plot3d(sl_pp)
+expect_equal(unclass(fig$x$mode), "tube")
+expect_equal(readBin(fig$x$radii, numeric(), size = 4L, n = nrow(pts)),
+             seq(0.1, 0.5, 0.1), tolerance = 1e-6)
 
-# Without groups (single bundle), all streamlines share one cap.
-cap_all <- rtists:::.threejs_overlap_cap(sls_mixed, border = 0.008)
-expect_equal(cap_all$max_radius, rep(0, 3L))
+# an explicit `radius` argument overrides any radius stored on the object.
+fig <- plot3d(bun_r, radius = 0.05)
+expect_equal(unclass(fig$x$mode), "tube")
+radii <- readBin(fig$x$radii, numeric(), size = 4L,
+                 n = length(fig$x$radii) / 4L)
+expect_equal(unique(round(radii, 5)), 0.05)
 
-# Integration: two coincident SINGLE-streamline bundles. Within each bundle
-# there is nothing to collide (group size 1), so the tubes keep their requested
-# thickness even though the two bundles overlap each other; only intra-bundle
-# spacing would cap them. Decode the per-point float32 radii.
-bunA <- fiber::bundle(list(sl))
-bunB <- fiber::bundle(list(sl))
-bs_same <- fiber::bundle_set(list(bunA, bunB))
+# no radius anywhere and no argument -> fast thin Line2.
+fig <- plot3d(sl)
+expect_equal(unclass(fig$x$mode), "line2")
+expect_true(is.null(fig$x$radii))
+
+# rtists does NOT police overlap at render time: fat tubes on coincident
+# streamlines keep the requested radius (overlap is the generator's concern;
+# use prune() only when you fabricate tubes yourself from line-only data).
+bs_same <- fiber::bundle_set(list(
+  fiber::bundle(list(sl)),
+  fiber::bundle(list(sl))
+))
 fig <- plot3d(bs_same, radius = 0.08)
 expect_equal(unclass(fig$x$mode), "tube")
 radii <- readBin(fig$x$radii, numeric(), size = 4L,
                  n = length(fig$x$radii) / 4L)
-expect_true(max(radii) > 0)                        # no intra-bundle collision
-expect_true(all(abs(radii - 0.08) < 1e-5))         # radii left at request
+expect_true(all(abs(radii - 0.08) < 1e-5))   # requested radius left untouched
+
+# ---- mixed-metadata bundle sets (CST/SLF/CC style) ---------------------------
+
+# A bundle_set whose bundles carry different metadata columns must still fold
+# into one dataframe: the CST bundle carries a `radius` key while the CC and
+# SLF bundles carry none. `.bundle_set_to_df()` aligns the parts to the union
+# of their columns (missing -> NA) instead of failing on an rbind mismatch.
+sl_no_meta <- fiber::streamline(
+  points = matrix(
+    c(1, 0, 0, 2, 0, 0, 3, 0, 0), ncol = 3, byrow = TRUE,
+    dimnames = list(NULL, c("X", "Y", "Z"))
+  )
+)
+sl_radius <- fiber::streamline(
+  points = matrix(
+    c(0, 1, 0, 0, 2, 0), ncol = 3, byrow = TRUE,
+    dimnames = list(NULL, c("X", "Y", "Z"))
+  ),
+  streamline_data = list(radius = 0.1)
+)
+bun_rad <- fiber::bundle(list(sl_radius, sl_radius))
+bun_plain <- fiber::bundle(list(sl_no_meta))
+bs_mixed <- fiber::bundle_set(list(CST = bun_rad, CC = bun_plain))
+
+mdf <- rtists:::.bundle_set_to_df(bs_mixed)
+expect_inherits(mdf, "data.frame")
+expect_true("radius" %in% names(mdf))            # union carries the radius column
+# only the CST streamlines actually hold a radius; the CC ones are NA
+expect_equal(sort(unique(mdf$BundleName)), c("CC", "CST"))
+expect_true(all(is.na(mdf$radius[mdf$BundleName == "CC"])))
+expect_true(all(mdf$radius[mdf$BundleName == "CST"] == 0.1))
+
+# plot3d on the mixed set draws a widget without erroring.
+fig <- suppressMessages(plot3d(bs_mixed))
+expect_inherits(fig, "rtists")
+cat("mixed-metadata bundle_set tests OK\n")

@@ -2,6 +2,20 @@
 # dispatch does NOT find methods registered under the bare name.  These are
 # therefore plain internal helpers called directly by plot3d().
 
+# rbind a list of data.frames, aligning every frame to the union of all
+# their columns so that parts carrying different metadata (e.g. one bundle
+# with a `radius` key and another with none) still combine. Absent columns
+# are filled with NA.
+.rbind_union <- function(parts) {
+  cols <- unique(unlist(lapply(parts, names), use.names = FALSE))
+  filled <- lapply(parts, function(p) {
+    miss <- setdiff(cols, names(p))
+    for (nm in miss) p[[nm]] <- NA_real_
+    p[cols]
+  })
+  do.call(rbind, filled)
+}
+
 .streamline_to_df <- function(x, streamline_id = 1L) {
   n  <- nrow(x@points)
   df <- data.frame(
@@ -34,7 +48,7 @@
     }
     parts[[i]] <- sl_df
   }
-  do.call(rbind, parts)
+  .rbind_union(parts)
 }
 
 .bundle_set_to_df <- function(x, bundle_names = NULL) {
@@ -58,5 +72,5 @@
     sl_offset        <- sl_offset + x@bundles[[i]]@n_streamlines
     parts[[i]]       <- bdf
   }
-  do.call(rbind, parts)
+  .rbind_union(parts)
 }

@@ -28,7 +28,9 @@ documentation.
 \examples{
 library(fiber)
 
-# A bundle of six meandering strands spaced 1.2 units apart laterally.
+# Six line-only streamlines in a bundle (no radius data on them). Rendered
+# as thin lines by default; if you want to draw them as fat tubes you would
+# pick a radius yourself. At radius 1 the six packed strands overlap.
 sl  <- streamline(cbind(X = seq_len(200) * 0.1,
                         Y = 0.25 * sin(seq_len(200) / 200 * 4 * pi),
                         Z = 0.25 * cos(seq_len(200) / 200 * 4 * pi)))
@@ -42,8 +44,8 @@ strand <- function(i) {
 }
 bun <- bundle(lapply(seq_len(6), strand))
 
-# Thick tubes (radius 1) only fit a spread-out subset that still covers the
-# bundle: prune keeps the extreme strands.
+# Because the tubes are fabricated by you from line-only data, prune keeps
+# a spread-out subset whose fat tubes do not overlap: the extreme strands.
 pruned <- prune(bun, radius = 1)
 length(pruned@streamlines)
 }

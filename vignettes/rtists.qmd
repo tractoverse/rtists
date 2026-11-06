@@ -168,7 +168,7 @@ plot3d(bun, color = "steelblue", opacity = 0.6)
 | `palette` | `"Viridis"` | Plotly / ColorBrewer scale used for continuous numeric metadata. |
 | `linewidth` | `2` | Constant line width in world units (three.js `Line2`). |
 | `opacity` | `0.5` | Global line opacity (0–1). |
-| `radius` | `NULL` | Tube radius: a positive scalar draws each streamline as a true 3D tube; `0` (or `NULL`) draws flat `Line2`. Per-streamline or per-point vectors give variable radii. |
+| `radius` | `NULL` | Tube radius. When `NULL` (default), rtists uses the radius carried in the object's own data if present (`radius` in the per-streamline or per-point data), or falls back to thin `Line2` lines when the streamlines carry none. A positive scalar draws every streamline as a true 3D tube at that fixed radius and overrides any data radius; per-streamline or per-point vectors give variable radii. rtists never shrinks tubes or hides streamlines to dodge overlap: overlapping tubes are the generator's business, not rtists's. |
 
 Line width, opacity, and radius are combined freely:
 
