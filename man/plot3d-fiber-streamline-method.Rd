@@ -77,19 +77,21 @@ Renders a single \link[fiber:streamline]{fiber::streamline} as an interactive 3D
 \examples{
 library(fiber)
 
-# --- minimal streamline example -------------------------------------------
-pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 1),
-  ncol = 3, byrow = TRUE,
-  dimnames = list(NULL, c("X", "Y", "Z"))
+# --- a realistic streamline -----------------------------------------------
+# A dense, smoothly meandering 3-D curve advanced in small steps along X,
+# thin and elongated like a real DTI tract (spaghetti), not a coarse fat
+# polyline.
+n  <- 200L
+t  <- seq(0, 4 * pi, length.out = n)
+pts <- cbind(
+  X = seq_len(n) * 0.1,
+  Y = 0.5 * sin(t),
+  Z = 0.5 * cos(t)
 )
 sl <- streamline(
   points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
-  streamline_data = list(mean_FA = 0.525)
+  point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
+  streamline_data = list(mean_FA = 0.5)
 )
 
 # Default: colour by local fibre orientation

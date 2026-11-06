@@ -86,21 +86,36 @@ See \code{\link[=plot3d]{plot3d()}} for the full parameter documentation.
 \examples{
 library(fiber)
 
-# --- minimal streamline example -------------------------------------------
-pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 1),
-  ncol = 3, byrow = TRUE,
-  dimnames = list(NULL, c("X", "Y", "Z"))
+# --- a realistic streamline -----------------------------------------------
+# A dense, smoothly meandering 3-D curve advanced in small steps along X,
+# thin and elongated like a real DTI tract (spaghetti), not a coarse fat
+# polyline.
+n  <- 200L
+t  <- seq(0, 4 * pi, length.out = n)
+pts <- cbind(
+  X = seq_len(n) * 0.1,
+  Y = 0.5 * sin(t),
+  Z = 0.5 * cos(t)
 )
 sl <- streamline(
   points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
-  streamline_data = list(mean_FA = 0.525)
+  point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
+  streamline_data = list(mean_FA = 0.5)
 )
-bun <- bundle(list(sl, sl))
+strand <- function(i) {
+  t <- seq(0, 4 * pi, length.out = 200)
+  pts <- cbind(
+    X = seq_len(200) * 0.1,
+    Y = 0.5 * sin(t + 1.3 * i) + (i - 3.5) * 0.35,
+    Z = 0.5 * cos(t) + (i - 3.5) * 0.35
+  )
+  streamline(
+    pts,
+    point_data      = list(FA = 0.4 + 0.3 * sin((t + 1.3 * i) / 2)),
+    streamline_data = list(mean_FA = 0.5)
+  )
+}
+bun <- bundle(lapply(seq_len(6), strand))
 bun_set <- bundle_set(list(bun, bun))
 plot3d(bun_set)
 }
