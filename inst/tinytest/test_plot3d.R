@@ -43,11 +43,16 @@ expect_inherits(fig, "rtists")
 fig <- plot3d(bun)
 expect_inherits(fig, "rtists")
 
-# plotly backend is selected explicitly
-fig <- plot3d(sl, backend = "plotly")
-expect_inherits(fig, "plotly")
-fig <- plot3d(bun, backend = "plotly")
-expect_inherits(fig, "plotly")
+# plotly backend is selected explicitly. plotly is a Suggests-only
+# dependency, so skip these assertions on platforms that do not carry it
+# (e.g. some R-hub containers); the plotly-not-installed error branch itself
+# is exercised by test_coverage.R via a mocked is_installed().
+if (requireNamespace("plotly", quietly = TRUE)) {
+  fig <- plot3d(sl, backend = "plotly")
+  expect_inherits(fig, "plotly")
+  fig <- plot3d(bun, backend = "plotly")
+  expect_inherits(fig, "plotly")
+}
 
 # three.js tube mode (thickness > 0) carries the tube payload
 fig <- plot3d(sl, thickness = 0.25)
