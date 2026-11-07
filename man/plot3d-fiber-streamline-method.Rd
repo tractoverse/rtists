@@ -25,15 +25,51 @@ lines are drawn in that fixed colour.
 \item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
 \code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
 
-\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}.}
+\item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
+(default) or \code{"plotly"}. The three.js backend supports real world-space
+line thickness (true 3D tubes) and object-level depth-sorted
+transparency; the plotly backend is an opt-in alternative for interactive
+plotly-style charts.}
+
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
+three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
+fibres.}
+
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+radius is treated as data carried on the object: when \code{radius} is \code{NULL}
+(the default), a \code{radius} key in the streamlines' \verb{@point_data} (per-point)
+or \verb{@streamline_data} (per-streamline) is picked up and rendered as real
+3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+overlap between neighbouring fibres (overlap is the generator's business,
+not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
+\itemize{
+\item \code{NULL} (default): draw at the object's own radius data if present,
+otherwise thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
+\item A \strong{per-streamline vector} (length == number of streamlines): one
+constant radius per line, drawn as \code{TubeGeometry}.
+\item A \strong{per-point vector} (length == total number of points): radius varying
+along each streamline, drawn as \code{TubeGeometry} with radial displacement —
+the most general form.
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
-\item{...}{Additional named arguments forwarded to \code{\link[plotly:layout]{plotly::layout()}},
-e.g. \code{title = "My bundle"}.}
+\item{bg}{Background colour (CSS) of the scene (three.js backend only).
+Defaults to \code{"#111111"}.}
+
+\item{...}{Additional named arguments. Only the plotly backend uses these,
+forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
+three.js backend (default) ignores them.}
 }
 \value{
-An interactive \link[plotly:plotly]{plotly} htmlwidget.
+An interactive htmlwidget (three.js or plotly, see \code{\link[=plot3d]{plot3d()}}).
 }
 \description{
 Renders a single \link[fiber:streamline]{fiber::streamline} as an interactive 3D line plot. See
@@ -42,28 +78,24 @@ Renders a single \link[fiber:streamline]{fiber::streamline} as an interactive 3D
 \examples{
 library(fiber)
 
-# --- minimal streamline example -------------------------------------------
-pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 1),
-  ncol = 3, byrow = TRUE,
-  dimnames = list(NULL, c("X", "Y", "Z"))
+# A single fibre curving through 3-D space, sampled densely into small
+# steps, thin like a real DTI tract rather than a coarse polyline.
+t   <- seq(0, 4 * pi, length.out = 200)
+pts <- cbind(
+  X = seq_len(200) * 0.1,
+  Y = 0.5 * sin(t),
+  Z = 0.5 * cos(t)
 )
 sl <- streamline(
   points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
-  streamline_data = list(mean_FA = 0.525)
+  point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
+  streamline_data = list(mean_FA = 0.5)
 )
 
-# Default: colour by local fibre orientation
+# Colour by local fibre orientation (default), by per-point FA, or by a
+# fixed hue.
 plot3d(sl)
-
-# Colour by per-point FA (continuous colour scale)
 plot3d(sl, color = "FA")
-
-# Fixed colour
 plot3d(sl, color = "steelblue", opacity = 0.8)
 }
 \seealso{

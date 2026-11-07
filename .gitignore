@@ -7,3 +7,5 @@ inst/doc
 man/figures/lib
 **/.quarto/
 docs
+notes/
+tools/
