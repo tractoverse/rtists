@@ -203,3 +203,114 @@ expect_true(all(mdf$radius[mdf$BundleName == "CST"] == 0.1))
 fig <- suppressMessages(plot3d(bs_mixed))
 expect_inherits(fig, "rtists")
 cat("mixed-metadata bundle_set tests OK\n")
+
+# ---- three.js hover tooltip (tooltip= argument) -----------------------------
+# The three.js backend ships a structured per-point tooltip payload
+# (`tooltipData`): `bundle` (per-point bundle label, or NULL) and `xyz`
+# (per-point formatted coordinates), both pinned and always shown, plus
+# `columns` (the toggleable attribute columns), `shown` (their initial
+# selection), and `values` (a named list mapping each column to its per-point
+# formatted display string). `tooltip=TRUE` (default) selects every attribute
+# column; `tooltip=FALSE` disables the payload; a character vector restricts
+# the initial selection. Line2 mode also carries `segToPoint`.
+
+# default -> tooltipData present, structured, covers every packed point
+fig <- plot3d(sl)
+expect_true("tooltipData" %in% names(fig$x))
+tt <- fig$x$tooltipData
+expect_true(all(c("bundle", "xyz", "columns", "shown", "values") %in% names(tt)))
+expect_null(tt$bundle)                    # a single streamline has no name
+expect_length(tt$xyz, nrow(pts))
+expect_true(all(c("FA", "mean_FA") %in% tt$columns))
+# default selects all toggleable columns
+expect_true(setequal(tt$shown, tt$columns))
+expect_true(all(c("FA", "mean_FA") %in% names(tt$values)))
+expect_length(tt$values$FA, nrow(pts))
+expect_length(tt$values$mean_FA, nrow(pts))
+# formatted values match the prior string semantics
+expect_true(grepl("X:", tt$xyz[1]))
+expect_equal(tt$values$FA[1], "0.3")
+expect_equal(tt$values$mean_FA[1], "0.5")
+# line2 carries the segment -> point index map
+expect_true("segToPoint" %in% names(fig$x))
+expect_equal(fig$x$segToPoint, seq_len(nrow(pts) - 1L) - 1L)
+
+# tube mode: no segToPoint needed; same structured payload
+fig <- plot3d(sl, radius = 0.25)
+expect_equal(unclass(fig$x$mode), "tube")
+expect_true("tooltipData" %in% names(fig$x))
+tt <- fig$x$tooltipData
+expect_length(tt$xyz, nrow(pts))
+expect_null(fig$x$segToPoint)             # tube mode maps hits by streamline offset
+
+# tooltip = FALSE -> the payload is dropped entirely
+fig <- plot3d(sl, tooltip = FALSE)
+expect_false("tooltipData" %in% names(fig$x))
+expect_false("segToPoint" %in% names(fig$x))
+
+# tooltip = character vector -> all columns offered, only the request selected
+fig <- plot3d(sl, tooltip = "FA")
+expect_true("tooltipData" %in% names(fig$x))
+tt <- fig$x$tooltipData
+expect_true(all(c("FA", "mean_FA") %in% tt$columns))  # both still toggleable
+expect_true(setequal(tt$shown, "FA"))
+# unknown column names are ignored rather than erroring
+fig <- plot3d(sl, tooltip = c("FA", "not_a_column"))
+tt <- fig$x$tooltipData
+expect_true(setequal(tt$shown, "FA"))
+
+# bundle_set: the bundle name is pinned and per-point
+b1 <- fiber::bundle(list(sl))
+b2 <- fiber::bundle(list(fiber::streamline(pts + 1)))
+bs_tt <- fiber::bundle_set(list(CST = b1, CC = b2))
+fig <- suppressMessages(plot3d(bs_tt))
+expect_true("tooltipData" %in% names(fig$x))
+tt <- fig$x$tooltipData
+expect_length(tt$bundle, length(tt$xyz))
+expect_equal(tt$bundle[1], "CST")
+expect_true("CC" %in% tt$bundle)
+# the bundle name is pinned, not a toggleable column
+expect_false("BundleName" %in% tt$columns)
+# `shown` is a subset of `columns` for the default selection
+expect_true(all(tt$shown %in% tt$columns))
+cat("tooltip tests OK\n")
+
+# ---- three.js legend (aesthetic-mapping panel) ------------------------------
+# The three.js widget ships a `legendData` payload driving the legend panel:
+# `n_pts` (per-streamline point counts, unnamed so jsonlite emits an array and
+# the renderer can index per-streamline visibility), `bundlePerSl` + 
+# `bundleNames` (per-streamline bundle category for bundle_set objects),
+# `attrsPoint` (point-scoped attribute series, numeric packed as Float32 raw)
+# and `attrsSl` (streamline-scoped representative values) for live remapping,
+# and `ramp` (3x256 Uint8 colour ramp). No attribute column -> legendData is
+# NULL. `BundleName` is offered as a per-bundle visual key, never as a point
+# series.
+#
+# single streamline, line2 and tube modes both ship the payload
+fig <- plot3d(sl)
+expect_true("legendData" %in% names(fig$x))
+ld <- fig$x$legendData
+expect_equal(unclass(ld$n_pts), 5L)          # 5 points
+expect_null(ld$bundlePerSl)                  # no BundleName on a plain streamline
+expect_null(ld$bundleNames)
+expect_true("FA" %in% names(ld$attrsPoint))  # point-scoped
+expect_equal(ld$attrsSl$mean_FA, 0.5)        # streamline-scoped
+expect_length(ld$attrsPoint$FA, 5L * 4L)     # numeric packed as Float32 raw
+expect_false("mean_FA" %in% names(ld$attrsPoint))   # constant within streamline
+expect_length(ld$ramp, 3L * 256L)            # 3x256 colour ramp
+
+fig <- plot3d(sl, radius = 0.25)             # tube mode
+expect_true("legendData" %in% names(fig$x))
+expect_equal(unclass(fig$x$legendData$n_pts), 5L)
+
+# bundle_set -> per-streamline bundle category, named and indexed
+fig <- suppressMessages(plot3d(bs_tt))
+ld <- fig$x$legendData
+expect_equal(unclass(ld$n_pts), c(5L, 5L))
+expect_equal(ld$bundleNames, c("CST", "CC"))
+expect_equal(ld$bundlePerSl, c(1L, 2L))      # 1-based category index per streamline
+expect_equal(ld$attrsSl$BundleName, c("CST", "CC"))
+expect_false("BundleName" %in% names(ld$attrsPoint))   # bundle key is sl-scoped
+# streamline-scoped attr absent on the second bundle pads to NA
+expect_equal(ld$attrsSl$mean_FA, c(0.5, NA))
+cat("legend tests OK\n")

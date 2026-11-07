@@ -141,7 +141,7 @@
 .threejs_widget <- function(streamlines, color = "orientation",
                             linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111", border = 0,
-                            elementId = NULL) {
+                            tooltip = NULL, legend = NULL, elementId = NULL) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
@@ -197,12 +197,19 @@
       positions    = writeBin(pos, raw(), size = 4L),          # Float32 base64
       colors       = as.raw(pmin(255L, round(colors * 255))),  # Uint8 base64
       tubeOffsets  = tubeOffsets,                # cumulative point index
+      n_pts        = n_pts,        # per-streamline point counts
       radii        = writeBin(rinfo$radii, raw(), size = 4L),  # Float32 base64
       linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
       border       = jsonlite::unbox(border),    # outline as a fraction of scene radius
       opacity      = jsonlite::unbox(opacity),
       bg           = jsonlite::unbox(bg)
     )
+    if (!is.null(tooltip)) {
+      x$tooltipData <- tooltip          # structured per-point metadata
+    }
+    if (!is.null(legend)) {
+      x$legendData <- legend            # aesthetic-remapping metadata
+    }
 
   } else {
     # ---- line2 mode: interleaved segment buffers (default, fast) ------------
@@ -258,9 +265,28 @@
       positions = writeBin(pos, raw(), size = 4L),            # Float32 base64
       colors    = as.raw(pmin(255L, round(colors * 255))),    # Uint8 base64
       linewidth = jsonlite::unbox(rinfo$linewidth),   # world-units width
+      n_pts     = n_pts,            # per-streamline point counts
       opacity   = jsonlite::unbox(opacity),           # scalar
       bg        = jsonlite::unbox(bg)                 # scalar
     )
+    if (!is.null(tooltip)) {
+      # Map each line2 segment (raycast `faceIndex`) to the packed point index
+      # of its START vertex. Consecutive points within a streamline sit next to
+      # each other in packed order, so the segment's end vertex is start + 1.
+      pt_start <- c(0L, cumsum(n_pts)[-length(n_pts)])
+      seg_to   <- integer(sum(n_seg))
+      g        <- 0L
+      for (j in seq_along(streamlines)) {
+        nj <- nrow(streamlines[[j]]) - 1L
+        if (nj >= 1L) seg_to[g + seq_len(nj)] <- pt_start[j] + seq_len(nj) - 1L
+        g  <- g + nj
+      }
+      x$tooltipData <- tooltip          # structured per-point metadata
+      x$segToPoint  <- seg_to           # line2 segment index -> point index
+    }
+    if (!is.null(legend)) {
+      x$legendData <- legend            # aesthetic-remapping metadata
+    }
   }
 
   htmlwidgets::createWidget(
@@ -299,10 +325,154 @@
   r                                   # per-point vector
 }
 
+# Format one tooltip value: numeric values are trimmed to a compact width,
+# everything else is shown as-is.
+# Format tooltip values: numeric values are trimmed to a compact width,
+# everything else is shown as-is. Vectorised (NA elements stay NA).
+.df_tt_val <- function(v) {
+  if (is.numeric(v)) {
+    out <- as.character(signif(v, 4))
+    out[is.na(v)] <- NA_character_
+    out
+  } else {
+    v
+  }
+}
+
+# Build the structured hover-tooltip payload for the three.js widget.
+#
+# `tooltip` is TRUE (bundle name + coordinates + all attribute columns), FALSE
+# (disabled), or a character vector of attribute column names to restrict the
+# initial selection to. Every attribute recorded on the object is already a df
+# column (per-point, per-streamline, per-bundle, and per-bundle-set alike, plus
+# the `BundleName` added by bundle_set()), so selecting them is a column pass
+# over the resolved df; one row of `df` corresponds to one packed point.
+#
+# Returns a structured list consumed by the three.js renderer: `bundle` is the
+# per-point bundle label (or NULL), `xyz` the per-point formatted coordinates
+# (bundle name and coordinates are pinned and always shown), `columns` the
+# toggleable attribute columns, `shown` their initial selection, and `values` a
+# named list mapping each toggleable column to its per-point formatted display
+# string. Returns NULL when the tooltip is disabled.
+.df_tooltip_meta <- function(df, tooltip) {
+  if (isFALSE(tooltip) || is.null(tooltip)) return(NULL)
+  # The pinned columns (the bundle name and the coordinates, plus the internal
+  # bookkeeping) are never offered as toggleable attribute columns.
+  meta_cols <- setdiff(
+    names(df),
+    c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover", "BundleName")
+  )
+  if (isTRUE(tooltip)) {
+    columns <- meta_cols
+  } else {
+    columns <- meta_cols                # all toggleable columns are offered...
+  }
+  shown <- if (isTRUE(tooltip)) columns else intersect(tooltip, columns)
+  if (length(columns) == 0L) return(NULL)
+
+  bundle_v <- df$BundleName
+  bundle   <- if (!is.null(bundle_v)) as.character(bundle_v) else NULL
+  xyz      <- sprintf(
+    "X: %s  Y: %s  Z: %s",
+    .df_tt_val(df$X), .df_tt_val(df$Y), .df_tt_val(df$Z)
+  )
+  values <- lapply(columns, function(k) {
+    v <- df[[k]]
+    out <- .df_tt_val(v)
+    # blank empty values so rows with nothing to show render an empty line
+    out[is.na(out) | (is.character(out) & out == "")] <- ""
+    out
+  })
+  names(values) <- columns
+  list(
+    bundle  = bundle,
+    xyz     = xyz,
+    columns = columns,
+    shown   = shown,
+    values  = values
+  )
+}
+
+# Build the structured legend payload for the three.js widget: the per-
+# streamline point counts, the per-streamline bundle category, and the
+# attribute columns usable for live aesthetic remapping (colour, tube radius,
+# visibility). Columns are classified as streamline-scoped when they are
+# constant within every streamline (this covers `@streamline_data` and
+# `@bundle_data` columns, plus whole-column NA padding from union-binding) and
+# point-scoped otherwise.
+#
+# The bundle name, the coordinates and the internal bookkeeping columns are
+# never offered as aesthetics. `BundleName` is kept: it is the natural
+# per-bundle colour / visibility key for bundle_set() objects.
+#
+# Returns a structured list consumed by the three.js renderer: `n_pts` the
+# per-streamline point counts, `bundlePerSl` a per-streamline bundle category
+# index (0 for the NA "no bundle" slot), `bundleNames` the category labels,
+# `attrsPoint` a named list of point-scoped attribute series (numeric series
+# packed as Float32 for compactness, anything else as a character vector),
+# `attrsSl` a named list of streamline-scoped representative values, and `ramp`
+# a 3x256 Uint8 colour ramp built from `palette`. Returns NULL when the object
+# carries no attribute column.
+.df_legend_meta <- function(df, palette = "Viridis") {
+  base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
+  meta <- setdiff(names(df), base)
+  if (length(meta) == 0L) return(NULL)
+
+  ids <- df$StreamlineId
+  if (is.null(ids)) ids <- rep(1L, nrow(df))
+  grp <- factor(ids, levels = unique(ids))   # common group for split()/table()
+  n_pts <- as.integer(unname(table(grp)))   # unnamed so jsonlite emits an array, not a named object
+
+  bundle_v <- df$BundleName
+  bundle_names <- if (!is.null(bundle_v)) unique(as.character(bundle_v)) else NULL
+  bundlePerSl <- NULL
+  if (!is.null(bundle_names)) {
+    first <- function(x) { x <- x[!is.na(x)]; if (length(x)) x[1L] else NA_character_ }
+    labels <- vapply(split(as.character(bundle_v), grp), first, character(1L))
+    idx <- match(labels, bundle_names)
+    idx[is.na(idx)] <- 0L
+    bundlePerSl <- as.integer(idx)
+  }
+
+  first_rep <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x)) x[1L] else NA
+  }
+  pack_series <- function(v) {
+    if (is.numeric(v)) writeBin(as.numeric(v), raw(), size = 4L)
+    else as.character(v)
+  }
+
+  attrs_point <- list()
+  attrs_sl    <- list()
+  for (k in meta) {
+    v <- df[[k]]
+    const <- vapply(split(v, grp),
+                    function(x) length(unique(x[!is.na(x)])) <= 1L,
+                    logical(1L))
+    if (all(const)) {
+      attrs_sl[[k]] <- unlist(lapply(split(v, grp), first_rep), use.names = FALSE)
+    } else {
+      attrs_point[[k]] <- pack_series(v)
+    }
+  }
+
+  ramp_mat <- grDevices::col2rgb(grDevices::hcl.colors(256, palette))
+  list(
+    n_pts       = n_pts,
+    bundlePerSl = bundlePerSl,
+    bundleNames = bundle_names,
+    attrsPoint  = attrs_point,
+    attrsSl     = attrs_sl,
+    ramp        = as.raw(as.vector(ramp_mat))
+  )
+}
+
 .plot3d_threejs <- function(df, color = "orientation", palette = "Viridis",
                             linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111",
-                            color_by_bundle = FALSE, ...) {
+                            color_by_bundle = FALSE, tooltip = TRUE, ...) {
+  legend_meta <- .df_legend_meta(df, palette)
   sls <- .df_to_streamlines(df)
   # Rely on the tube radius carried on the streamlines themselves: a `radius`
   # key in @point_data / @streamline_data is flattened into a df `radius`
@@ -319,6 +489,8 @@
     radius      = radius,
     opacity     = opacity,
     bg          = bg,
+    tooltip     = .df_tooltip_meta(df, tooltip),
+    legend      = legend_meta,
     ...
   )
 }

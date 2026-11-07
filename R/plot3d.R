@@ -196,6 +196,24 @@
 #' @param bg Background colour (CSS) of the scene (three.js backend only).
 #'   Defaults to `"#111111"`.
 #' @param opacity Numeric in \[0, 1\]. Global line opacity. Defaults to `0.5`.
+#' @param tooltip Hover tooltip on the three.js backend. When a point of a
+#'   streamline is hovered, an in-scene tooltip shows that bundle's name, the
+#'   point's 3D coordinates, and the values of its attributes. Accepted values:
+#'
+#'   - `TRUE` (default): show the bundle name (when the object carries one), the
+#'     coordinates, and **all** attributes recorded on the object (per-point,
+#'     per-streamline, per-bundle and per-bundle-set alike).
+#'   - `FALSE`: disable the tooltip entirely.
+#'   - A character vector of attribute column names: show only those, alongside
+#'     the always-included coordinates (and bundle name when present). Names that
+#'     do not exist on the object are ignored.
+#'
+#'   Right-clicking the hovered tooltip opens a checkbox list of every toggleable
+#'   column; ticking or unticking one updates the visible box immediately. The
+#'   bundle name and coordinates stay pinned and cannot be toggled off.
+#'
+#'   The plotly backend ignores this argument (the plotly surface carries its
+#'   own hover).
 #' @param ... Additional named arguments. Only the plotly backend uses these,
 #'   forwarding them to [plotly::layout()] (e.g. `title = "My bundle"`); the
 #'   three.js backend (default) ignores them.
@@ -277,8 +295,8 @@
 #' slf <- bundle(lapply(seq_len(8), slf_sl))
 #' cs  <- bundle_set(list(CST = cst, CC = cc, SLF = slf))
 #'
-#' plot3d(cs)
-#' plot3d(cs, color_by_bundle = TRUE)
+#' plot3d(cs, radius = 0.05)
+#' plot3d(cs, color_by_bundle = TRUE, radius = 0.05)
 
 plot3d <- S7::new_generic(
   name = "plot3d",
@@ -286,7 +304,7 @@ plot3d <- S7::new_generic(
   fun = function(x, color = "orientation", palette = "Viridis",
                  backend = c("threejs", "plotly"), linewidth = 2,
                  radius = NULL, opacity = 0.5,
-                 bg = "#111111", ...) {
+                 bg = "#111111", tooltip = TRUE, ...) {
     S7::S7_dispatch()
   }
 )
@@ -337,6 +355,7 @@ S7::method(plot3d, fiber::streamline) <- function(
     radius    = NULL,
     opacity   = 0.5,
     bg        = "#111111",
+    tooltip   = TRUE,
     ...) {
   backend <- match.arg(backend)
   df <- .streamline_to_df(x, streamline_id = 1L)
@@ -349,6 +368,7 @@ S7::method(plot3d, fiber::streamline) <- function(
       radius    = radius,
       opacity   = opacity,
       bg        = bg,
+      tooltip   = tooltip,
       ...
     )
   } else {
@@ -437,6 +457,7 @@ S7::method(plot3d, fiber::bundle) <- function(
     radius    = NULL,
     opacity   = 0.5,
     bg        = "#111111",
+    tooltip   = TRUE,
     ...) {
   backend <- match.arg(backend)
   n <- length(x@streamlines)
@@ -451,6 +472,7 @@ S7::method(plot3d, fiber::bundle) <- function(
       radius    = radius,
       opacity   = opacity,
       bg        = bg,
+      tooltip   = tooltip,
       ...
     )
   } else {
@@ -543,6 +565,7 @@ S7::method(plot3d, fiber::bundle_set) <- function(
     opacity         = 0.5,
     bg              = "#111111",
     color_by_bundle = FALSE,
+    tooltip         = TRUE,
     ...) {
   backend <- match.arg(backend)
   n_bundles <- x@n_bundles
@@ -561,6 +584,7 @@ S7::method(plot3d, fiber::bundle_set) <- function(
       opacity         = opacity,
       bg              = bg,
       color_by_bundle = color_by_bundle,
+      tooltip         = tooltip,
       ...
     )
   } else {

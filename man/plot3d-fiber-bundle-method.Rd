@@ -64,6 +64,26 @@ the most general form.
 \item{bg}{Background colour (CSS) of the scene (three.js backend only).
 Defaults to \code{"#111111"}.}
 
+\item{tooltip}{Hover tooltip on the three.js backend. When a point of a
+streamline is hovered, an in-scene tooltip shows that bundle's name, the
+point's 3D coordinates, and the values of its attributes. Accepted values:
+\itemize{
+\item \code{TRUE} (default): show the bundle name (when the object carries one), the
+coordinates, and \strong{all} attributes recorded on the object (per-point,
+per-streamline, per-bundle and per-bundle-set alike).
+\item \code{FALSE}: disable the tooltip entirely.
+\item A character vector of attribute column names: show only those, alongside
+the always-included coordinates (and bundle name when present). Names that
+do not exist on the object are ignored.
+}
+
+Right-clicking the hovered tooltip opens a checkbox list of every toggleable
+column; ticking or unticking one updates the visible box immediately. The
+bundle name and coordinates stay pinned and cannot be toggled off.
+
+The plotly backend ignores this argument (the plotly surface carries its
+own hover).}
+
 \item{...}{Additional named arguments. Only the plotly backend uses these,
 forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
 three.js backend (default) ignores them.}
