@@ -165,3 +165,6 @@ Vendored files:
 - `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
   LineSegmentsGeometry
 - `jsm/controls/`: OrbitControls.js
+
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which ships
+with the installed package.
