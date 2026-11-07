@@ -88,8 +88,14 @@
 #' Prune a tractography bundle to non-overlapping, hull-covering tubes
 #'
 #' @description
-#' `prune()` thins a [fiber::bundle] (or a [fiber::bundle_set]) down to a
-#' subset of streamlines that can be rendered as fat non-overlapping tubes.
+#' `prune()` is the low-level, tunable engine behind [fatten()]: it thins a
+#' [fiber::bundle] (or a [fiber::bundle_set]) down to a subset of streamlines
+#' that can be rendered as fat non-overlapping tubes, from a tube `radius` and
+#' `overlap_margin` that *you* choose. Reach for `prune()` directly when you
+#' want full control over the tube size and the clearance between tubes (the
+#' argument-driven path); reach for [fatten()] when you would rather rtists pick
+#' a visible radius for you, in which case it calls this same selection logic
+#' internally.
 #' Use it when *you* build the tubes yourself, from streamlines that carry no
 #' per-point or per-streamline radius: you choose a single tube `radius`, and
 #' `prune()` keeps as many streamlines as possible such that:
@@ -121,7 +127,8 @@
 #'   streamlines. For a [fiber::bundle_set] the pruning is applied to every
 #'   bundle independently, and empty bundles are dropped from the returned set.
 #'
-#' @seealso [plot3d()]
+#' @seealso [fatten()], [plot3d()]. `fatten()` is the convenience
+#'   wrapper that derives the radius for you and calls this engine internally.
 #' @export
 prune <- S7::new_generic(
   name = "prune",

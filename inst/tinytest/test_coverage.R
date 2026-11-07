@@ -252,3 +252,75 @@ if (requireNamespace("mockthat", quietly = TRUE)) {
   )
   expect_true(grepl("plotly backend requires", msg))
 }
+
+# ================= backend-threejs.R (tail branches) =================
+
+# .df_tt_val: both the numeric path (NA elements stay NA, lines 337-338) and
+# the non-numeric passthrough (the `else` return, line 340)
+tt <- rtists:::.df_tt_val(c(1.2, NA, 3))
+expect_identical(tt, c("1.2", NA_character_, "3"))
+expect_identical(rtists:::.df_tt_val(c("a", "b")), c("a", "b"))
+
+# .df_radius_from_data: positive, per-streamline-constant radius -> one value
+# per streamline (per-streamline path); point-varying radius -> per-point
+# vector; and, without a StreamlineId column, the ids rep(1L, nrow(df))
+# fallback (line 319) yields a single per-streamline value.
+dfr <- data.frame(X = 1:4, Y = 1:4, Z = 1:4,
+                  StreamlineId = c(1, 1, 2, 2), radius = c(0.5, 0.5, 0.8, 0.8))
+expect_equal(as.numeric(rtists:::.df_radius_from_data(dfr)), c(0.5, 0.8))
+dfv <- data.frame(X = 1:4, Y = 1:4, Z = 1:4,
+                  StreamlineId = c(1, 1, 1, 1), radius = c(0.5, 0.6, 0.7, 0.8))
+expect_identical(rtists:::.df_radius_from_data(dfv), c(0.5, 0.6, 0.7, 0.8))
+dfn <- data.frame(X = 1:3, Y = 1:3, Z = 1:3, radius = c(0.5, 0.5, 0.5))
+expect_equal(as.numeric(rtists:::.df_radius_from_data(dfn)), 0.5)
+
+# .df_legend_meta: a BundleName + numeric varying attr (raw-packed via
+# pack_series), and the no-StreamlineId fallback (line 422). A character
+# per-point attr exercises pack_series's non-numeric branch (line 443).
+dflm <- data.frame(
+  StreamlineId = c(1, 1, 2), PointId = c(1, 2, 1), X = 1:3, Y = 1:3, Z = 1:3,
+  .color = "red", .hover = NA,
+  BundleName = c("A", "A", "B"),
+  fa = c(0.3, 0.3, 0.9),          # constant within each streamline
+  pt = c(0.1, 0.2, 0.3)           # varies -> attrsPoint, raw-packed
+)
+lm <- rtists:::.df_legend_meta(dflm)
+expect_identical(lm$bundleNames, c("A", "B"))
+expect_identical(lm$bundlePerSl, c(1L, 2L))
+expect_identical(lm$attrsSl$fa, c(0.3, 0.9))
+expect_true(is.raw(lm$attrsPoint$pt))     # pack_series numeric branch
+
+# no StreamlineId column -> ids defaults to rep(1L, nrow(df)) (line 422);
+# with a single implicit group the varied attr is non-constant, so it lands in
+# attrsPoint via pack_series
+lm2 <- rtists:::.df_legend_meta(data.frame(X = 1:2, Y = 1:2, Z = 1:2,
+                                           .color = "r", .hover = NA,
+                                           grp = c("m", "n")))
+expect_identical(lm2$attrsPoint$grp, c("m", "n"))
+
+# character point-varying attr -> pack_series non-numeric branch (line 443)
+lm3 <- rtists:::.df_legend_meta(data.frame(
+  StreamlineId = c(1, 1, 2), PointId = c(1, 2, 1), X = 1:3, Y = 1:3, Z = 1:3,
+  .color = "red", .hover = NA, tag = c("a", "b", "c")))
+expect_identical(lm3$attrsPoint$tag, c("a", "b", "c"))
+
+# ================= fatten.R =================
+
+# .fatten_dmin: fewer than two polylines -> +Inf (line 38, the < 2 guard)
+expect_identical(rtists:::.fatten_dmin(list(pts)), Inf)
+
+# ================= prune.R =================
+
+# .prune_indices: the all-covered early break (line 80). A linear strip of
+# densely packed parallel fibres at radius 1.0 keeps the two extremes {1, 9}
+# then the midpoint 5 (each 2 units from a kept tube), after which every
+# remaining fibre lies within radius of a kept tube, so the loop breaks on
+# full coverage rather than overlap.
+n_lin <- 9L
+polys_lin <- lapply(seq_len(n_lin), function(i) {
+  t <- seq(0, 4 * pi, length.out = 200)
+  cbind(X = seq_len(200) * 0.1,
+        Y = rep((i - (n_lin - 1L) / 2) * 0.5, 200),
+        Z = 0)
+})
+expect_identical(rtists:::.prune_indices(polys_lin, 1.0), c(1L, 5L, 9L))

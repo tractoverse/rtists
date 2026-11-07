@@ -25,8 +25,14 @@ streamlines. For a \link[fiber:bundle_set]{fiber::bundle_set} the pruning is app
 bundle independently, and empty bundles are dropped from the returned set.
 }
 \description{
-\code{prune()} thins a \link[fiber:bundle]{fiber::bundle} (or a \link[fiber:bundle_set]{fiber::bundle_set}) down to a
-subset of streamlines that can be rendered as fat non-overlapping tubes.
+\code{prune()} is the low-level, tunable engine behind \code{\link[=fatten]{fatten()}}: it thins a
+\link[fiber:bundle]{fiber::bundle} (or a \link[fiber:bundle_set]{fiber::bundle_set}) down to a subset of streamlines
+that can be rendered as fat non-overlapping tubes, from a tube \code{radius} and
+\code{overlap_margin} that \emph{you} choose. Reach for \code{prune()} directly when you
+want full control over the tube size and the clearance between tubes (the
+argument-driven path); reach for \code{\link[=fatten]{fatten()}} when you would rather rtists pick
+a visible radius for you, in which case it calls this same selection logic
+internally.
 Use it when \emph{you} build the tubes yourself, from streamlines that carry no
 per-point or per-streamline radius: you choose a single tube \code{radius}, and
 \code{prune()} keeps as many streamlines as possible such that:
@@ -47,5 +53,6 @@ farthest from the already-kept tubes so the retained set spreads across the
 bundle rather than clustering.
 }
 \seealso{
-\code{\link[=plot3d]{plot3d()}}
+\code{\link[=fatten]{fatten()}}, \code{\link[=plot3d]{plot3d()}}. \code{fatten()} is the convenience
+wrapper that derives the radius for you and calls this engine internally.
 }
