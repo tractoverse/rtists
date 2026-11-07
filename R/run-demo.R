@@ -6,6 +6,9 @@
 # root). We resolve the root without a hard dependency on pkgload/rprojroot by
 # walking up from the working directory to the first `DESCRIPTION` declaring
 # `Package: rtists`.
+# The demo launcher runs an interactive Shiny app that blocks until the app
+# is closed, so it is not unit-testable and is excluded from coverage.
+# nocov start
 .rtists_source_root <- function() {
   here <- getwd()
   repeat {
@@ -72,3 +75,4 @@ runDemo <- function(name = "line2", ...) {
   shiny::runApp(dir, ...)
   invisible(TRUE)
 }
+# nocov end
