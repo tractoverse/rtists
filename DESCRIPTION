@@ -33,6 +33,7 @@ Suggests:
     knitr,
     mockthat,
     plotly,
+    pkgdown,
     quarto,
     shiny,
     tinytest
