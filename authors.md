@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/tractoverse/rtists/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/tractoverse/rtists/blob/main/DESCRIPTION)
 
 Stamm A (2026). *rtists: Tissue Integrity Superimposed on Tractography
 Streamlines*. R package version 0.1.0,
