@@ -8,8 +8,12 @@ plot3d(
   x,
   color = "orientation",
   palette = "Viridis",
+  backend = c("threejs", "plotly"),
   linewidth = 2,
+  radius = NULL,
   opacity = 0.5,
+  bg = "#111111",
+  tooltip = TRUE,
   ...
 )
 }
@@ -34,20 +38,86 @@ lines are drawn in that fixed colour.
 \item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
 \code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
 
-\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}.}
+\item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
+(default) or \code{"plotly"}. The three.js backend supports real world-space
+line thickness (true 3D tubes) and object-level depth-sorted
+transparency; the plotly backend is an opt-in alternative for interactive
+plotly-style charts.}
+
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
+three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
+fibres.}
+
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+radius is treated as data carried on the object: when \code{radius} is \code{NULL}
+(the default), a \code{radius} key in the streamlines' \verb{@point_data} (per-point)
+or \verb{@streamline_data} (per-streamline) is picked up and rendered as real
+3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+overlap between neighbouring fibres (overlap is the generator's business,
+not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
+\itemize{
+\item \code{NULL} (default): draw at the object's own radius data if present,
+otherwise thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
+\item A \strong{per-streamline vector} (length == number of streamlines): one
+constant radius per line, drawn as \code{TubeGeometry}.
+\item A \strong{per-point vector} (length == total number of points): radius varying
+along each streamline, drawn as \code{TubeGeometry} with radial displacement —
+the most general form.
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
-\item{...}{Additional named arguments forwarded to \code{\link[plotly:layout]{plotly::layout()}},
-e.g. \code{title = "My bundle"}.}
+\item{bg}{Background colour (CSS) of the scene (three.js backend only).
+Defaults to \code{"#111111"}.}
+
+\item{tooltip}{Hover tooltip on the three.js backend. When a point of a
+streamline is hovered, an in-scene tooltip shows that bundle's name, the
+point's 3D coordinates, and the values of its attributes. Accepted values:
+\itemize{
+\item \code{TRUE} (default): show the bundle name (when the object carries one), the
+coordinates, and \strong{all} attributes recorded on the object (per-point,
+per-streamline, per-bundle and per-bundle-set alike).
+\item \code{FALSE}: disable the tooltip entirely.
+\item A character vector of attribute column names: show only those, alongside
+the always-included coordinates (and bundle name when present). Names that
+do not exist on the object are ignored.
+}
+
+Right-clicking the hovered tooltip opens a checkbox list of every toggleable
+column; ticking or unticking one updates the visible box immediately. The
+bundle name and coordinates stay pinned and cannot be toggled off.
+
+The plotly backend ignores this argument (the plotly surface carries its
+own hover).}
+
+\item{...}{Additional named arguments. Only the plotly backend uses these,
+forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
+three.js backend (default) ignores them.}
 }
 \value{
-An interactive \link[plotly:plotly]{plotly} htmlwidget.
+An interactive htmlwidget.
 }
 \description{
-\code{plot3d()} is an S7 generic that produces an interactive 3D line plot of
+\code{plot3d()} is an S7 generic that produces an interactive 3D plot of
 tractography objects from the \href{https://tractoverse.github.io/fiber/}{fiber}
-package using \link[plotly:plotly]{plotly}.
+package. Two htmlwidget backends are available:
+\itemize{
+\item \code{"threejs"} (default): a self-contained three.js renderer with real
+world-space line thickness (true 3D tubes), depth-sorted
+transparency, and a fast single-mesh line mode that scales to large
+bundles.
+\item \code{"plotly"}: a \code{scatter3d} line plot where all streamlines share one trace
+separated by \code{NA} break-points. A deliberately opt-in alternative renderer
+for when you prefer an interactive plotly surface.
+}
+
 Methods are available for the following classes:
 
 \itemize{
@@ -55,43 +125,83 @@ Methods are available for the following classes:
 \item \code{\link[=plot3d-fiber-bundle_set-method]{fiber::bundle_set}}
 \item \code{\link[=plot3d-fiber-streamline-method]{fiber::streamline}}
 }
-
-All streamlines are rendered as a single \code{scatter3d} trace separated by
-\code{NA} break-points, which keeps the widget lightweight even for large
-bundles.
 }
 \examples{
 library(fiber)
 
-# --- minimal streamline example -------------------------------------------
-pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 1),
-  ncol = 3, byrow = TRUE,
-  dimnames = list(NULL, c("X", "Y", "Z"))
+# --- a single realistic streamline ---------------------------------------
+# A smooth fibre curving through 3-D space, sampled densely into small
+# steps, thin like a real DTI tract rather than a coarse polyline.
+t   <- seq(0, 4 * pi, length.out = 200)
+pts <- cbind(
+  X = seq_len(200) * 0.1,
+  Y = 0.5 * sin(t),
+  Z = 0.5 * cos(t)
 )
 sl <- streamline(
   points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
-  streamline_data = list(mean_FA = 0.525)
+  point_data      = list(FA = 0.4 + 0.3 * sin(t / 2)),
+  streamline_data = list(mean_FA = 0.5)
 )
 
-# Default: colour by local fibre orientation
+# Colour by local fibre orientation (default), by per-point FA, or by a
+# fixed hue.
 plot3d(sl)
-
-# Colour by per-point FA (continuous colour scale)
 plot3d(sl, color = "FA")
-
-# Fixed colour
 plot3d(sl, color = "steelblue", opacity = 0.8)
 
-# --- bundle example -------------------------------------------------------
-bun <- bundle(list(sl, sl))
-plot3d(bun)
-plot3d(bun, color = "mean_FA", palette = "RdYlBu")
+# --- a small bundle carrying its own radius ------------------------------
+# Eight streamlines of a pyramidal tract (corticospinal, CST) fanning
+# upward toward the cortex. Each one carries a per-streamline `radius` in
+# its data, so plot3d draws real 3D tubes straight from the object, with
+# no radius argument needed.
+cst_sl <- function(i) {
+  t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+  fan <- (t + 1) / 2                        # 0 at depth, 1 at cortex
+  streamline(
+    cbind(
+      X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+      Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+      Z = 4 * t
+    ),
+    streamline_data = list(radius = 0.05 + 0.05 * (i / 8))
+  )
+}
+cst <- bundle(lapply(seq_len(8), cst_sl))
+
+# Tubes at the radii carried in the data, or overridden by one explicit radius.
+plot3d(cst)
+plot3d(cst, radius = 0.08)
+
+# --- a 3-bundle crossing at the centrum semiovale -------------------------
+# The pyramidal (CST, vertical), the superior longitudinal fasciculus
+# (SLF, anterior-posterior) and the corpus callosum (CC, left-right) all
+# run through the centrum semiovale. Drawn at the origin they cross there,
+# giving the classic DTI orientation colours: CST blue (superior-inferior),
+# SLF green (anterior-posterior), CC red (left-right).
+cc_sl <- function(i) {
+  t <- seq(-1, 1, length.out = 120)
+  streamline(cbind(
+    X = 6 * t,
+    Y = 0.35 * t * t + (i - 3.5) * 0.18 * (1 + 0.4 * abs(t)),
+    Z = 0.3 * sin(pi * t) + (i - 3.5) * 0.12
+  ))
+}
+slf_sl <- function(i) {
+  t <- seq(-1, 1, length.out = 120)
+  streamline(cbind(
+    X = 0.35 * sin(pi * t) + (i - 3.5) * 0.15,
+    Y = 6 * t,
+    Z = 0.5 * sin(0.8 * t) + (i - 3.5) * 0.14
+  ))
+}
+cc  <- bundle(lapply(seq_len(8), cc_sl))
+slf <- bundle(lapply(seq_len(8), slf_sl))
+cs  <- bundle_set(list(CST = cst, CC = cc, SLF = slf))
+
+plot3d(cs, radius = 0.05)
+plot3d(cs, color_by_bundle = TRUE, radius = 0.05)
 }
 \seealso{
-\link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}
+\link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}, \link[fiber:bundle_set]{fiber::bundle_set}
 }

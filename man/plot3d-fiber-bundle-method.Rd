@@ -25,15 +25,71 @@ lines are drawn in that fixed colour.
 \item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
 \code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
 
-\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}.}
+\item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
+(default) or \code{"plotly"}. The three.js backend supports real world-space
+line thickness (true 3D tubes) and object-level depth-sorted
+transparency; the plotly backend is an opt-in alternative for interactive
+plotly-style charts.}
+
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
+three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
+WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
+fibres.}
+
+\item{radius}{Numeric radius in world units (three.js backend only). This is
+the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
+radius is treated as data carried on the object: when \code{radius} is \code{NULL}
+(the default), a \code{radius} key in the streamlines' \verb{@point_data} (per-point)
+or \verb{@streamline_data} (per-streamline) is picked up and rendered as real
+3D tubes; tubes are drawn exactly at that radius, never shrunk to avoid
+overlap between neighbouring fibres (overlap is the generator's business,
+not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
+\itemize{
+\item \code{NULL} (default): draw at the object's own radius data if present,
+otherwise thin lines (fast \code{Line2} at \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+\item A positive \strong{scalar}: every streamline is drawn as a real 3D
+\code{TubeGeometry} tube of this constant world radius, with genuine thickness,
+Phong flat shading, and object-level depth-sorted transparency (each tube
+is its own mesh sorted back-to-front).
+\item A \strong{per-streamline vector} (length == number of streamlines): one
+constant radius per line, drawn as \code{TubeGeometry}.
+\item A \strong{per-point vector} (length == total number of points): radius varying
+along each streamline, drawn as \code{TubeGeometry} with radial displacement —
+the most general form.
+}}
 
 \item{opacity}{Numeric in [0, 1]. Global line opacity. Defaults to \code{0.5}.}
 
-\item{...}{Additional named arguments forwarded to \code{\link[plotly:layout]{plotly::layout()}},
-e.g. \code{title = "My bundle"}.}
+\item{bg}{Background colour (CSS) of the scene (three.js backend only).
+Defaults to \code{"#111111"}.}
+
+\item{tooltip}{Hover tooltip on the three.js backend. When a point of a
+streamline is hovered, an in-scene tooltip shows that bundle's name, the
+point's 3D coordinates, and the values of its attributes. Accepted values:
+\itemize{
+\item \code{TRUE} (default): show the bundle name (when the object carries one), the
+coordinates, and \strong{all} attributes recorded on the object (per-point,
+per-streamline, per-bundle and per-bundle-set alike).
+\item \code{FALSE}: disable the tooltip entirely.
+\item A character vector of attribute column names: show only those, alongside
+the always-included coordinates (and bundle name when present). Names that
+do not exist on the object are ignored.
+}
+
+Right-clicking the hovered tooltip opens a checkbox list of every toggleable
+column; ticking or unticking one updates the visible box immediately. The
+bundle name and coordinates stay pinned and cannot be toggled off.
+
+The plotly backend ignores this argument (the plotly surface carries its
+own hover).}
+
+\item{...}{Additional named arguments. Only the plotly backend uses these,
+forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
+three.js backend (default) ignores them.}
 }
 \value{
-An interactive \link[plotly:plotly]{plotly} htmlwidget.
+An interactive htmlwidget (three.js or plotly, see \code{\link[=plot3d]{plot3d()}}).
 }
 \description{
 Renders all streamlines in a \link[fiber:bundle]{fiber::bundle} as a single interactive 3D
@@ -42,24 +98,55 @@ line plot. See \code{\link[=plot3d]{plot3d()}} for the full parameter documentat
 \examples{
 library(fiber)
 
-# --- minimal streamline example -------------------------------------------
-pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 1),
-  ncol = 3, byrow = TRUE,
-  dimnames = list(NULL, c("X", "Y", "Z"))
-)
-sl <- streamline(
-  points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6)),
-  streamline_data = list(mean_FA = 0.525)
-)
+# A small pyramidal tract (corticospinal, CST): eight streamlines fanning
+# upward from deep white matter toward the cortex, each carrying its own
+# per-streamline `radius`, `mean_FA` and hemisphere `region`.
+cst_sl <- function(i) {
+  t   <- seq(-1, 1, length.out = 120)      # -1 deep, +1 cortex
+  fan <- (t + 1) / 2                        # 0 at depth, 1 at cortex
+  streamline(
+    cbind(
+      X = 0.5 * sin(0.7 * t) + (i - 3.5) * 0.22 * (0.30 + 0.85 * fan),
+      Y = 0.4 * cos(0.5 * t) + (i - 3.5) * 0.10 * (0.30 + 0.85 * fan),
+      Z = 4 * t
+    ),
+    streamline_data = list(
+      radius = 0.05 + 0.05 * (i / 8),
+      mean_FA = 0.4 + 0.08 * i,
+      region  = if (i \%\% 2) "left" else "right"
+    )
+  )
+}
+cst <- bundle(lapply(seq_len(8), cst_sl))
 
-bun <- bundle(list(sl, sl))
-plot3d(bun)
-plot3d(bun, color = "mean_FA", palette = "RdYlBu")
+# Tubes at the radii carried in the data, or overridden by one explicit radius.
+plot3d(cst)
+plot3d(cst, radius = 0.08)
+
+# Colour by a per-streamline scalar key (continuous palette) or by a
+# per-streamline character key (categorical).
+plot3d(cst, color = "mean_FA", palette = "RdYlBu")
+plot3d(cst, color = "region")
+
+# Transparency: fade the bundle to overlay it on other geometry.
+plot3d(cst, opacity = 0.3)
+
+# Line-only streamlines (no radius data) draw as thin lines. If you decide
+# to fatten them into tubes yourself, prune() keeps a spread-out subset
+# whose tubes do not overlap, so the overlap is not introduced by you.
+strand <- function(i) {
+  t <- seq(0, 4 * pi, length.out = 200)
+  streamline(cbind(
+    X = seq_len(200) * 0.1,
+    Y = 0.25 * sin(t + 1.3 * i) + (i - 3.5) * 1.2,
+    Z = 0.25 * cos(t) + (i - 3.5) * 0.15
+  ))
+}
+lines <- bundle(lapply(seq_len(6), strand))
+plot3d(lines)
+pruned <- prune(lines, radius = 1)
+length(pruned@streamlines)
+plot3d(pruned, radius = 1)
 }
 \seealso{
 \code{\link[=plot3d]{plot3d()}}
