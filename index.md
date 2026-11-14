@@ -1,4 +1,4 @@
-# rtists [![rtists website](reference/figures/logo.png)](https://tractoverse.github.io/rtists/)
+# rtists
 
 **rtists** (*R for Tissue Integrity Superimposed on Tractography
 Streamlines*) provides interactive 3-D visualisation of tractography

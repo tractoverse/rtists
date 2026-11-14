@@ -1,6 +1,6 @@
 # Articles
 
-### All vignettes
+### Articles
 
 - [Getting started with
   rtists](https://tractoverse.github.io/rtists/articles/rtists.md):
