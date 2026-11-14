@@ -7,16 +7,27 @@ streamlines and bundles defined in the
 
 The main function is
 [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md),
-an [S7](https://rconsortium.github.io/S7/) generic with methods for both
-[`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
+an [S7](https://rconsortium.github.io/S7/) generic with methods for
+[`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html),
+[`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html),
 and
-[`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
-objects. Figures are rendered by [plotly](https://plotly.com/r/) and are
-fully interactive (pan, rotate, zoom).
+[`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+objects. The default `backend = "threejs"` uses a self-contained
+three.js widget with real world-space line thickness (`thickness`) and
+depth-sorted transparency; `backend = "plotly"` is retained as an
+interim fallback. Both are fully interactive (pan, rotate, zoom). The
+static figures below are exported from the plotly backend.
 
 ## Installation
 
-Install the development version from
+Install the latest CRAN release:
+
+``` r
+
+install.packages("rtists")
+```
+
+Or the current development version from
 [GitHub](https://github.com/tractoverse/rtists):
 
 ``` r
@@ -151,9 +162,57 @@ Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in
 [`?plot3d`](https://tractoverse.github.io/rtists/reference/plot3d.md).
 
+## Licensing
+
+rtists is released under the [MIT
+license](https://tractoverse.github.io/rtists/LICENSE.md) and bundles a
+vendored copy of the [three.js](https://threejs.org/) library and its
+`examples/jsm` addons. Those files are distributed under the MIT license
+(“Copyright 2010-2026 Three.js Authors”; full SPDX header preserved) and
+are byte-identical copies of the upstream r186 release, unmodified.
+Vendored files:
+
+- `three.module.js` and `three.core.js`
+- `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
+  LineSegmentsGeometry
+- `jsm/controls/`: OrbitControls.js
+
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which
+ships with the installed package.
+
 # Package index
 
 ## All functions
+
+- [`fatten-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle-method.md)
+  [`fatten,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle-method.md)
+  :
+
+  [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+  method for
+  [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
+  objects
+
+- [`fatten-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle_set-method.md)
+  [`fatten,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle_set-method.md)
+  :
+
+  [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+  method for
+  [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+  objects
+
+- [`fatten-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-streamline-method.md)
+  [`fatten,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-streamline-method.md)
+  :
+
+  [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+  method for
+  [`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
+  objects
+
+- [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+  : Assign a visible tube radius to line-only streamlines
 
 - [`plot3d-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
   [`plot3d,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
@@ -185,9 +244,39 @@ documented in
 - [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
   : Interactive 3D line plot for tractography streamlines and bundles
 
+- [`prune-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle-method.md)
+  [`prune,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle-method.md)
+  :
+
+  [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md)
+  method for
+  [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
+  objects
+
+- [`prune-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle_set-method.md)
+  [`prune,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle_set-method.md)
+  :
+
+  [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md)
+  method for
+  [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+  objects
+
+- [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md) :
+  Prune a tractography bundle to non-overlapping, hull-covering tubes
+
+- [`rtistsOutput()`](https://tractoverse.github.io/rtists/reference/rtists-shiny.md)
+  [`renderRtists()`](https://tractoverse.github.io/rtists/reference/rtists-shiny.md)
+  : Shiny output / render functions for the three.js backend.
+
+- [`runDemo()`](https://tractoverse.github.io/rtists/reference/runDemo.md)
+  : Launch an interactive rtists Shiny demo
+
 # Articles
 
 ### Articles
 
 - [Getting started with
   rtists](https://tractoverse.github.io/rtists/articles/rtists.md):
+- [The rtists package, inside and
+  out](https://tractoverse.github.io/rtists/articles/rtists-api.md):

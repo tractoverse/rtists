@@ -123,6 +123,7 @@ blue).
 ``` r
 
 plot3d(sl)
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 Figure 1: Single streamline coloured by local fibre orientation.
@@ -133,6 +134,7 @@ The same default works for a whole bundle:
 
 plot3d(bun)
 #> ℹ Rendering 4 streamlines...
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 Figure 2: Bundle of four streamlines coloured by orientation.
@@ -145,6 +147,7 @@ are mapped to a continuous colour scale (default: `"Viridis"`).
 ``` r
 
 plot3d(sl, color = "FA")
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 Figure 3: Streamline coloured by per-point FA.
@@ -160,6 +163,7 @@ its tract-level scalar.
 
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 #> ℹ Rendering 4 streamlines...
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 Figure 4: Bundle coloured by per-streamline mean FA.
@@ -172,6 +176,7 @@ Pass any CSS colour name or hex code to colour all lines identically.
 
 plot3d(bun, color = "steelblue", opacity = 0.6)
 #> ℹ Rendering 4 streamlines...
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 Figure 5: Bundle in a single fixed colour with reduced opacity.
@@ -184,16 +189,17 @@ Figure 5: Bundle in a single fixed colour with reduced opacity.
 |----|----|----|
 | `color` | `"orientation"` | Colour mode: `"orientation"`, metadata key, or a CSS/hex string. |
 | `palette` | `"Viridis"` | Plotly / ColorBrewer scale used for continuous numeric metadata. |
-| `linewidth` | `2` | Line width in pixels. |
+| `linewidth` | `2` | Constant line width in world units (three.js `Line2`). |
 | `opacity` | `0.5` | Global line opacity (0–1). |
-| `...` |  | Passed to `plotly::layout()`, e.g. `title = "Left CST"`. |
+| `radius` | `NULL` | Tube radius. When `NULL` (default), rtists uses the radius carried in the object’s own data if present (`radius` in the per-streamline or per-point data), or falls back to thin `Line2` lines when the streamlines carry none. A positive scalar draws every streamline as a true 3D tube at that fixed radius and overrides any data radius; per-streamline or per-point vectors give variable radii. rtists never shrinks tubes or hides streamlines to dodge overlap: overlapping tubes are the generator’s business, not rtists’s. |
 
-Extra `plotly::layout()` arguments can be supplied directly:
+Line width, opacity, and radius are combined freely:
 
 ``` r
 
-plot3d(bun, color = "FA", linewidth = 4, title = "Example bundle — FA")
+plot3d(bun, color = "steelblue", linewidth = 4, opacity = 0.6)
 #> ℹ Rendering 4 streamlines...
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
-Figure 6: Custom title and increased line width.
+Figure 6: Custom fixed colour, thicker lines, and reduced opacity.

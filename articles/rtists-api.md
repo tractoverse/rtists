@@ -1,0 +1,420 @@
+# The rtists package, inside and out
+
+``` r
+
+if (!requireNamespace("rtists", quietly = TRUE)) {
+  knitr::opts_chunk$set(eval = FALSE)
+} else {
+  library(rtists)
+  library(fiber)
+}
+```
+
+This second vignette is a technical tour of the rtists package: how the
+pieces fit together, the exact algorithms behind
+[`prune()`](https://tractoverse.github.io/rtists/reference/prune.md) and
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md),
+how the browser widget renders the data, and how rtists compares with
+the alternatives (`rgl`, `plotly`, or a future Rust rewrite). Read the
+[“Getting started”
+vignette](https://tractoverse.github.io/rtists/articles/rtists.md) first
+if you have not used the package before. This one answers *how it
+works*, not *how to call it*.
+
+------------------------------------------------------------------------
+
+## Package architecture
+
+`rtists` wraps `fiber` tractography objects (streamline, bundle,
+bundle_set) into interactive 3-D visualisations. The whole package in
+one sentence:
+
+> A fiber object flows through an internal long-data-frame pipeline into
+> one of two htmlwidget backends, a three.js renderer (default) or a
+> `plotly` `scatter3d` plot.
+
+The dependency shape is deliberately light:
+
+| Concern                  | Package                      |
+|--------------------------|------------------------------|
+| Data model               | `fiber` (S7 classes)         |
+| Object system            | `S7`                         |
+| Widget plumbing          | `htmlwidgets`                |
+| JSON / serialisation     | `jsonlite`                   |
+| Console messaging        | `cli`                        |
+| 3-D renderer             | vendored three.js r186 (ESM) |
+| Optional second renderer | `plotly` (Suggests, opt-in)  |
+
+There is no compiled code and no `SystemRequirements`, which is central
+to the package’s CRAN-clean posture. The 3-D rendering happens entirely
+in the browser via vendored JavaScript.
+
+### The public surface
+
+The exported API is small:
+
+- [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md):
+  an S7 generic with methods for the three fiber classes. Returns an
+  htmlwidget.
+- [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md):
+  an S7 generic that thins an overlapping bundle to a spread-out subset
+  whose tubes do not touch.
+- [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md):
+  an S7 generic that attaches a visible tube radius to streamlines that
+  carry none.
+
+Everything else is internal. Because the fiber classes are namespaced
+([`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
+and so on), plain S3 dispatch breaks on them, so rtists uses **S7
+generics** with methods declared on the S7 classes directly. The
+per-class data-frame conversion helpers (`.streamline_to_df`,
+`.bundle_to_df`, `.bundle_set_to_df`) are plain internal functions
+rather than S3/S7 methods, precisely because the class names carry a
+`::` prefix that S3 dispatch cannot match.
+
+------------------------------------------------------------------------
+
+## The data pipeline
+
+Whatever the input class,
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+funnels the object through the same path:
+
+    fiber object
+       └─ .streamline_to_df / .bundle_to_df / .bundle_set_to_df
+            └─ long data frame (one row per point, metadata as extra columns)
+                 └─ .rbind_union (align frames to the union of columns, NA fill)
+                      └─ resolved data frame
+                           └─ .plot3d_threejs  ──► three.js htmlwidget
+                           └─ .plot3d_impl     ──► plotly htmlwidget
+
+### Long-form data frame
+
+Each streamline becomes a block of rows with the columns `StreamlineId`,
+`PointId`, `X`, `Y`, `Z`, plus one column per metadata key. A streamline
+with per-point `FA` and per-streamline `mean_FA` becomes:
+
+``` r
+
+pts <- matrix(c(0,0,0, 1,2,1, 2,3,3), ncol = 3, byrow = TRUE,
+              dimnames = list(NULL, c("X","Y","Z")))
+sl  <- streamline(pts, point_data = list(FA = c(0.2, 0.5, 0.8)),
+                  streamline_data = list(mean_FA = 0.5))
+d   <- rtists:::.streamline_to_df(sl, streamline_id = 1L)
+d
+#>   StreamlineId PointId X Y Z  FA mean_FA
+#> 1            1       1 0 0 0 0.2     0.5
+#> 2            1       2 1 2 1 0.5     0.5
+#> 3            1       3 2 3 3 0.8     0.5
+```
+
+Per-streamline scalars are broadcast to every point of their streamline,
+so the long frame is uniformly point-based. This flat shape is what
+makes the widget backend straightforward: the renderer only ever
+consumes points, colours, and an optional per-point radius.
+
+### Aligning heterogenous objects
+
+A single streamlines’ frame has as many columns as it has metadata keys.
+When several streamlines (or bundles, or bundle sets) carry different
+keys, `.rbind_union` aligns them to the **union** of all columns,
+filling the missing cells with `NA`. Those `NA` cells never reach the
+renderer as geometry; they are metadata only, and the widget skips
+missing values in the tooltip and the legend panel.
+
+------------------------------------------------------------------------
+
+## Backend routing
+
+The default backend is **three.js**. The choice is made inside each S7
+method by `match.arg(backend)` after building the shared data frame, so
+the two backends consume the exact same resolved frame. Only the
+three.js backend understands `radius`, `bg`, and `tooltip`; the `plotly`
+backend ignores those and instead forwards any `...` arguments to
+`plotly::layout()` (the only backend that honours a custom `...`).
+
+------------------------------------------------------------------------
+
+## The three.js backend
+
+The three.js backend lives in `R/backend-threejs.R`, which builds the
+widget payload, and in `inst/htmlwidgets/lib/threejs/rtists-render.js`,
+which renders it.
+
+### Payload and binary encoding
+
+A naive widget would send coordinates as JSON floating-point numbers (17
+significant digits each). For even a 100k-point bundle that bloats the
+widget JSON enormously. rtists instead packs numerical buffers as **raw
+binary little-endian** and lets `htmlwidgets` base64-encode the byte
+strings, giving compact payloads:
+
+| Field | Type | Encoding |
+|----|----|----|
+| `positions` | Float32 xyz (3 per point) | `writeBin(pos, raw(), size = 4L)` -\> base64 |
+| `colors` | Uint8 RGB (3 per point) | `as.raw(pmin(255L, round(colors * 255)))` -\> base64 |
+| `radii` (tube mode) | Float32 (1 per point) | `writeBin(..., size = 4L)` -\> base64 |
+| `ramp` (legend) | Uint8 3 x 256 | raw -\> base64 |
+
+The JS side decodes them back with `atob` and typed-array views
+(`b64ToF32`, `b64ToU8F32`). Positions and radii cross the wire at
+**Float32** precision; colours cross at 8-bit channels, which is exactly
+what the canvas samples anyway.
+
+### Two render paths
+
+The widget branches on a `mode` field set on the R side.
+
+**line2 mode (default).** A single `LineSegments2` mesh with a
+`LineMaterial({ worldUnits: true, vertexColors: true, linewidth })`.
+Interleaved segment buffers `[start, end]` per segment, with per-segment
+start/end colours. Because everything is one draw call, this path scales
+to large bundles and is the default. Constant world-space width via the
+`linewidth` uniform. The classic three.js `resolution` footgun (an unset
+`resolution` uniform producing `NaN` aspect in the shader) is
+self-healed in r186 by `LineSegmentsGeometry`’s `onBeforeRender` hook,
+so no manual handling is needed.
+
+**tube mode.** One `TubeGeometry` per streamline, built at **unit
+radius** around a `CatmullRomCurve3`, then every ring of vertices is
+displaced radially by that streamline’s per-point radius, and a
+per-vertex `color` attribute supplies the fill. Because the tube is
+built at unit radius and displaced, a single geometry can represent a
+radius that varies along the streamline. Object-level depth sorting
+gives transparent tubes: each tube is its own mesh with
+`transparent: true` and `depthWrite: false`, so transparent tubes
+compose correctly instead of flickering.
+
+### The radius knob in detail
+
+`rtists` never decides a radius for you beyond what you ask for, and it
+never shrinks tubes or hides streamlines to dodge overlap. Overlap is
+the generator’s business, not rtists’s. The `radius` argument resolves
+through a small set of helpers:
+
+1.  `.df_radius_from_data(df)` recovers a radius carried on the object
+    itself: a `radius` column in the resolved frame. If the radius is
+    constant within each streamline it returns a per-streamline vector;
+    otherwise a per-point vector; `NULL` when no usable positive radius
+    exists.
+2.  `.threejs_radius(radius, df)` resolves the explicit `radius`
+    argument into a `mode` and per-point radii. It accepts:
+    - `NULL` / `0`: fast `line2` (either “use the object’s own radius”
+      or “plain thin lines”).
+    - a positive scalar: constant-radius tubes.
+    - a per-streamline vector (length == number of streamlines).
+    - a per-point vector (length == total number of points).
+
+    Positivity is validated; this echoes the “radial displacement of a
+    unit tube” design, where the most general form (per-point) is the
+    same code path as a scalar.
+
+### Hovering, tooltips, and the legend panel
+
+The widget ships a small in-scene DOM tooltip. On pointer move it
+raycasts the mesh, maps the hit back to a packed point index, and
+renders the pinned bundle name and coordinates plus the toggleable
+attribute columns. Line2 mode maps a raycast segment index to a point
+via a `segToPoint` index; tube mode finds the nearest point within the
+hit streamline.
+
+A separate legend panel (from `.df_legend_meta`) lets the user remap
+aesthetics live without re-framing the camera: colour by bundle or any
+attribute, radius by any numeric attribute (tube mode), and per-bundle
+or per-streamline visibility. The R side ships a 3 x 256 Uint8 colour
+ramp plus per-streamline and per-point attribute buffers; the JS side
+rebuilds the mesh in place from decoded buffers. Anything missing (a
+`NULL`/`NaN` value) is painted a distinct grey, never dropped silently.
+
+------------------------------------------------------------------------
+
+## `prune()` and `fatten()`: the algorithms
+
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+renders whatever it is given. For bundles of *thin* streamlines that
+carry no radius, the picture can be a tangle of overlapping lines.
+[`prune()`](https://tractoverse.github.io/rtists/reference/prune.md) and
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+are companion utilities that turn a dense bundle into a legible one.
+
+### `prune()`: keep a non-overlapping spread
+
+`prune(x, radius, overlap_margin = 1, max_iter = Inf)` returns a subset
+whose tubes of the given radius do not overlap. The core is
+`.prune_indices(polys, radius, overlap_margin, max_iter)`:
+
+1.  **Required separation**: `req = 2 * radius * overlap_margin` (tube
+    diameter, scaled by the margin). Two streamlines count as “not
+    overlapping” when their `.min_sep_two` (closest approach between the
+    two polyline geometries) is at least `req`.
+2.  **Greedy, deterministic selection**, starting from an empty kept
+    set:
+    - if nothing is kept yet, consider the remaining streamlines in raw
+      index order;
+    - otherwise, among the remaining streamlines, choose
+      **farthest-first**: the one whose gap to the kept set
+      (`.streamline_cover_gap`) is largest, ties broken by index, and
+      keep the first one whose tube does not overlap any kept tube
+      (every `.min_sep_two` at least `req`).
+3.  **Stop** as soon as every remaining streamline is “covered”
+    (`.streamline_cover_gap <= radius`, meaning the kept tubes already
+    span the whole hull at the given radius), or when no remaining
+    streamline has a non-overlapping candidate.
+
+The result is `sort(keep)`: a deterministic, reproducible spread. Beyond
+the index tie-break the outcome does not depend on input order, so the
+same bundle prunes the same way every time.
+
+### `fatten()`: give thin streamlines a visible radius
+
+`fatten(x, visibility = NULL, ...)` attaches a constant per-streamline
+`radius` so that radius-less streamlines render as tubes instead of
+hairline lines. It chooses the radius from the geometry:
+
+- `.fatten_step(polys)`: the median intra-streamline sampling step
+  (median distance between consecutive points along a streamline).
+- `.fatten_dmin(polys)`: the **minimum** distance between any two
+  streamlines.
+- `.fatten_floor(polys, visibility)`: the visible-radius floor. Either a
+  user-supplied `visibility` (validated to a single positive number), or
+  the median step as a sensible default.
+
+The bundle method decides between two regimes on how the streamlines sit
+relative to one another, with `f` the floor and `dmin` the closest
+approach:
+
+- **Sparse** (`dmin / 2 >= f`): streamlines are far enough apart that
+  tubes of radius `dmin / 2` *just touch*. Everything is kept, at that
+  radius: the visually fullest picture with no overlap.
+- **Dense** (`dmin / 2 < f`): streamlines overlap at any visible radius,
+  so
+  [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+  falls back to pruning: the radius is $`r = f`$ (the floor) and `kept`
+  is the `.prune_indices(polys, f, 1)` subset, giving non-overlapping
+  tubes at the visible floor.
+
+The `bundle_set` method simply applies
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+to each bundle in turn and drops any that become empty.
+
+#### Where the radius lands
+
+A subtle and important detail:
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+does **not** attach the radius to each nested streamline. It calls
+
+``` r
+
+fiber::bundle(kept, streamline_data = list(radius = rep(r, length(kept))))
+```
+
+[`fiber::bundle()`](https://tractoverse.github.io/fiber/reference/bundle.html)
+hoists per-streamline metadata to the bundle-level `@streamline_data`
+slot (a per-streamline vector of length *S*), rather than nesting it
+inside each streamline. This is the same slot
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+reads back via `.df_radius_from_data()`, so the fattened radius flows
+straight through the pipeline. This is why a bundle that
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+returns renders as tubes on a bare `plot3d(x)` call with no `radius`
+argument: the radius now lives in the object’s data.
+
+The
+[`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
+method for a single streamline always applies the visibility floor
+(there is nothing to prune), and the empty-bundle case is handled
+explicitly as `fiber::bundle(list())`.
+
+------------------------------------------------------------------------
+
+## Assessment: three.js vs rgl vs plotly vs Rust
+
+The comparison that motivated the three.js choice, and the question of
+whether to keep the `plotly` backend or one day move the renderer to
+native code.
+
+### three.js (the chosen end state)
+
+**Strengths.** A single `LineSegments2` draw call plus per-vertex colour
+buffers scales to very large bundles. Real world-space tube geometry
+(`TubeGeometry` + radial displacement) gives genuine 3-D thickness and
+Phong flat shading, which rgl gives but `plotly` cannot. Object-level
+depth-sorted transparency renders overlapping transparent tubes
+correctly. It stays a self-contained inline htmlwidget with **no
+`SystemRequirements`** and no compiled code, preserving the CRAN-clean
+posture.
+
+**Costs.** The plotting code is JavaScript. Engineering it (payload
+encoding, the ESM loading trick, the two render paths, hover + legend)
+was a one-time effort of a few hundred lines of JS. The off-the-shelf
+`rthreejs` package is a thin wrapper and not suited to this level of
+control, so rtists vendors three.js directly.
+
+### rgl (the neuroimaging standard) – why it loses
+
+`rgl` offers true OpenGL lighting and the interactive `rglwidget()`, and
+it is the usual tool in tractography. But adopting it would mean:
+
+- adding `SystemRequirements` (GLEW/GLU/GL on Linux, X on some systems),
+  which broke the “no SystemRequirements” CRAN posture that motivated
+  this design;
+- `lines3d()` issues one GL draw call per line, which is slow for huge
+  bundles compared to a single `LineSegments` draw call;
+- continuous per-point colour on a single line requires splitting it
+  into per segment sub-lines to vary the colour;
+- the widget still opens a GL context and needs a virtual framebuffer in
+  headless CI.
+
+The three.js renderer *can* approach rgl’s “cinematic” look (tubes,
+lighting, depth-sorted transparency) without any of those costs.
+
+### plotly (kept, but as a deliberate opt-in)
+
+The two backends were assessed again after the r186 upgrade. `plotly`
+renders flat, screen-space line strips: no real thickness, no lighting,
+no depth-sorted transparency. Before r186 it had a credible payoff (line
+width, interactivity) that the upgrade removed, so its original
+justification is gone. rtists keeps it for two specific reasons:
+
+1.  it is the **only** backend that honours `...`, forwarding to
+    `plotly::layout()` (handy for titles and scene tweaks);
+2.  it is a **resilient second renderer** if WebGL is unavailable.
+
+It is therefore exposed as `backend = "plotly"`, an explicit opt-in
+rather than a default.
+
+### Moving to Rust (the scale ceiling)
+
+The binding constraint for very large bundles is *not* the renderer. Per
+the whole-brain benchmark (5 M points), both htmlwidget backends are
+limited by **JSON text encoding** of the payload: roughly 278 MB of
+binary floats become around 444 MB of JSON and over a gigabyte of HTML,
+taking 4-52 s just to serialise. At 10^5 points everything is instant;
+at 10^6 to 10^7 points a saved inline widget becomes impractical for
+either backend, because both are htmlwidgets sharing the same
+serialisation ceiling.
+
+The escape that a Rust implementation would offer is a **local server
+architecture**: transfer the same binary floats over a WebSocket (or
+WASM), avoiding JSON text entirely. But rtists is deliberately a
+*static, self-contained htmlwidget*: embeddable, shareable, openable
+from a saved `.html`. A streaming server would invert that contract (the
+widget becomes a client of a running local process) and add a compiled
+server dependency, exactly what the package avoids. That reassessment
+concluded **no WebSocket/streaming backend**: it would only pay off at a
+scale that is beyond the htmlwidget’s practical range regardless of
+transport, and it sacrifices the self-contained artifact. If whole-brain
+self-contained output is ever truly needed at 10^6+ points, the path is
+a genuinely binary-embedded artifact (a base64 blob of a `Float32Array`
+fetched within one HTML file), not a server that rtists must ship.
+
+### Bottom line
+
+For the overwhelming majority of tractography work (single tracts up to
+whole bundles, tens to hundreds of thousands of points), the three.js
+htmlwidget is the right shape: no native dependencies, real 3-D tubes
+and transparency, and a fast single-draw-call default. The `plotly`
+backend stays as an opt-in, `...`-honouring fallback. A Rust
+local-server rewrite would only be justified by the 10^6-point scale
+ceiling, and even then it fights the htmlwidget’s core promise of a
+self-contained, shareable artifact.

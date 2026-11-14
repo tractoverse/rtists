@@ -23,9 +23,9 @@ Useful links:
 ## Author
 
 **Maintainer**: Aymeric Stamm <aymeric.stamm@cnrs.fr>
-([ORCID](https://orcid.org/0000-0002-8725-3654))
+([ORCID](https://orcid.org/0000-0002-8725-3654)) \[copyright holder\]
 
 Authors:
 
 - Aymeric Stamm <aymeric.stamm@cnrs.fr>
-  ([ORCID](https://orcid.org/0000-0002-8725-3654))
+  ([ORCID](https://orcid.org/0000-0002-8725-3654)) \[copyright holder\]

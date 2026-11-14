@@ -7,16 +7,27 @@ streamlines and bundles defined in the
 
 The main function is
 [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md),
-an [S7](https://rconsortium.github.io/S7/) generic with methods for both
-[`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
+an [S7](https://rconsortium.github.io/S7/) generic with methods for
+[`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html),
+[`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html),
 and
-[`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
-objects. Figures are rendered by [plotly](https://plotly.com/r/) and are
-fully interactive (pan, rotate, zoom).
+[`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+objects. The default `backend = "threejs"` uses a self-contained
+three.js widget with real world-space line thickness (`thickness`) and
+depth-sorted transparency; `backend = "plotly"` is retained as an
+interim fallback. Both are fully interactive (pan, rotate, zoom). The
+static figures below are exported from the plotly backend.
 
 ## Installation
 
-Install the development version from
+Install the latest CRAN release:
+
+``` r
+
+install.packages("rtists")
+```
+
+Or the current development version from
 [GitHub](https://github.com/tractoverse/rtists):
 
 ``` r
@@ -150,3 +161,21 @@ plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in
 [`?plot3d`](https://tractoverse.github.io/rtists/reference/plot3d.md).
+
+## Licensing
+
+rtists is released under the [MIT
+license](https://tractoverse.github.io/rtists/LICENSE.md) and bundles a
+vendored copy of the [three.js](https://threejs.org/) library and its
+`examples/jsm` addons. Those files are distributed under the MIT license
+(“Copyright 2010-2026 Three.js Authors”; full SPDX header preserved) and
+are byte-identical copies of the upstream r186 release, unmodified.
+Vendored files:
+
+- `three.module.js` and `three.core.js`
+- `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
+  LineSegmentsGeometry
+- `jsm/controls/`: OrbitControls.js
+
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which
+ships with the installed package.
