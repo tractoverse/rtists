@@ -100,7 +100,7 @@ streamlines <- lapply(seq_len(4), function(i) {
 bun <- bundle(streamlines)
 bun
 #> 
-#> ── Object of class `fiber::bundle()` with 4 streamliness and [6–6] points per streamline. ──
+#> ── Object of class `fiber::bundle()` with 4 streamlines and [6–6] points per streamline. ──
 #> 
 #> • Point attributes: "FA"
 #> • Streamline attributes: "mean_FA"
