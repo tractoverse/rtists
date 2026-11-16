@@ -15,7 +15,14 @@ on:
       config:
         description: 'A comma separated list of R-hub platforms to use.'
         type: string
-        default: 'linux,windows,macos'
+        # Trimmed default matrix. The platforms removed here (rchk, gcc16,
+        # nosuggests, valgrind, ubuntu-clang) fail every dispatch on rhub
+        # check-container dependency-runtime flakes (e.g. libasan.so.8 /
+        # libc++.so.1 missing from LD_LIBRARY_PATH, rchk "bcheck output file
+        # does not exist") before as-cran checks ever start, so they contribute
+        # no signal about rtists. The genuine sanitizer platforms
+        # (gcc-asan, clang-asan) and clang16-clang23 are kept.
+        default: 'linux, m1-san, macos, macos-arm64, windows, atlas, c23, clang-asan, clang-ubsan, clang16, clang17, clang18, clang19, clang20, clang21, clang22, clang23, donttest, gcc-asan, gcc13, gcc14, gcc15, intel, lto, mkl, nold, noremap, ubuntu-gcc12, ubuntu-next, ubuntu-release, vnu'
       name:
         description: 'Run name. You can leave this empty now.'
         type: string
