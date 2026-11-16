@@ -398,13 +398,36 @@ HTMLWidgets.widget({
     let modeMenuEl  = null;   // the orbit-mode popup, or null
     let orbitMode   = 'rotate'; // rotate | pan | zoom
     let axesBtn     = null;   // kept for the toggled state glyph
+    let modeBtnEl   = null;   // mode button; tooltip shows the current mode
+    let barTip      = null;   // styled helper popup for toolbar/mode buttons
 
     const TOOLBAR_BTN =
       'background:none;border:none;color:#f1eee6;cursor:pointer;' +
       'font:18px/1 system-ui,Segoe UI,sans-serif;line-height:22px;' +
       'width:26px;height:26px;padding:0;text-align:center;border-radius:4px;';
     const TOOLBAR_BTN_HOVER = 'background:rgba(241,238,230,0.16);';
+    const TOOLBAR_BTN_ACTIVE = 'background:rgba(241,238,230,0.30);';
     const TOOLBAR_ROW = 'vertical-align:middle;';
+
+    // Show the named helper popup near `btn`, flipping across the edges so it
+    // stays onscreen; shared by the toolbar and mode-menu buttons.
+    function showBarTip(btn, text) {
+      if (!barTip) return;
+      barTip.textContent = text;
+      barTip.style.display = 'block';
+      const tw = barTip.offsetWidth, th = barTip.offsetHeight;
+      const r = btn.getBoundingClientRect();
+      let left = r.left + r.width / 2 - tw / 2;
+      if (left < 4) left = 4;
+      if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
+      let top = r.bottom + 8;
+      if (top + th > window.innerHeight - 4) top = r.top - th - 8;
+      barTip.style.left = left + 'px';
+      barTip.style.top  = top + 'px';
+    }
+    function hideBarTip() {
+      if (barTip) barTip.style.display = 'none';
+    }
 
     function makeToolbarButton(glyph, title, onClick) {
       const b = document.createElement('button');
@@ -413,13 +436,23 @@ HTMLWidgets.widget({
       b.innerHTML = '<span style="' + TOOLBAR_ROW + '">' + glyph + '</span>';
       b.style.cssText = TOOLBAR_BTN;
       b.addEventListener('mouseenter', function() {
-        b.style.cssText = TOOLBAR_BTN + TOOLBAR_BTN_HOVER;
+        b.style.cssText = TOOLBAR_BTN +
+          (b.classList.contains('active') ? TOOLBAR_BTN_ACTIVE : TOOLBAR_BTN_HOVER);
+        showBarTip(b, title);
       });
       b.addEventListener('mouseleave', function() {
-        b.style.cssText = TOOLBAR_BTN;
+        b.style.cssText = TOOLBAR_BTN +
+          (b.classList.contains('active') ? TOOLBAR_BTN_ACTIVE : '');
+        hideBarTip();
       });
       b.addEventListener('click', function(e) { e.stopPropagation(); onClick(e); });
       return b;
+    }
+
+    function modeLabel(mode) {
+      if (mode === 'rotate') return 'Rotate';
+      if (mode === 'pan') return 'Pan';
+      return 'Zoom';
     }
 
     function renderModeMenu() {
@@ -432,7 +465,8 @@ HTMLWidgets.widget({
       ];
       modeMenuEl.innerHTML = items.map(function(it) {
         const on = it[0] === current ? 'background:rgba(241,238,230,0.22);' : '';
-        return '<button type="button" data-mode="' + it[0] + '" style="' +
+        return '<button type="button" data-mode="' + it[0] + '" title="' +
+          it[2] + '" style="' +
           TOOLBAR_BTN + on + 'font-size:15px;">' + it[1] + '</button>';
       }).join('');
       // bind after innerHTML so the listeners see fresh nodes
@@ -447,6 +481,7 @@ HTMLWidgets.widget({
 
     function closeModeMenu() {
       if (modeMenuEl) modeMenuEl.style.display = 'none';
+      hideBarTip();
     }
 
     // Toggle the mouse interaction model. "rotate" (default) maps the left
@@ -457,6 +492,7 @@ HTMLWidgets.widget({
     function setOrbitMode(mode) {
       orbitMode = mode;
       applyControlsForMode();
+      if (modeBtnEl) modeBtnEl.title = 'Orbit mode: ' + modeLabel(mode);
     }
 
     function applyControlsForMode() {
@@ -480,11 +516,11 @@ HTMLWidgets.widget({
       axesOn = !axesOn;
       axes.visible = axesOn;
       if (axesBtn) {
-        axesBtn.innerHTML =
-          (axesOn ? '&#10003; ' : '') + '<span style="' + TOOLBAR_ROW + '">&boxv;&boxh;</span>';
         axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
-        if (axesOn) axesBtn.classList.add('active');
-        else axesBtn.classList.remove('active');
+        axesBtn.classList.toggle('active', axesOn);   // highlight = axes shown
+        axesBtn.style.cssText = TOOLBAR_BTN +
+          (axesOn ? TOOLBAR_BTN_ACTIVE : '');
+        if (axesOn) showBarTip(axesBtn, 'Hide axes');
       }
     }
 
@@ -499,6 +535,8 @@ HTMLWidgets.widget({
       toolbarEl = container;
 
       axesBtn = makeToolbarButton('&boxv;&boxh;', 'Hide axes', toggleAxes);
+      axesBtn.classList.toggle('active', axesOn);   // axes are shown by default
+      if (axesOn) axesBtn.style.cssText = TOOLBAR_BTN + TOOLBAR_BTN_ACTIVE;
       const pngBtn = makeToolbarButton('&#8600;', 'Download as PNG', function() {
         renderer.domElement.toBlob(function(blob) {
           if (!blob) return;
@@ -515,6 +553,7 @@ HTMLWidgets.widget({
 
       const modeBtn = makeToolbarButton('&#8635;', 'Orbit mode', function(e) {
         e.stopPropagation();
+        hideBarTip();
         renderModeMenu();
         modeMenuEl.style.display = 'block';
         const mw = modeMenuEl.offsetWidth, mh = modeMenuEl.offsetHeight;
@@ -526,6 +565,7 @@ HTMLWidgets.widget({
         modeMenuEl.style.left = left + 'px';
         modeMenuEl.style.top  = top + 'px';
       });
+      modeBtnEl = modeBtn;
 
       const zinBtn = makeToolbarButton('+', 'Zoom in', function() {
         controls.dollyIn(0.85);
@@ -555,6 +595,17 @@ HTMLWidgets.widget({
       renderModeMenu();
       closeModeMenu();
 
+      // Helper popup for the toolbar / mode-menu buttons (styled like the hover
+      // tooltip, shown on mouseenter and hidden on mouseleave / menu close).
+      barTip = document.createElement('div');
+      barTip.style.cssText =
+        'position:fixed;pointer-events:none;z-index:25;display:none;' +
+        'background:rgba(10,14,12,0.92);color:#f1eee6;' +
+        'font:12px/1.4 system-ui,Segoe UI,sans-serif;padding:4px 8px;' +
+        'border:1px solid rgba(241,238,230,0.25);border-radius:4px;' +
+        'white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+      document.body.appendChild(barTip);
+
       if (!el.style.position || el.style.position === 'static') el.style.position = 'relative';
       el.appendChild(container);
       toolbarEl.style.display = 'none';
@@ -571,6 +622,7 @@ HTMLWidgets.widget({
       buildToolbar();
       applyControlsForMode();
       if (axesBtn) axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
+      if (modeBtnEl) modeBtnEl.title = 'Orbit mode: ' + modeLabel(orbitMode);
       axes.visible = axesOn;
       toolbarEl.style.display = 'block';
     }
@@ -1248,7 +1300,8 @@ HTMLWidgets.widget({
         legendBtn = null; legendPanel = null; legendState = null; stateX = null;
         if (toolbarEl && toolbarEl.parentNode) toolbarEl.parentNode.removeChild(toolbarEl);
         if (modeMenuEl && modeMenuEl.parentNode) modeMenuEl.parentNode.removeChild(modeMenuEl);
-        toolbarEl = null; modeMenuEl = null; axesBtn = null;
+        if (barTip && barTip.parentNode) barTip.parentNode.removeChild(barTip);
+        toolbarEl = null; modeMenuEl = null; axesBtn = null; barTip = null;
         renderer.dispose();
         controls.dispose();
         if (renderer.domElement.parentNode) {
