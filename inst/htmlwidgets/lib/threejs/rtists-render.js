@@ -376,13 +376,11 @@ HTMLWidgets.widget({
       );
       camera.updateProjectionMatrix();
       controls.update();
-      controls.saveState();
     }
 
-    // Re-frame the camera to the full data extent and reset the user's camera
-    // baseline. Used by the toolbar's autoscale / reset buttons; also refreshes
-    // OrbitControls' saved state so reset() after a data update matches the new
-    // data.
+    // Re-frame the camera to the full data extent. Used by the toolbar's
+    // autoscale button; deliberately does NOT touch OrbitControls' saved state,
+    // so reset() still returns to the view framed at render time.
     function reframeToData() {
       frameCamera(renderPositions);
     }
@@ -438,7 +436,7 @@ HTMLWidgets.widget({
       b.addEventListener('mouseenter', function() {
         b.style.cssText = TOOLBAR_BTN +
           (b.classList.contains('active') ? TOOLBAR_BTN_ACTIVE : TOOLBAR_BTN_HOVER);
-        showBarTip(b, title);
+        showBarTip(b, b.title);  // read the live title: axes/mode update it
       });
       b.addEventListener('mouseleave', function() {
         b.style.cssText = TOOLBAR_BTN +
@@ -453,6 +451,11 @@ HTMLWidgets.widget({
       if (mode === 'rotate') return 'Rotate';
       if (mode === 'pan') return 'Pan';
       return 'Zoom';
+    }
+    function modeGlyph(mode) {
+      if (mode === 'rotate') return '&#8635;';
+      if (mode === 'pan') return '&#9998;';
+      return '&#128269;';
     }
 
     function renderModeMenu() {
@@ -492,7 +495,11 @@ HTMLWidgets.widget({
     function setOrbitMode(mode) {
       orbitMode = mode;
       applyControlsForMode();
-      if (modeBtnEl) modeBtnEl.title = 'Orbit mode: ' + modeLabel(mode);
+      if (modeBtnEl) {
+        modeBtnEl.title = 'Orbit mode: ' + modeLabel(mode);
+        modeBtnEl.innerHTML =
+          '<span style="' + TOOLBAR_ROW + '">' + modeGlyph(mode) + '</span>';
+      }
     }
 
     function applyControlsForMode() {
@@ -577,7 +584,7 @@ HTMLWidgets.widget({
         reframeToData();
       });
       const resetBtn = makeToolbarButton('&#8634;', 'Reset camera', function() {
-        // restores the target/position/zoom saved by placeCamera()/saveState()
+        // restores the target/position/zoom saved at render time
         controls.reset();
       });
 
@@ -1370,6 +1377,9 @@ HTMLWidgets.widget({
         // is null then, so its positions cannot be relied on).
         renderPositions = b64ToF32(x.positions);
         frameCamera(renderPositions);
+        // Baseline for the toolbar's reset button: the *initial* framed view only.
+        // Autoscale must not overwrite it, or reset would degenerate to autoscale.
+        controls.saveState();
         refreshToolbar();
       },
 
