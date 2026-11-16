@@ -305,6 +305,11 @@ HTMLWidgets.widget({
     // ---- controls ---------------------------------------------------------
     const controls = new OrbitControls(camera, renderer.domElement);
 
+    // Axis on/off + camera reset bookkeeping; updated per render.
+    let toolbarEnabled = true;   // `x.toolbar` from the R payload
+    let axesOn         = true;   // current visibility of the axes helper
+    let renderPositions = null;  // decoded positions of the current render
+
     // ---- lighting -----------------------------------------------------------
     // Phantomas-style illumination for the FlatShading fill tubes: a dim
     // ambient plus directional lights from several octants so tube facets
@@ -371,6 +376,203 @@ HTMLWidgets.widget({
       );
       camera.updateProjectionMatrix();
       controls.update();
+      controls.saveState();
+    }
+
+    // Re-frame the camera to the full data extent and reset the user's camera
+    // baseline. Used by the toolbar's autoscale / reset buttons; also refreshes
+    // OrbitControls' saved state so reset() after a data update matches the new
+    // data.
+    function reframeToData() {
+      frameCamera(renderPositions);
+    }
+
+    // ---- toolbar ------------------------------------------------------------
+    // A plotly-style overlay of icon buttons in the top-left corner: toggle the
+    // axes, download the current view as PNG, pick an orbit mode (rotate / pan /
+    // zoom), zoom in, zoom out, re-frame to the data ("autoscale"), and reset
+    // the camera. Styled to match the tooltip / legend overlays and kept out of
+    // the way of the Legend button (top-right). Built lazily on first render and
+    // shown only when the payload asked for it (`x.toolbar`).
+    let toolbarEl   = null;   // the toolbar container, or null
+    let modeMenuEl  = null;   // the orbit-mode popup, or null
+    let orbitMode   = 'rotate'; // rotate | pan | zoom
+    let axesBtn     = null;   // kept for the toggled state glyph
+
+    const TOOLBAR_BTN =
+      'background:none;border:none;color:#f1eee6;cursor:pointer;' +
+      'font:18px/1 system-ui,Segoe UI,sans-serif;line-height:22px;' +
+      'width:26px;height:26px;padding:0;text-align:center;border-radius:4px;';
+    const TOOLBAR_BTN_HOVER = 'background:rgba(241,238,230,0.16);';
+    const TOOLBAR_ROW = 'vertical-align:middle;';
+
+    function makeToolbarButton(glyph, title, onClick) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.title = title;
+      b.innerHTML = '<span style="' + TOOLBAR_ROW + '">' + glyph + '</span>';
+      b.style.cssText = TOOLBAR_BTN;
+      b.addEventListener('mouseenter', function() {
+        b.style.cssText = TOOLBAR_BTN + TOOLBAR_BTN_HOVER;
+      });
+      b.addEventListener('mouseleave', function() {
+        b.style.cssText = TOOLBAR_BTN;
+      });
+      b.addEventListener('click', function(e) { e.stopPropagation(); onClick(e); });
+      return b;
+    }
+
+    function renderModeMenu() {
+      if (!modeMenuEl) return;
+      const current = orbitMode;
+      const items = [
+        ['rotate', '&#8635;', 'Rotate'],
+        ['pan',    '&#9998;', 'Pan'],
+        ['zoom',   '&#128269;', 'Zoom']
+      ];
+      modeMenuEl.innerHTML = items.map(function(it) {
+        const on = it[0] === current ? 'background:rgba(241,238,230,0.22);' : '';
+        return '<button type="button" data-mode="' + it[0] + '" style="' +
+          TOOLBAR_BTN + on + 'font-size:15px;">' + it[1] + '</button>';
+      }).join('');
+      // bind after innerHTML so the listeners see fresh nodes
+      Array.prototype.forEach.call(modeMenuEl.querySelectorAll('button'), function(b) {
+        b.addEventListener('click', function(e) {
+          e.stopPropagation();
+          setOrbitMode(b.getAttribute('data-mode'));
+          closeModeMenu();
+        });
+      });
+    }
+
+    function closeModeMenu() {
+      if (modeMenuEl) modeMenuEl.style.display = 'none';
+    }
+
+    // Toggle the mouse interaction model. "rotate" (default) maps the left
+    // button to orbit / middle to zoom / right to pan; "pan" also pans with the
+    // left button (zoom still via the wheel / middle); "zoom" uses the left
+    // button for dollying. Zooming remains possible with the scroll wheel in
+    // every mode, so dollyIn()/dollyOut() and the wheel stay usable.
+    function setOrbitMode(mode) {
+      orbitMode = mode;
+      applyControlsForMode();
+    }
+
+    function applyControlsForMode() {
+      const r = controls.mouseButtons;
+      const ROTATE = THREE.MOUSE.ROTATE, PAN = THREE.MOUSE.PAN, DOLLY = THREE.MOUSE.DOLLY;
+      if (orbitMode === 'pan') {
+        r.LEFT = PAN; r.MIDDLE = PAN; r.RIGHT = ROTATE;
+      } else if (orbitMode === 'zoom') {
+        r.LEFT = DOLLY; r.MIDDLE = DOLLY; r.RIGHT = PAN;
+      } else { // rotate (default)
+        r.LEFT = ROTATE; r.MIDDLE = DOLLY; r.RIGHT = PAN;
+      }
+      // pan and zoom stay available in every mode (the mode only remaps the
+      // left button, and the wheel always zooms); rotate is the mode's own.
+      controls.enableRotate = (orbitMode === 'rotate');
+      controls.enablePan    = true;
+      controls.enableZoom   = true;
+    }
+
+    function toggleAxes() {
+      axesOn = !axesOn;
+      axes.visible = axesOn;
+      if (axesBtn) {
+        axesBtn.innerHTML =
+          (axesOn ? '&#10003; ' : '') + '<span style="' + TOOLBAR_ROW + '">&boxv;&boxh;</span>';
+        axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
+        if (axesOn) axesBtn.classList.add('active');
+        else axesBtn.classList.remove('active');
+      }
+    }
+
+    function buildToolbar() {
+      if (toolbarEl) return;
+      const container = document.createElement('div');
+      container.style.cssText =
+        'position:absolute;top:8px;left:8px;z-index:20;display:flex;' +
+        'flex-direction:column;gap:2px;padding:4px;' +
+        'background:rgba(18,24,21,0.9);' +
+        'border:1px solid rgba(241,238,230,0.3);border-radius:4px;';
+      toolbarEl = container;
+
+      axesBtn = makeToolbarButton('&boxv;&boxh;', 'Hide axes', toggleAxes);
+      const pngBtn = makeToolbarButton('&#8600;', 'Download as PNG', function() {
+        renderer.domElement.toBlob(function(blob) {
+          if (!blob) return;
+          const a = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          a.href = url;
+          a.download = 'rtists.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        }, 'image/png');
+      });
+
+      const modeBtn = makeToolbarButton('&#8635;', 'Orbit mode', function(e) {
+        e.stopPropagation();
+        renderModeMenu();
+        modeMenuEl.style.display = 'block';
+        const mw = modeMenuEl.offsetWidth, mh = modeMenuEl.offsetHeight;
+        const r = modeBtn.getBoundingClientRect();
+        let left = r.left - 26 - mw + 4;
+        if (left < 0) left = 4;
+        let top = r.top;
+        if (top + mh > window.innerHeight) top = window.innerHeight - mh - 4;
+        modeMenuEl.style.left = left + 'px';
+        modeMenuEl.style.top  = top + 'px';
+      });
+
+      const zinBtn = makeToolbarButton('+', 'Zoom in', function() {
+        controls.dollyIn(0.85);
+      });
+      const zoutBtn = makeToolbarButton('&minus;', 'Zoom out', function() {
+        controls.dollyOut(0.85);
+      });
+      const autoBtn = makeToolbarButton('&#8605;', 'Autoscale', function() {
+        reframeToData();
+      });
+      const resetBtn = makeToolbarButton('&#8634;', 'Reset camera', function() {
+        // restores the target/position/zoom saved by placeCamera()/saveState()
+        controls.reset();
+      });
+
+      [axesBtn, pngBtn, modeBtn, zinBtn, zoutBtn, autoBtn, resetBtn].forEach(function(b) {
+        container.appendChild(b);
+      });
+
+      modeMenuEl = document.createElement('div');
+      modeMenuEl.style.cssText =
+        'position:fixed;z-index:22;display:none;padding:3px;' +
+        'background:rgba(18,24,21,0.97);color:#f1eee6;' +
+        'border:1px solid rgba(241,238,230,0.3);border-radius:4px;' +
+        'box-shadow:0 4px 14px rgba(0,0,0,0.6);';
+      document.body.appendChild(modeMenuEl);
+      renderModeMenu();
+      closeModeMenu();
+
+      if (!el.style.position || el.style.position === 'static') el.style.position = 'relative';
+      el.appendChild(container);
+      toolbarEl.style.display = 'none';
+    }
+
+    // Show/hide the toolbar (and keep the orbit mode + axes map in sync).
+    function refreshToolbar() {
+      const want = toolbarEnabled && stateX;
+      if (!want) {
+        if (toolbarEl) toolbarEl.style.display = 'none';
+        closeModeMenu();
+        return;
+      }
+      buildToolbar();
+      applyControlsForMode();
+      if (axesBtn) axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
+      axes.visible = axesOn;
+      toolbarEl.style.display = 'block';
     }
 
     // Dispose a mesh or a Group of meshes, releasing GPU geometry/material.
@@ -1044,6 +1246,9 @@ HTMLWidgets.widget({
         if (legendBtn && legendBtn.parentNode) legendBtn.parentNode.removeChild(legendBtn);
         if (legendPanel && legendPanel.parentNode) legendPanel.parentNode.removeChild(legendPanel);
         legendBtn = null; legendPanel = null; legendState = null; stateX = null;
+        if (toolbarEl && toolbarEl.parentNode) toolbarEl.parentNode.removeChild(toolbarEl);
+        if (modeMenuEl && modeMenuEl.parentNode) modeMenuEl.parentNode.removeChild(modeMenuEl);
+        toolbarEl = null; modeMenuEl = null; axesBtn = null;
         renderer.dispose();
         controls.dispose();
         if (renderer.domElement.parentNode) {
@@ -1055,6 +1260,13 @@ HTMLWidgets.widget({
 
       renderValue: function(x) {
         scene.background = new THREE.Color(x.bg);
+
+        // options that carry state across renders reset to their defaults each
+        // time (matches how the legend panel re-reads every renderValue)
+        toolbarEnabled = x.toolbar !== false;
+        axesOn = true;
+        orbitMode = 'rotate';
+        closeModeMenu();
 
         if (mesh) {
           scene.remove(mesh);
@@ -1100,7 +1312,12 @@ HTMLWidgets.widget({
           mesh = buildLine2(x, transparent);
           scene.add(mesh);
         }
-        frameCamera(b64ToF32(x.positions));
+        // Keep the decoded positions for the toolbar's autoscale / reset-camera
+        // actions, which re-frame even when the tooltip is disabled (hoverData
+        // is null then, so its positions cannot be relied on).
+        renderPositions = b64ToF32(x.positions);
+        frameCamera(renderPositions);
+        refreshToolbar();
       },
 
       sizing: {},
