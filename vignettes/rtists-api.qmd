@@ -12,6 +12,7 @@ knitr:
 
 ```{r}
 #| label: setup
+#| include: false
 if (!requireNamespace("rtists", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
 } else {
@@ -359,25 +360,57 @@ a default.
 ### Moving to Rust (the scale ceiling)
 
 The binding constraint for very large bundles is *not* the renderer. Per the
-whole-brain benchmark (5 M points), both htmlwidget backends are limited by
-**JSON text encoding** of the payload: roughly 278 MB of binary floats become
-around 444 MB of JSON and over a gigabyte of HTML, taking 4-52 s just to
-serialise. At 10^5 points everything is instant; at 10^6 to 10^7 points a saved
-inline widget becomes impractical for either backend, because both are
-htmlwidgets sharing the same serialisation ceiling.
+whole-brain benchmark (5 M points), the R-side build is 25.3 s for 278 MB of
+packed position and colour bytes; both htmlwidget backends are then limited by
+**how those bytes cross to the browser**. rtists already avoids per-float JSON
+decimal text: geometry is packed as little-endian Float32 and Uint8 buffers that
+htmlwidgets base64-encodes into one string each, and the widget `atob()`-decodes
+straight into typed arrays. That keeps small scenes light, but base64 is 4/3 the
+raw size: the non-interleaved whole-brain build (5 M points with colours and
+radii) is about 127 MB of packed bytes, so roughly 170 MB of base64 inside one
+HTML file, and the interleaved tube path emits each vertex twice, pushing a whole
+brain past 350 MB. Lossless compression does not rescue this: on these packed
+buffers gzip saves under 10% overall, because float mantissa bits are effectively
+noise and the colour channels are distributionally dense, so the payload stays
+incompressible at any scale. Either way the browser must decode the whole thing
+on open, in full. At 10^5 points everything is instant; at 10^6 to 10^7 points a
+saved inline widget becomes impractical for either backend, because both share
+the same serialisation ceiling.
 
-The escape that a Rust implementation would offer is a **local server
-architecture**: transfer the same binary floats over a WebSocket (or WASM),
-avoiding JSON text entirely. But rtists is deliberately a *static, self-contained
-htmlwidget*: embeddable, shareable, openable from a saved `.html`. A streaming
-server would invert that contract (the widget becomes a client of a running
-local process) and add a compiled server dependency, exactly what the package
-avoids. That reassessment concluded **no WebSocket/streaming backend**: it
-would only pay off at a scale that is beyond the htmlwidget's practical range
-regardless of transport, and it sacrifices the self-contained artifact. If
-whole-brain self-contained output is ever truly needed at 10^6+ points, the path
-is a genuinely binary-embedded artifact (a base64 blob of a `Float32Array`
-fetched within one HTML file), not a server that rtists must ship.
+A Rust rewrite is *not* the only route to "all computation in the browser," and
+not the most pragmatic one. Two alternatives deserve distinct treatment, because
+they answer different questions.
+
+**Serverless deployment: webR + shinylive.** If the goal is to run the rtists
+pipeline with no R server at runtime, webR and shinylive already do that in plain
+R. R (compiled to WASM) runs the whole computation client-side: a shinylive build
+of the `runDemo()` apps serves every page as static files, with fiber and rtists
+executing entirely in the browser. This is a real and well-trodden serverless
+story for a *hosted, interactive app*. It is not, however, a fix for the
+serialisation ceiling above: the fibre coordinates still cross the R-and-JS
+boundary, the runtime adds tens of megabytes of WASM on every load, and a
+shinylive app is a folder of assets that must be *served* over HTTP, not a single
+`file://`-openable HTML file. WebR removes a *server*; it neither shrinks the
+payload nor preserves the self-contained artifact, so it changes what the Rust
+section is fighting for only by relaxing the artifact promise.
+
+**Compiled scale escape: Rust and a local server.** The escape that a Rust
+implementation would offer is a **local server architecture**: transfer the same
+binary floats over a WebSocket (or WASM), avoiding JSON text entirely. But rtists
+is deliberately a *static, self-contained htmlwidget*: embeddable, shareable,
+openable from a saved `.html`. A streaming server would invert that contract (the
+widget becomes a client of a running local process) and add a compiled server
+dependency, exactly what the package avoids. That reassessment concluded
+**no WebSocket/streaming backend**: it would only pay off at a scale that is
+beyond the htmlwidget's practical range regardless of transport, and it
+sacrifices the self-contained artifact. The binary-embedded artifact is not a
+future escape but the scheme rtists already uses (base64-packed Float32 buffers
+decoded to typed arrays). The only lever that remains for 10^6+ whole-brain
+output is a deliberately non-self-contained one: a binary sidecar file fetched
+at runtime, dropping the base64 overhead and enabling HTTP range requests, at the
+cost of no longer being a single `file://`-openable HTML file. That is a real
+trade of self-containment for scale, not a free win, and it is exactly why rtists
+stays on the self-contained widget for its practical range.
 
 ### Bottom line
 
@@ -385,6 +418,7 @@ For the overwhelming majority of tractography work (single tracts up to whole
 bundles, tens to hundreds of thousands of points), the three.js htmlwidget is
 the right shape: no native dependencies, real 3-D tubes and transparency, and a
 fast single-draw-call default. The `plotly` backend stays as an opt-in,
-`...`-honouring fallback. A Rust local-server rewrite would only be justified
-by the 10^6-point scale ceiling, and even then it fights the htmlwidget's core
-promise of a self-contained, shareable artifact.
+`...`-honouring fallback. If a hosted, serverless viewer is ever wanted, webR and
+shinylive can publish the demo apps in plain R. A Rust local-server rewrite would
+only be justified by the 10^6-point scale ceiling, and even then it fights the
+htmlwidget's core promise of a self-contained, shareable artifact.
