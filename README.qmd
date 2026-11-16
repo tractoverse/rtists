@@ -22,7 +22,7 @@ reticulate::py_require(c("kaleido", "plotly"))
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tractoverse/rtists/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/tractoverse/rtists/graph/badge.svg)](https://app.codecov.io/gh/tractoverse/rtists)
+[![Codecov test coverage](https://codecov.io/gh/tractoverse/rtists/branch/main/graph/badge.svg)](https://app.codecov.io/gh/tractoverse/rtists)
 [![pkgdown](https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/tractoverse/rtists/actions/workflows/pkgdown.yaml)
 <!-- badges: end -->
 
