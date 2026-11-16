@@ -89,7 +89,14 @@ jobs:
           mkdir -p /tmp/quarto
           tar -xzf /tmp/quarto.tar.gz -C /tmp/quarto --strip-components=1
           echo "/tmp/quarto/bin" >> "$GITHUB_PATH"
-      - uses: r-hub/actions/setup-deps@v1
+      # Pin setup-deps to a main-branch commit (f9c35f7c) pending a v1
+      # release carrying the cache-key fix: v1 (== v1.8.1) computes a
+      # platform-independent cache-version ("1"), so a clang-built dependency
+      # (e.g. digest.so, needs libc++.so.1) restored from the shared GitHub
+      # Actions cache breaks g++-only jobs. The main-branch fix appends the
+      # platform name to the cache version, so incompatible containers no
+      # longer collide keys.
+      - uses: r-hub/actions/setup-deps@f9c35f7cf9f5d9ac82fae5367ac99458a6a68cbe
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
@@ -126,7 +133,9 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: '1.11.9'
-      - uses: r-hub/actions/setup-deps@v1
+      # Pinned to the main-branch commit carrying the cache-key fix; see the
+      # linux-containers job for details.
+      - uses: r-hub/actions/setup-deps@f9c35f7cf9f5d9ac82fae5367ac99458a6a68cbe
         with:
           job-config: ${{ matrix.config.job-config }}
           token: ${{ secrets.RHUB_TOKEN }}
