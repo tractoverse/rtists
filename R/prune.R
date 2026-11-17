@@ -37,46 +37,73 @@
 # 0 when A is entirely within `r` of the kept tubes (fully covered), positive
 # when A still contributes new ground.
 .streamline_cover_gap <- function(A, kept) {
-  max(vapply(seq_len(nrow(A)), function(i)
-    .point_to_set(A[i, ], kept), numeric(1L)))
+  max(vapply(
+    seq_len(nrow(A)),
+    function(i) {
+      .point_to_set(A[i, ], kept)
+    },
+    numeric(1L)
+  ))
 }
 
 # Greedy prune over a list of polylines. Returns the integer indices kept.
 .prune_indices <- function(polys, radius, overlap_margin = 1, max_iter = Inf) {
   m <- length(polys)
-  if (m < 2L) return(seq_len(m))            # nothing to prune
-  req <- 2 * radius * overlap_margin        # centre-to-centre clearance needed
+  if (m < 2L) {
+    return(seq_len(m))
+  } # nothing to prune
+  req <- 2 * radius * overlap_margin # centre-to-centre clearance needed
   keep <- integer(0)
   remaining <- seq_len(m)
   n_iter <- 0L
   while (length(remaining) > 0L && n_iter < max_iter) {
     n_iter <- n_iter + 1L
     if (length(keep) == 0L) {
-      ord <- seq_along(remaining)           # no kept set yet: index order
+      ord <- seq_along(remaining) # no kept set yet: index order
     } else {
       # Farthest-first over the remaining streamlines relative to kept tubes.
-      gap <- vapply(remaining, function(i)
-        .streamline_cover_gap(polys[[i]], polys[keep]), numeric(1L))
-      ord <- order(-gap, remaining)         # farthest first, index tie-break
+      gap <- vapply(
+        remaining,
+        function(i) {
+          .streamline_cover_gap(polys[[i]], polys[keep])
+        },
+        numeric(1L)
+      )
+      ord <- order(-gap, remaining) # farthest first, index tie-break
     }
     chosen <- NULL
     for (o in ord) {
       i <- remaining[o]
-      if (length(keep) == 0L ||
-          all(vapply(keep, function(j) .min_sep_two(polys[[i]], polys[[j]]),
-                     numeric(1L)) >= req)) {
+      if (
+        length(keep) == 0L ||
+          all(
+            vapply(
+              keep,
+              function(j) .min_sep_two(polys[[i]], polys[[j]]),
+              numeric(1L)
+            ) >=
+              req
+          )
+      ) {
         chosen <- i
         break
       }
     }
-    if (is.null(chosen)) break              # every remaining tube overlaps
+    if (is.null(chosen)) {
+      break
+    } # every remaining tube overlaps
     keep <- c(keep, chosen)
     remaining <- setdiff(remaining, chosen)
     # Stop once the kept tubes cover the convex hull: every remaining point is
     # within `radius` of a kept tube.
     if (length(remaining) > 0L) {
-      covered <- vapply(remaining, function(i)
-        .streamline_cover_gap(polys[[i]], polys[keep]) <= radius, logical(1L))
+      covered <- vapply(
+        remaining,
+        function(i) {
+          .streamline_cover_gap(polys[[i]], polys[keep]) <= radius
+        },
+        logical(1L)
+      )
       if (all(covered)) break
     }
   }
@@ -176,16 +203,22 @@ prune <- S7::new_generic(
 #' pruned <- prune(bun, radius = 1)
 #' length(pruned@streamlines)
 S7::method(prune, fiber::bundle) <- function(
-    x,
-    radius,
-    overlap_margin = 1,
-    ...) {
-  if (!is.numeric(radius) || length(radius) != 1L || is.na(radius) ||
-      radius <= 0) {
+  x,
+  radius,
+  overlap_margin = 1,
+  ...
+) {
+  if (
+    !is.numeric(radius) || length(radius) != 1L || is.na(radius) || radius <= 0
+  ) {
     stop("`radius` must be a single positive number.", call. = FALSE)
   }
-  if (!is.numeric(overlap_margin) || length(overlap_margin) != 1L ||
-      is.na(overlap_margin) || overlap_margin <= 0) {
+  if (
+    !is.numeric(overlap_margin) ||
+      length(overlap_margin) != 1L ||
+      is.na(overlap_margin) ||
+      overlap_margin <= 0
+  ) {
     stop("`overlap_margin` must be a single positive number.", call. = FALSE)
   }
   polys <- lapply(x@streamlines, function(s) as.matrix(s@points))
@@ -207,10 +240,11 @@ S7::method(prune, fiber::bundle) <- function(
 #' @aliases prune,fiber::bundle_set-method
 #' @usage NULL
 S7::method(prune, fiber::bundle_set) <- function(
-    x,
-    radius,
-    overlap_margin = 1,
-    ...) {
+  x,
+  radius,
+  overlap_margin = 1,
+  ...
+) {
   pruned <- lapply(x@bundles, function(b) prune(b, radius, overlap_margin))
   pruned <- Filter(function(b) length(b@streamlines) > 0L, pruned)
   fiber::bundle_set(pruned)

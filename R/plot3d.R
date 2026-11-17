@@ -4,11 +4,14 @@
 # segments within a single scatter3d trace.
 .add_na_separators <- function(df) {
   parts <- split(df, df$StreamlineId)
-  do.call(rbind, lapply(parts, function(part) {
-    na_row <- part[1L, , drop = FALSE]
-    na_row[seq_along(na_row)] <- NA
-    rbind(part, na_row)
-  }))
+  do.call(
+    rbind,
+    lapply(parts, function(part) {
+      na_row <- part[1L, , drop = FALSE]
+      na_row[seq_along(na_row)] <- NA
+      rbind(part, na_row)
+    })
+  )
 }
 
 # Compute per-point orientation colours for one streamline's data frame.
@@ -16,7 +19,7 @@
 # DTI colour convention (left–right = red, anterior–posterior = green,
 # superior–inferior = blue).
 .color_by_orientation <- function(df) {
-  n  <- nrow(df)
+  n <- nrow(df)
   dx <- c(diff(df$X), NA_real_)
   dy <- c(diff(df$Y), NA_real_)
   dz <- c(diff(df$Z), NA_real_)
@@ -24,7 +27,7 @@
   dx[n] <- dx[n - 1L]
   dy[n] <- dy[n - 1L]
   dz[n] <- dz[n - 1L]
-  norm       <- sqrt(dx^2 + dy^2 + dz^2)
+  norm <- sqrt(dx^2 + dy^2 + dz^2)
   norm[norm == 0 | is.na(norm)] <- 1
   grDevices::rgb(abs(dx) / norm, abs(dy) / norm, abs(dz) / norm)
 }
@@ -36,7 +39,7 @@
 .plot3d_impl <- function(df, color, palette, linewidth, opacity, ...) {
   if (!is_installed("plotly")) {
     stop(
-      "The plotly backend requires the 'plotly' package; install it with " ,
+      "The plotly backend requires the 'plotly' package; install it with ",
       "install.packages('plotly') or use the default backend = 'threejs'.",
       call. = FALSE
     )
@@ -50,23 +53,21 @@
       part[[".color"]] <- .color_by_orientation(part)
       part
     })
-    df        <- do.call(rbind, parts)
+    df <- do.call(rbind, parts)
     line_args <- list(color = ~.color, width = linewidth)
-
   } else if (color %in% meta_keys) {
     df[[".color"]] <- df[[color]]
     if (is.numeric(df[[".color"]])) {
       line_args <- list(
-        color    = ~.color,
+        color = ~.color,
         colorscale = palette,
         colorbar = list(title = color),
-        width    = linewidth
+        width = linewidth
       )
     } else {
       # Character / factor: plotly will pick its own discrete colours
       line_args <- list(color = ~.color, width = linewidth)
     }
-
   } else {
     # Treat as a fixed CSS / hex colour string
     line_args <- list(color = color, width = linewidth)
@@ -90,35 +91,35 @@
   # ---- hover text from available metadata ------------------------------------
   visible_keys <- intersect(meta_keys, names(df))
   if (length(visible_keys) > 0L) {
-    hover_parts    <- lapply(visible_keys, \(k) paste0(k, ": ", df[[k]]))
+    hover_parts <- lapply(visible_keys, \(k) paste0(k, ": ", df[[k]]))
     df[[".hover"]] <- Reduce(\(a, b) paste(a, b, sep = "<br>"), hover_parts)
-    hover_arg      <- ~.hover
-    hoverinfo      <- "text"
+    hover_arg <- ~.hover
+    hoverinfo <- "text"
   } else {
-    hover_arg  <- NULL
-    hoverinfo  <- "none"
+    hover_arg <- NULL
+    hoverinfo <- "none"
   }
 
   # ---- build plotly figure ---------------------------------------------------
   fig <- plotly::plot_ly(
-    data      = df,
-    x         = ~X,
-    y         = ~Y,
-    z         = ~Z,
-    type      = "scatter3d",
-    mode      = "lines",
-    opacity   = opacity,
-    line      = line_args,
-    text      = hover_arg,
+    data = df,
+    x = ~X,
+    y = ~Y,
+    z = ~Z,
+    type = "scatter3d",
+    mode = "lines",
+    opacity = opacity,
+    line = line_args,
+    text = hover_arg,
     hoverinfo = hoverinfo
   )
 
   plotly::layout(
     fig,
     scene = list(
-      xaxis      = list(title = "X (mm)"),
-      yaxis      = list(title = "Y (mm)"),
-      zaxis      = list(title = "Z (mm)"),
+      xaxis = list(title = "X (mm)"),
+      yaxis = list(title = "Y (mm)"),
+      zaxis = list(title = "Z (mm)"),
       aspectmode = "data"
     ),
     ...
@@ -315,10 +316,19 @@
 plot3d <- S7::new_generic(
   name = "plot3d",
   dispatch_args = "x",
-  fun = function(x, color = "orientation", palette = "Viridis",
-                 backend = c("threejs", "plotly"), linewidth = 2,
-                 radius = NULL, opacity = 0.5,
-                 bg = "#111111", tooltip = TRUE, toolbar = TRUE, ...) {
+  fun = function(
+    x,
+    color = "orientation",
+    palette = "Viridis",
+    backend = c("threejs", "plotly"),
+    linewidth = 2,
+    radius = NULL,
+    opacity = 0.5,
+    bg = "#111111",
+    tooltip = TRUE,
+    toolbar = TRUE,
+    ...
+  ) {
     S7::S7_dispatch()
   }
 )
@@ -361,39 +371,40 @@ plot3d <- S7::new_generic(
 #' plot3d(sl, color = "steelblue", opacity = 0.8)
 
 S7::method(plot3d, fiber::streamline) <- function(
-    x,
-    color     = "orientation",
-    palette   = "Viridis",
-    backend   = c("threejs", "plotly"),
-    linewidth = 2,
-    radius    = NULL,
-    opacity   = 0.5,
-    bg        = "#111111",
-    tooltip   = TRUE,
-    toolbar   = TRUE,
-    ...) {
+  x,
+  color = "orientation",
+  palette = "Viridis",
+  backend = c("threejs", "plotly"),
+  linewidth = 2,
+  radius = NULL,
+  opacity = 0.5,
+  bg = "#111111",
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+) {
   backend <- match.arg(backend)
   df <- .streamline_to_df(x, streamline_id = 1L)
   if (backend == "threejs") {
     .plot3d_threejs(
-      df        = df,
-      color     = color,
-      palette   = palette,
+      df = df,
+      color = color,
+      palette = palette,
       linewidth = linewidth,
-      radius    = radius,
-      opacity   = opacity,
-      bg        = bg,
-      tooltip   = tooltip,
-      toolbar   = toolbar,
+      radius = radius,
+      opacity = opacity,
+      bg = bg,
+      tooltip = tooltip,
+      toolbar = toolbar,
       ...
     )
   } else {
     .plot3d_impl(
-      df        = df,
-      color     = color,
-      palette   = palette,
+      df = df,
+      color = color,
+      palette = palette,
       linewidth = linewidth,
-      opacity   = opacity,
+      opacity = opacity,
       ...
     )
   }
@@ -465,41 +476,42 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' plot3d(pruned, radius = 1)
 
 S7::method(plot3d, fiber::bundle) <- function(
-    x,
-    color     = "orientation",
-    palette   = "Viridis",
-    backend   = c("threejs", "plotly"),
-    linewidth = 2,
-    radius    = NULL,
-    opacity   = 0.5,
-    bg        = "#111111",
-    tooltip   = TRUE,
-    toolbar   = TRUE,
-    ...) {
+  x,
+  color = "orientation",
+  palette = "Viridis",
+  backend = c("threejs", "plotly"),
+  linewidth = 2,
+  radius = NULL,
+  opacity = 0.5,
+  bg = "#111111",
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+) {
   backend <- match.arg(backend)
   n <- length(x@streamlines)
   cli::cli_alert_info("Rendering {n} streamline{?s}...")
   df <- .bundle_to_df(x)
   if (backend == "threejs") {
     .plot3d_threejs(
-      df        = df,
-      color     = color,
-      palette   = palette,
+      df = df,
+      color = color,
+      palette = palette,
       linewidth = linewidth,
-      radius    = radius,
-      opacity   = opacity,
-      bg        = bg,
-      tooltip   = tooltip,
-      toolbar   = toolbar,
+      radius = radius,
+      opacity = opacity,
+      bg = bg,
+      tooltip = tooltip,
+      toolbar = toolbar,
       ...
     )
   } else {
     .plot3d_impl(
-      df        = df,
-      color     = color,
-      palette   = palette,
+      df = df,
+      color = color,
+      palette = palette,
       linewidth = linewidth,
-      opacity   = opacity,
+      opacity = opacity,
       ...
     )
   }
@@ -574,46 +586,47 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' plot3d(cs, radius = 0.08, opacity = 0.4)
 
 S7::method(plot3d, fiber::bundle_set) <- function(
-    x,
-    color           = "orientation",
-    palette         = "Viridis",
-    backend         = c("threejs", "plotly"),
-    linewidth       = 2,
-    radius          = NULL,
-    opacity         = 0.5,
-    bg              = "#111111",
-    color_by_bundle = FALSE,
-    tooltip         = TRUE,
-    toolbar         = TRUE,
-    ...) {
+  x,
+  color = "orientation",
+  palette = "Viridis",
+  backend = c("threejs", "plotly"),
+  linewidth = 2,
+  radius = NULL,
+  opacity = 0.5,
+  bg = "#111111",
+  color_by_bundle = FALSE,
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+) {
   backend <- match.arg(backend)
   n_bundles <- x@n_bundles
-  n_sl      <- sum(vapply(x@bundles, \(b) b@n_streamlines, integer(1L)))
+  n_sl <- sum(vapply(x@bundles, \(b) b@n_streamlines, integer(1L)))
   cli::cli_alert_info(
     "Rendering {n_sl} streamline{?s} across {n_bundles} bundle{?s}..."
   )
   df <- .bundle_set_to_df(x)
   if (backend == "threejs") {
     .plot3d_threejs(
-      df              = df,
-      color           = if (color_by_bundle) "BundleName" else color,
-      palette         = palette,
-      linewidth       = linewidth,
-      radius          = radius,
-      opacity         = opacity,
-      bg              = bg,
+      df = df,
+      color = if (color_by_bundle) "BundleName" else color,
+      palette = palette,
+      linewidth = linewidth,
+      radius = radius,
+      opacity = opacity,
+      bg = bg,
       color_by_bundle = color_by_bundle,
-      tooltip         = tooltip,
-      toolbar         = toolbar,
+      tooltip = tooltip,
+      toolbar = toolbar,
       ...
     )
   } else {
     .plot3d_impl(
-      df        = df,
-      color     = if (color_by_bundle) "BundleName" else color,
-      palette   = palette,
+      df = df,
+      color = if (color_by_bundle) "BundleName" else color,
+      palette = palette,
       linewidth = linewidth,
-      opacity   = opacity,
+      opacity = opacity,
       ...
     )
   }

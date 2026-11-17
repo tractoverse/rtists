@@ -35,15 +35,15 @@
 
   # bundle_set() threads a per-bundle category through `color_by_bundle`.
   if (color_by_bundle) {
-    col <- df[[color]]                                   # e.g. "BundleName"
+    col <- df[[color]] # e.g. "BundleName"
     key <- tapply(as.character(col), df$StreamlineId, function(v) v[1L])
     lvls <- unique(col)
-    pal  <- grDevices::hcl.colors(length(lvls), palette = palette)
+    pal <- grDevices::hcl.colors(length(lvls), palette = palette)
     return(unname(pal[match(key, lvls)]))
   }
 
   if (identical(color, "orientation")) {
-    return("orientation")              # pass straight through to the widget
+    return("orientation") # pass straight through to the widget
   }
 
   if (color %in% meta_keys) {
@@ -55,23 +55,26 @@
       ## sends the minimum to index 0, silently dropping a streamline).
       ## Streamlines with an NA key (e.g. a metadata column absent from some
       ## bundles in a mixed set) are given a neutral grey instead of failing.
-      key  <- tapply(val, df$StreamlineId, function(v) v[1L])
-      ok   <- !is.na(key)
-      pal  <- grDevices::hcl.colors(1000, palette = palette)
-      out  <- rep("#888888", length(key))
+      key <- tapply(val, df$StreamlineId, function(v) v[1L])
+      ok <- !is.na(key)
+      pal <- grDevices::hcl.colors(1000, palette = palette)
+      out <- rep("#888888", length(key))
       if (any(ok)) {
         key_ok <- key[ok]
-        span   <- diff(range(key_ok))
-        idx    <- if (span == 0) rep.int(1L, length(key_ok))
-                  else 1L + ceiling(999 * (key_ok - min(key_ok)) / span)
+        span <- diff(range(key_ok))
+        idx <- if (span == 0) {
+          rep.int(1L, length(key_ok))
+        } else {
+          1L + ceiling(999 * (key_ok - min(key_ok)) / span)
+        }
         out[ok] <- pal[pmin(1000L, idx)]
       }
       return(out)
     }
     ## character / factor metadata -> categorical palette
-    key  <- tapply(as.character(val), df$StreamlineId, function(v) v[1L])
+    key <- tapply(as.character(val), df$StreamlineId, function(v) v[1L])
     lvls <- unique(val)
-    pal  <- grDevices::hcl.colors(length(lvls), palette = palette)
+    pal <- grDevices::hcl.colors(length(lvls), palette = palette)
     return(unname(pal[match(key, lvls)]))
   }
 
@@ -95,9 +98,16 @@
 # but are not CVD-safe, and this is flagged in the widget's palette picker.
 .palette_names <- function() {
   c(
-    "Viridis", "Plasma", "Inferno", "Cividis", "Mako", "Rocket", "Mint",
+    "Viridis",
+    "Plasma",
+    "Inferno",
+    "Cividis",
+    "Mako",
+    "Rocket",
+    "Mint",
     # Diverging / figures-style palettes (valid hcl.colors names; NOT CVD-safe)
-    "RdYlBu", "Spectral"
+    "RdYlBu",
+    "Spectral"
   )
 }
 
@@ -140,14 +150,18 @@
       return(list(mode = "line2", radii = NULL, linewidth = linewidth))
     }
     # Positive scalar -> true constant-radius 3D tube (per-point radii).
-    return(list(mode = "tube", radii = rep(radius, total), linewidth = linewidth))
+    return(list(
+      mode = "tube",
+      radii = rep(radius, total),
+      linewidth = linewidth
+    ))
   }
 
   if (length(radius) == length(n_pts)) {
     # Per-streamline constant radius -> expand to per-point.
     rpp <- unlist(Map(\(k, v) rep(v, k), n_pts, radius), use.names = FALSE)
   } else if (length(radius) == total) {
-    rpp <- radius                   # per-point (most general)
+    rpp <- radius # per-point (most general)
   } else {
     stop(
       "`radius` must be a positive scalar, a per-streamline vector ",
@@ -168,12 +182,19 @@
 # world-width lines, the default) or "tube" (per-streamline `TubeGeometry` with
 # per-point radius via radial displacement).
 
-
-.threejs_widget <- function(streamlines, color = "orientation",
-                            linewidth = 1, radius = NULL,
-                            opacity = 1, bg = "#111111", border = 0,
-                            tooltip = NULL, legend = NULL, toolbar = TRUE,
-                            elementId = NULL) {
+.threejs_widget <- function(
+  streamlines,
+  color = "orientation",
+  linewidth = 1,
+  radius = NULL,
+  opacity = 1,
+  bg = "#111111",
+  border = 0,
+  tooltip = NULL,
+  legend = NULL,
+  toolbar = TRUE,
+  elementId = NULL
+) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
@@ -186,8 +207,8 @@
   if (tube_mode) {
     # ---- tube mode: per-streamline points + per-point RGB ------------------
     n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
-    pos   <- numeric(3 * sum(n_pts))
-    idx   <- 0L
+    pos <- numeric(3 * sum(n_pts))
+    idx <- 0L
     tubeOffsets <- integer(length(streamlines) + 1L)
     tubeOffsets[1L] <- 0L
     for (j in seq_along(streamlines)) {
@@ -203,10 +224,11 @@
       ci <- 0L
       for (s in streamlines) {
         k <- nrow(s)
-        d  <- rbind(0, diff(s))            # forward tangent per point
+        d <- rbind(0, diff(s)) # forward tangent per point
         d[k, ] <- d[k - 1L, ]
-        nm <- sqrt(rowSums(d^2)); nm[nm == 0] <- 1
-        rgb <- abs(d) / nm                 # |dx|,|dy|,|dz| -> R,G,B
+        nm <- sqrt(rowSums(d^2))
+        nm[nm == 0] <- 1
+        rgb <- abs(d) / nm # |dx|,|dy|,|dz| -> R,G,B
         colors[ci + seq_len(3 * k)] <- as.numeric(t(rgb))
         ci <- ci + 3 * k
       }
@@ -225,25 +247,24 @@
     # compact strings instead of emitting ~17 decimal floats per point, and the
     # widget decodes them back on the JS side.
     x <- list(
-      mode         = jsonlite::unbox("tube"),
-      positions    = writeBin(pos, raw(), size = 4L),          # Float32 base64
-      colors       = as.raw(pmin(255L, round(colors * 255))),  # Uint8 base64
-      tubeOffsets  = tubeOffsets,                # cumulative point index
-      n_pts        = n_pts,        # per-streamline point counts
-      radii        = writeBin(rinfo$radii, raw(), size = 4L),  # Float32 base64
-      linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
-      border       = jsonlite::unbox(border),    # outline as a fraction of scene radius
-      opacity      = jsonlite::unbox(opacity),
-      bg           = jsonlite::unbox(bg),
-      toolbar      = jsonlite::unbox(toolbar)
+      mode = jsonlite::unbox("tube"),
+      positions = writeBin(pos, raw(), size = 4L), # Float32 base64
+      colors = as.raw(pmin(255L, round(colors * 255))), # Uint8 base64
+      tubeOffsets = tubeOffsets, # cumulative point index
+      n_pts = n_pts, # per-streamline point counts
+      radii = writeBin(rinfo$radii, raw(), size = 4L), # Float32 base64
+      linewidth = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
+      border = jsonlite::unbox(border), # outline as a fraction of scene radius
+      opacity = jsonlite::unbox(opacity),
+      bg = jsonlite::unbox(bg),
+      toolbar = jsonlite::unbox(toolbar)
     )
     if (!is.null(tooltip)) {
-      x$tooltipData <- tooltip          # structured per-point metadata
+      x$tooltipData <- tooltip # structured per-point metadata
     }
     if (!is.null(legend)) {
-      x$legendData <- legend            # aesthetic-remapping metadata
+      x$legendData <- legend # aesthetic-remapping metadata
     }
-
   } else {
     # ---- line2 mode: interleaved segment buffers (default, fast) ------------
     # Each pair (P_i, P_{i+1}) becomes one segment, so intermediate points are
@@ -251,12 +272,12 @@
     # `LineSegments2` draw call with `LineMaterial(worldUnits: true)`.
     # `linewidth` is the world-units constant width (or thin for no-radius).
     n_seg <- vapply(streamlines, function(s) nrow(s) - 1L, integer(1L))
-    pos   <- numeric(6 * sum(n_seg))          # xyz xyz per segment
-    idx   <- 0L
+    pos <- numeric(6 * sum(n_seg)) # xyz xyz per segment
+    idx <- 0L
     for (s in streamlines) {
       k <- nrow(s)
       for (i in seq_len(k - 1L)) {
-        pos[idx + 1L:3L] <- s[i,      ]
+        pos[idx + 1L:3L] <- s[i, ]
         pos[idx + 4L:6L] <- s[i + 1L, ]
         idx <- idx + 6L
       }
@@ -273,8 +294,12 @@
         for (i in seq_len(k - 1L)) {
           d <- s[i + 1L, ] - s[i, ]
           n <- sqrt(sum(d^2))
-          if (n == 0) d <- c(1, 1, 1) else d <- d / n
-          rgb <- abs(d)                        # DTI: |dx|,|dy|,|dz|
+          if (n == 0) {
+            d <- c(1, 1, 1)
+          } else {
+            d <- d / n
+          }
+          rgb <- abs(d) # DTI: |dx|,|dy|,|dz|
           colors[ci + 1L:6L] <- c(rgb, rgb)
           ci <- ci + 6L
         }
@@ -285,7 +310,7 @@
       for (j in seq_along(streamlines)) {
         s <- streamlines[[j]]
         k <- nrow(s)
-        col <- grDevices::col2rgb(colour_vec[j]) / 255   # 3x1 in [0,1]
+        col <- grDevices::col2rgb(colour_vec[j]) / 255 # 3x1 in [0,1]
         for (i in seq_len(k - 1L)) {
           colors[ci + 1L:6L] <- rep(as.numeric(col), 2)
           ci <- ci + 6L
@@ -294,43 +319,45 @@
     }
 
     x <- list(
-      mode      = jsonlite::unbox("line2"),
-      positions = writeBin(pos, raw(), size = 4L),            # Float32 base64
-      colors    = as.raw(pmin(255L, round(colors * 255))),    # Uint8 base64
-      linewidth = jsonlite::unbox(rinfo$linewidth),   # world-units width
-      n_pts     = n_pts,            # per-streamline point counts
-      opacity   = jsonlite::unbox(opacity),           # scalar
-      bg        = jsonlite::unbox(bg),                # scalar
-      toolbar   = jsonlite::unbox(toolbar)            # scalar
+      mode = jsonlite::unbox("line2"),
+      positions = writeBin(pos, raw(), size = 4L), # Float32 base64
+      colors = as.raw(pmin(255L, round(colors * 255))), # Uint8 base64
+      linewidth = jsonlite::unbox(rinfo$linewidth), # world-units width
+      n_pts = n_pts, # per-streamline point counts
+      opacity = jsonlite::unbox(opacity), # scalar
+      bg = jsonlite::unbox(bg), # scalar
+      toolbar = jsonlite::unbox(toolbar) # scalar
     )
     if (!is.null(tooltip)) {
       # Map each line2 segment (raycast `faceIndex`) to the packed point index
       # of its START vertex. Consecutive points within a streamline sit next to
       # each other in packed order, so the segment's end vertex is start + 1.
       pt_start <- c(0L, cumsum(n_pts)[-length(n_pts)])
-      seg_to   <- integer(sum(n_seg))
-      g        <- 0L
+      seg_to <- integer(sum(n_seg))
+      g <- 0L
       for (j in seq_along(streamlines)) {
         nj <- nrow(streamlines[[j]]) - 1L
-        if (nj >= 1L) seg_to[g + seq_len(nj)] <- pt_start[j] + seq_len(nj) - 1L
-        g  <- g + nj
+        if (nj >= 1L) {
+          seg_to[g + seq_len(nj)] <- pt_start[j] + seq_len(nj) - 1L
+        }
+        g <- g + nj
       }
-      x$tooltipData <- tooltip          # structured per-point metadata
-      x$segToPoint  <- seg_to           # line2 segment index -> point index
+      x$tooltipData <- tooltip # structured per-point metadata
+      x$segToPoint <- seg_to # line2 segment index -> point index
     }
     if (!is.null(legend)) {
-      x$legendData <- legend            # aesthetic-remapping metadata
+      x$legendData <- legend # aesthetic-remapping metadata
     }
   }
 
   htmlwidgets::createWidget(
-    name      = "rtists",
-    x         = x,
-    package   = "rtists",
+    name = "rtists",
+    x = x,
+    package = "rtists",
     elementId = elementId,
     sizingPolicy = htmlwidgets::sizingPolicy(
       viewer.padding = 0,
-      browser.fill   = TRUE
+      browser.fill = TRUE
     )
   )
 }
@@ -348,15 +375,19 @@
 # positive radius (thin lines are then drawn).
 .df_radius_from_data <- function(df) {
   r <- df$radius
-  if (is.null(r) || anyNA(r) || any(r <= 0)) return(NULL)
+  if (is.null(r) || anyNA(r) || any(r <= 0)) {
+    return(NULL)
+  }
   ids <- df$StreamlineId
-  if (is.null(ids)) ids <- rep(1L, nrow(df))
+  if (is.null(ids)) {
+    ids <- rep(1L, nrow(df))
+  }
   per_streamline <- tapply(r, ids, function(v) length(unique(v)) == 1L)
   if (all(per_streamline)) {
     key <- unname(tapply(r, ids, function(v) v[1L]))
-    return(key)                         # per-streamline vector
+    return(key) # per-streamline vector
   }
-  r                                   # per-point vector
+  r # per-point vector
 }
 
 # Format one tooltip value: numeric values are trimmed to a compact width,
@@ -389,26 +420,41 @@
 # named list mapping each toggleable column to its per-point formatted display
 # string. Returns NULL when the tooltip is disabled.
 .df_tooltip_meta <- function(df, tooltip) {
-  if (isFALSE(tooltip) || is.null(tooltip)) return(NULL)
+  if (isFALSE(tooltip) || is.null(tooltip)) {
+    return(NULL)
+  }
   # The pinned columns (the bundle name and the coordinates, plus the internal
   # bookkeeping) are never offered as toggleable attribute columns.
   meta_cols <- setdiff(
     names(df),
-    c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover", "BundleName")
+    c(
+      "StreamlineId",
+      "PointId",
+      "X",
+      "Y",
+      "Z",
+      ".color",
+      ".hover",
+      "BundleName"
+    )
   )
   if (isTRUE(tooltip)) {
     columns <- meta_cols
   } else {
-    columns <- meta_cols                # all toggleable columns are offered...
+    columns <- meta_cols # all toggleable columns are offered...
   }
   shown <- if (isTRUE(tooltip)) columns else intersect(tooltip, columns)
-  if (length(columns) == 0L) return(NULL)
+  if (length(columns) == 0L) {
+    return(NULL)
+  }
 
   bundle_v <- df$BundleName
-  bundle   <- if (!is.null(bundle_v)) as.character(bundle_v) else NULL
-  xyz      <- sprintf(
+  bundle <- if (!is.null(bundle_v)) as.character(bundle_v) else NULL
+  xyz <- sprintf(
     "X: %s  Y: %s  Z: %s",
-    .df_tt_val(df$X), .df_tt_val(df$Y), .df_tt_val(df$Z)
+    .df_tt_val(df$X),
+    .df_tt_val(df$Y),
+    .df_tt_val(df$Z)
   )
   values <- lapply(columns, function(k) {
     v <- df[[k]]
@@ -419,11 +465,11 @@
   })
   names(values) <- columns
   list(
-    bundle  = bundle,
-    xyz     = xyz,
+    bundle = bundle,
+    xyz = xyz,
     columns = columns,
-    shown   = shown,
-    values  = values
+    shown = shown,
+    values = values
   )
 }
 
@@ -432,7 +478,9 @@
 # metadata key when `color` names a column present in the payload, otherwise
 # NULL (the renderer keeps its base paint, `'default'`).
 .legend_color_by <- function(meta_keys, color, color_by_bundle = FALSE) {
-  if (isTRUE(color_by_bundle)) return("Bundle")
+  if (isTRUE(color_by_bundle)) {
+    return("Bundle")
+  }
   if (length(color) == 1L && is.character(color) && color %in% meta_keys) {
     return(color)
   }
@@ -460,22 +508,37 @@
 # a 3x256 Uint8 colour ramp built from `palette`, and `colorBy` the initial
 # "Color by" selection (see `.legend_color_by()`). Returns NULL when the
 # object carries no attribute column.
-.df_legend_meta <- function(df, palette = "Viridis", color = NULL,
-                            color_by_bundle = FALSE) {
+.df_legend_meta <- function(
+  df,
+  palette = "Viridis",
+  color = NULL,
+  color_by_bundle = FALSE
+) {
   base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
   meta <- setdiff(names(df), base)
-  if (length(meta) == 0L) return(NULL)
+  if (length(meta) == 0L) {
+    return(NULL)
+  }
 
   ids <- df$StreamlineId
-  if (is.null(ids)) ids <- rep(1L, nrow(df))
-  grp <- factor(ids, levels = unique(ids))   # common group for split()/table()
-  n_pts <- as.integer(unname(table(grp)))   # unnamed so jsonlite emits an array, not a named object
+  if (is.null(ids)) {
+    ids <- rep(1L, nrow(df))
+  }
+  grp <- factor(ids, levels = unique(ids)) # common group for split()/table()
+  n_pts <- as.integer(unname(table(grp))) # unnamed so jsonlite emits an array, not a named object
 
   bundle_v <- df$BundleName
-  bundle_names <- if (!is.null(bundle_v)) unique(as.character(bundle_v)) else NULL
+  bundle_names <- if (!is.null(bundle_v)) {
+    unique(as.character(bundle_v))
+  } else {
+    NULL
+  }
   bundlePerSl <- NULL
   if (!is.null(bundle_names)) {
-    first <- function(x) { x <- x[!is.na(x)]; if (length(x)) x[1L] else NA_character_ }
+    first <- function(x) {
+      x <- x[!is.na(x)]
+      if (length(x)) x[1L] else NA_character_
+    }
     labels <- vapply(split(as.character(bundle_v), grp), first, character(1L))
     idx <- match(labels, bundle_names)
     idx[is.na(idx)] <- 0L
@@ -487,19 +550,27 @@
     if (length(x)) x[1L] else NA
   }
   pack_series <- function(v) {
-    if (is.numeric(v)) writeBin(as.numeric(v), raw(), size = 4L)
-    else as.character(v)
+    if (is.numeric(v)) {
+      writeBin(as.numeric(v), raw(), size = 4L)
+    } else {
+      as.character(v)
+    }
   }
 
   attrs_point <- list()
-  attrs_sl    <- list()
+  attrs_sl <- list()
   for (k in meta) {
     v <- df[[k]]
-    const <- vapply(split(v, grp),
-                    function(x) length(unique(x[!is.na(x)])) <= 1L,
-                    logical(1L))
+    const <- vapply(
+      split(v, grp),
+      function(x) length(unique(x[!is.na(x)])) <= 1L,
+      logical(1L)
+    )
     if (all(const)) {
-      attrs_sl[[k]] <- unlist(lapply(split(v, grp), first_rep), use.names = FALSE)
+      attrs_sl[[k]] <- unlist(
+        lapply(split(v, grp), first_rep),
+        use.names = FALSE
+      )
     } else {
       attrs_point[[k]] <- pack_series(v)
     }
@@ -514,25 +585,33 @@
   })
   names(ramps) <- .palette_names()
   list(
-    n_pts          = n_pts,
-    bundlePerSl    = bundlePerSl,
-    bundleNames    = bundle_names,
-    attrsPoint     = attrs_point,
-    attrsSl        = attrs_sl,
-    ramp           = as.raw(as.vector(ramp_mat)),   # current palette, kept for back-compat
-    ramps          = ramps,
+    n_pts = n_pts,
+    bundlePerSl = bundlePerSl,
+    bundleNames = bundle_names,
+    attrsPoint = attrs_point,
+    attrsSl = attrs_sl,
+    ramp = as.raw(as.vector(ramp_mat)), # current palette, kept for back-compat
+    ramps = ramps,
     currentPalette = palette,
-    palettes       = .palette_names(),
-    palSafe        = .palette_is_cvd_safe(),
-    colorBy        = .legend_color_by(meta, color, color_by_bundle)
+    palettes = .palette_names(),
+    palSafe = .palette_is_cvd_safe(),
+    colorBy = .legend_color_by(meta, color, color_by_bundle)
   )
 }
 
-.plot3d_threejs <- function(df, color = "orientation", palette = "Viridis",
-                            linewidth = 1, radius = NULL,
-                            opacity = 1, bg = "#111111",
-                            color_by_bundle = FALSE, tooltip = TRUE,
-                            toolbar = TRUE, ...) {
+.plot3d_threejs <- function(
+  df,
+  color = "orientation",
+  palette = "Viridis",
+  linewidth = 1,
+  radius = NULL,
+  opacity = 1,
+  bg = "#111111",
+  color_by_bundle = FALSE,
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+) {
   legend_meta <- .df_legend_meta(df, palette, color, color_by_bundle)
   sls <- .df_to_streamlines(df)
   # Rely on the tube radius carried on the streamlines themselves: a `radius`
@@ -545,14 +624,14 @@
   }
   .threejs_widget(
     streamlines = sls,
-    color       = .df_resolve_colors(df, color, palette, color_by_bundle),
-    linewidth   = linewidth,
-    radius      = radius,
-    opacity     = opacity,
-    bg          = bg,
-    tooltip     = .df_tooltip_meta(df, tooltip),
-    legend      = legend_meta,
-    toolbar     = toolbar,
+    color = .df_resolve_colors(df, color, palette, color_by_bundle),
+    linewidth = linewidth,
+    radius = radius,
+    opacity = opacity,
+    bg = bg,
+    tooltip = .df_tooltip_meta(df, tooltip),
+    legend = legend_meta,
+    toolbar = toolbar,
     ...
   )
 }
@@ -571,12 +650,19 @@
 #' @rdname rtists-shiny
 #' @export
 rtistsOutput <- function(outputId, width = "100%", height = "480px") {
-  htmlwidgets::shinyWidgetOutput(outputId, "rtists", width, height,
-                                 package = "rtists")
+  htmlwidgets::shinyWidgetOutput(
+    outputId,
+    "rtists",
+    width,
+    height,
+    package = "rtists"
+  )
 }
 #' @rdname rtists-shiny
 #' @export
 renderRtists <- function(expr, env = parent.frame(), quoted = FALSE) {
-  if (!quoted) { expr <- substitute(expr) }
+  if (!quoted) {
+    expr <- substitute(expr)
+  }
   htmlwidgets::shinyRenderWidget(expr, rtistsOutput, env, quoted = TRUE)
 }

@@ -23,7 +23,9 @@
       }
     }
     parent <- dirname(here)
-    if (identical(parent, here)) break
+    if (identical(parent, here)) {
+      break
+    }
     here <- parent
   }
   stop(
@@ -66,7 +68,7 @@
 #' }
 runDemo <- function(name = "line2", ...) {
   root <- .rtists_source_root()
-  dir  <- file.path(root, "demo", name)
+  dir <- file.path(root, "demo", name)
   if (!file.exists(file.path(dir, "app.R"))) {
     stop("Demo app not found: ", dir, call. = FALSE)
   }
