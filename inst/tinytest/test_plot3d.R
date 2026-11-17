@@ -315,6 +315,18 @@ expect_false("BundleName" %in% names(ld$attrsPoint))   # bundle key is sl-scoped
 expect_equal(ld$attrsSl$mean_FA, c(0.5, NA))
 cat("legend tests OK\n")
 
+# ---- widget payload `n_pts` is an unnamed vector -----------------------------
+# The payload `n_pts` (per-streamline point counts) must stay unnamed so
+# jsonlite serializes it as a JSON array (the renderer indexes it numerically);
+# a named vector would emit `{"1":5,...}` and trip jsonlite's keep_vec_names
+# warning. line2 and tube modes both ship it.
+for (w in list(plot3d(sl), plot3d(sl, radius = 0.25))) {
+  expect_true("n_pts" %in% names(w$x))
+  expect_null(names(w$x$n_pts))
+  expect_equal(unclass(w$x$n_pts), 5L)
+}
+cat("payload n_pts tests OK\n")
+
 # ---- three.js toolbar (toolbar= argument) ------------------------------------
 # The three.js backend ships a `toolbar` flag (default TRUE) that enables the
 # on-scene plotly-style button overlay (axes toggle, PNG download, orbit mode,

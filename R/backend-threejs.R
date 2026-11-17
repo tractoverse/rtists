@@ -147,14 +147,14 @@
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
   streamlines <- lapply(streamlines, as.matrix)
-  n_pts <- vapply(streamlines, nrow, integer(1L))
+  n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
 
   rinfo <- .threejs_radius(linewidth, radius, n_pts)
   tube_mode <- identical(rinfo$mode, "tube")
 
   if (tube_mode) {
     # ---- tube mode: per-streamline points + per-point RGB ------------------
-    n_pts <- vapply(streamlines, nrow, integer(1L))
+    n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
     pos   <- numeric(3 * sum(n_pts))
     idx   <- 0L
     tubeOffsets <- integer(length(streamlines) + 1L)
