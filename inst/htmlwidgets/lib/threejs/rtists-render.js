@@ -291,9 +291,19 @@ HTMLWidgets.widget({
     // destroy() can remove them and avoid leaking listeners across re-renders.
     function onDocPointerDown(e) {
       if (!ttMenu.contains(e.target)) closeTooltipMenu();
+      // Outside clicks close the orbit-mode menu / legend panel too, but the
+      // toggle buttons themselves are excluded so their click handlers can
+      // toggle instead of fight the pointerdown handler.
+      if (modeMenuEl && !modeMenuEl.contains(e.target) &&
+          !(modeBtnEl && modeBtnEl.contains(e.target))) closeModeMenu();
+      if (legendPanel && !legendPanel.contains(e.target) &&
+          !(legendBtn && legendBtn.contains(e.target))) closeLegendPanel();
     }
     function onDocKeyDown(e) {
-      if (e.key === 'Escape') closeTooltipMenu();
+      if (e.key !== 'Escape') return;
+      closeTooltipMenu();
+      closeModeMenu();
+      closeLegendPanel();
     }
     document.addEventListener('pointerdown', onDocPointerDown);
     document.addEventListener('keydown', onDocKeyDown);
@@ -407,6 +417,53 @@ HTMLWidgets.widget({
     const TOOLBAR_BTN_ACTIVE = 'background:rgba(241,238,230,0.30);';
     const TOOLBAR_ROW = 'vertical-align:middle;';
 
+    // Inline SVG icons (stroke-based, 16px, tinted by `currentColor`) so the
+    // toolbar reads crisply at any DPI and matches the overlay text colour.
+    function svgIcon(inner) {
+      return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+    }
+    const ICONS = {
+      axes: svgIcon(
+        '<path d="M12 2v20M2 12h20"/>' +
+        '<path d="M9 5l3-3 3 3M5 9l-3 3 3 3M19 9l3 3-3 3M9 19l3 3 3-3"/>'
+      ),
+      png: svgIcon(
+        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+        '<path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>'
+      ),
+      rotate: svgIcon(
+        '<path d="M23 4v6h-6"/>' +
+        '<path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'
+      ),
+      pan: svgIcon(
+        '<path d="M15 19l-3-3 3-3M18 16l3-3-3-3"/>' +
+        '<path d="M5 9L2 12l3 3M9 5l3-3 3 3"/>' +
+        '<path d="M2 12h20M12 2v20"/>'
+      ),
+      zoom: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/>'
+      ),
+      zoomIn: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/>'
+      ),
+      zoomOut: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/><path d="M8 11h6"/>'
+      ),
+      autoscale: svgIcon(
+        '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/>' +
+        '<path d="M21 3l-7 7"/><path d="M3 21l7-7"/>'
+      ),
+      reset: svgIcon(
+        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+        '<path d="M9 22V12h6v10"/>'
+      )
+    };
+
     // Show the named helper popup near `btn`, flipping across the edges so it
     // stays onscreen; shared by the toolbar and mode-menu buttons.
     function showBarTip(btn, text) {
@@ -453,18 +510,18 @@ HTMLWidgets.widget({
       return 'Zoom';
     }
     function modeGlyph(mode) {
-      if (mode === 'rotate') return '&#8635;';
-      if (mode === 'pan') return '&#9998;';
-      return '&#128269;';
+      if (mode === 'rotate') return ICONS.rotate;
+      if (mode === 'pan') return ICONS.pan;
+      return ICONS.zoom;
     }
 
     function renderModeMenu() {
       if (!modeMenuEl) return;
       const current = orbitMode;
       const items = [
-        ['rotate', '&#8635;', 'Rotate'],
-        ['pan',    '&#9998;', 'Pan'],
-        ['zoom',   '&#128269;', 'Zoom']
+        ['rotate', ICONS.rotate, 'Rotate'],
+        ['pan',    ICONS.pan, 'Pan'],
+        ['zoom',   ICONS.zoom, 'Zoom']
       ];
       modeMenuEl.innerHTML = items.map(function(it) {
         const on = it[0] === current ? 'background:rgba(241,238,230,0.22);' : '';
@@ -541,10 +598,10 @@ HTMLWidgets.widget({
         'border:1px solid rgba(241,238,230,0.3);border-radius:4px;';
       toolbarEl = container;
 
-      axesBtn = makeToolbarButton('&boxv;&boxh;', 'Hide axes', toggleAxes);
+      axesBtn = makeToolbarButton(ICONS.axes, 'Hide axes', toggleAxes);
       axesBtn.classList.toggle('active', axesOn);   // axes are shown by default
       if (axesOn) axesBtn.style.cssText = TOOLBAR_BTN + TOOLBAR_BTN_ACTIVE;
-      const pngBtn = makeToolbarButton('&#8600;', 'Download as PNG', function() {
+      const pngBtn = makeToolbarButton(ICONS.png, 'Download as PNG', function() {
         renderer.domElement.toBlob(function(blob) {
           if (!blob) return;
           const a = document.createElement('a');
@@ -558,9 +615,10 @@ HTMLWidgets.widget({
         }, 'image/png');
       });
 
-      const modeBtn = makeToolbarButton('&#8635;', 'Orbit mode', function(e) {
+      const modeBtn = makeToolbarButton(ICONS.rotate, 'Orbit mode', function(e) {
         e.stopPropagation();
         hideBarTip();
+        if (modeMenuEl.style.display === 'block') { closeModeMenu(); return; }
         renderModeMenu();
         modeMenuEl.style.display = 'block';
         const mw = modeMenuEl.offsetWidth, mh = modeMenuEl.offsetHeight;
@@ -574,16 +632,16 @@ HTMLWidgets.widget({
       });
       modeBtnEl = modeBtn;
 
-      const zinBtn = makeToolbarButton('+', 'Zoom in', function() {
+      const zinBtn = makeToolbarButton(ICONS.zoomIn, 'Zoom in', function() {
         controls.dollyIn(0.85);
       });
-      const zoutBtn = makeToolbarButton('&minus;', 'Zoom out', function() {
+      const zoutBtn = makeToolbarButton(ICONS.zoomOut, 'Zoom out', function() {
         controls.dollyOut(0.85);
       });
-      const autoBtn = makeToolbarButton('&#8605;', 'Autoscale', function() {
+      const autoBtn = makeToolbarButton(ICONS.autoscale, 'Autoscale', function() {
         reframeToData();
       });
-      const resetBtn = makeToolbarButton('&#8634;', 'Reset camera', function() {
+      const resetBtn = makeToolbarButton(ICONS.reset, 'Reset camera', function() {
         // restores the target/position/zoom saved at render time
         controls.reset();
       });
@@ -1137,7 +1195,11 @@ HTMLWidgets.widget({
       legendBtn.style.display = 'none';
       legendBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        openLegendPanel();
+        if (legendPanel && legendPanel.style.display === 'block') {
+          closeLegendPanel();
+        } else {
+          openLegendPanel();
+        }
       });
       el.appendChild(legendBtn);
 
@@ -1238,7 +1300,6 @@ HTMLWidgets.widget({
       }
 
       panel.style.display = 'block';
-      legendBtn.textContent = 'Legend \u00d7';
     }
 
     // Visibility for every streamline in bundle index ci (0-based).
@@ -1308,7 +1369,7 @@ HTMLWidgets.widget({
         if (toolbarEl && toolbarEl.parentNode) toolbarEl.parentNode.removeChild(toolbarEl);
         if (modeMenuEl && modeMenuEl.parentNode) modeMenuEl.parentNode.removeChild(modeMenuEl);
         if (barTip && barTip.parentNode) barTip.parentNode.removeChild(barTip);
-        toolbarEl = null; modeMenuEl = null; axesBtn = null; barTip = null;
+        toolbarEl = null; modeMenuEl = null; axesBtn = null; modeBtnEl = null; barTip = null;
         renderer.dispose();
         controls.dispose();
         if (renderer.domElement.parentNode) {
