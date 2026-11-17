@@ -17,3 +17,5 @@
 ^notes$
 ^demo$
 ^tools$
+^[.]?air[.]toml$
+^\.vscode$

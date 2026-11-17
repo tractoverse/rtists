@@ -9,7 +9,7 @@ plot3d(
   color = "orientation",
   palette = "Viridis",
   backend = c("threejs", "plotly"),
-  linewidth = 2,
+  linewidth = NULL,
   radius = NULL,
   opacity = 0.5,
   bg = "#111111",
@@ -39,7 +39,11 @@ lines are drawn in that fixed colour.
 \item{palette}{A colour scale name applied when \code{color} is a numeric
 metadata key. The three.js backend resolves it through
 \code{grDevices::hcl.colors()} (e.g. \code{"Viridis"}, \code{"RdYlBu"}); the plotly
-backend passes it to plotly's \code{colorscale}. Defaults to \code{"Viridis"}.}
+backend passes it to plotly's \code{colorscale}. Defaults to \code{"Viridis"},
+which — like the other perceptual palettes — is colour-vision-deficiency
+(CVD) safe. In the three.js widget's legend panel, a palette picker lets
+you switch the continuous colour scale live; CVD-safe palettes are
+flagged there.}
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
@@ -47,12 +51,16 @@ line thickness (true 3D tubes) and object-level depth-sorted
 transparency; the plotly backend is an opt-in alternative for interactive
 plotly-style charts.}
 
-\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
-three.js backend this is the \code{linewidth} uniform of three.js'
-\code{LineMaterial} in world units (\code{worldUnits: true}): the width is measured
-in scene units rather than pixels, so it is not capped at the browser's
-1px line-width limit. For genuinely thick fibres, prefer \code{radius} (true 3D
-tubes).}
+\item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{NULL},
+meaning "auto": the three.js backend sizes the fast line path to a thin
+~0.5\% of the scene's bounding-box diagonal, so lines read as hairlines no
+matter the data's spatial scale (millimetre-scale DTI scenes or unit-scale
+synthetic scenarios alike). An explicit numeric value is used as-is in
+world units (the three.js \code{linewidth} uniform of \code{LineMaterial},
+\code{worldUnits: true}, measured in scene units rather than pixels, so not
+capped at the browser's 1px line-width limit). For genuinely thick fibres,
+prefer \code{radius} (true 3D tubes). The plotly backend ignores the auto mode
+and uses a fixed pixel width of \code{2} when \code{NULL}.}
 
 \item{radius}{Numeric radius in world units (three.js backend only). This is
 the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.
@@ -64,8 +72,9 @@ overlap between neighbouring fibres (overlap is the generator's business,
 not rtists's). An explicit \code{radius} argument overrides any data. Accepts:
 \itemize{
 \item \code{NULL} (default): draw at the object's own radius data if present,
-otherwise thin lines (fast \code{Line2} at \code{linewidth}).
-\item A scalar \code{0}: fast flat \code{Line2} at \code{linewidth} (nothing needs a tube).
+otherwise thin lines (fast \code{Line2} at the auto or explicit \code{linewidth}).
+\item A scalar \code{0}: fast flat \code{Line2} at the auto or explicit \code{linewidth}
+(nothing needs a tube).
 \item A positive \strong{scalar}: every streamline is drawn as a real 3D
 \code{TubeGeometry} tube of this constant world radius, with genuine thickness,
 Phong flat shading, and object-level depth-sorted transparency (each tube
