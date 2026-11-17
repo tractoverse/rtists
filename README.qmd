@@ -33,10 +33,10 @@ defined in the [fiber](https://github.com/tractoverse/fiber) package.
 The main function is `plot3d()`, an [S7](https://rconsortium.github.io/S7/)
 generic with methods for `fiber::streamline`, `fiber::bundle`, and
 `fiber::bundle_set` objects. The default `backend = "threejs"` uses a
-self-contained three.js widget with real world-space line thickness
-(`thickness`) and depth-sorted transparency; `backend = "plotly"` is retained
-as an interim fallback. Both are fully interactive (pan, rotate, zoom). The
-static figures below are exported from the plotly backend.
+self-contained three.js widget with real world-space line thickness and
+depth-sorted transparency; `backend = "plotly"` is retained as an interim
+fallback. Both are fully interactive (pan, rotate, zoom). The static figures
+below are exported from the plotly backend.
 
 ## Installation
 

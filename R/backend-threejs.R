@@ -11,7 +11,7 @@
 #                  colours and `depthWrite:false`, giving true thickness and
 #                  object-level depth-sorted transparency.
 #
-# Verbatim vendored three.js (r128) + OrbitControls live under
+# Verbatim vendored three.js (r186) + OrbitControls lie under
 # inst/htmlwidgets/lib/threejs/ and are declared in rtists.yaml, so the widget
 # is fully self-contained (no CDN at render time).
 
