@@ -53,6 +53,7 @@
 <li>Fixed colour: any CSS colour name or hex string.</li>
 </ul></li>
 <li>Interactive figures support pan, rotate, and zoom.</li>
+<li>The three.js backend now shows an on-scene toolbar (top-left, plotly-style) with controls to toggle the coordinate axes, download the view as a PNG, choose an orbit mode (rotate / pan / zoom), zoom in and out, re-frame the view to the data, and reset the camera. Disable it with <code>plot3d(..., toolbar = FALSE)</code>.</li>
 </ul><div class="section level3">
 <h3 id="bug-fixes-0-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-0"></a></h3>
 <ul><li>The static (non-Shiny) htmlwidgets path is fixed: with the three.js backend, the ESM renderer module is imported asynchronously, which can register its widget binding after htmlwidgets’ initial <code>staticRender()</code> (run once on DOMContentLoaded). The console and Viewer pane therefore produced no canvas and no error. The loader now re-invokes Shiny’s binding scan or <code>HTMLWidgets.staticRender()</code> once the module is ready. The re-render is idempotent, so other widgets are left untouched.</li>
