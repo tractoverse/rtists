@@ -77,6 +77,28 @@ expect_equal(length(fig$x$colors), 6L * (nrow(pts) - 1L))
 expect_true(is.null(fig$x$tubeOffsets))
 expect_true(is.null(fig$x$radii))
 expect_true(fig$x$linewidth > 0)
+# default linewidth is auto-scaled to the scene (a thin fraction of the
+# bounding-box diagonal), not the old scale-blind constant 2
+auto_expected <- 0.005 * sqrt(sum(apply(pts, 2L, function(v) diff(range(v)))^2))
+# the payload scalar is jsonlite-unboxed (class "scalar"), so strip the class
+# wrapper before comparing against the plain-double expectation
+expect_equal(unclass(fig$x$linewidth), auto_expected, tolerance = 1e-6)
+# an explicit numeric linewidth is honoured exactly
+fig <- plot3d(sl, linewidth = 2)
+expect_equal(unclass(fig$x$linewidth), 2)
+# a unit-scale scene with no radius data gets a thin auto width rather than
+# a world-unit 2 slab (the master-scenario "big tubes" bug)
+small <- fiber::streamline(cbind(
+  X = c(0, 1, 2),
+  Y = c(0, 0.5, 0),
+  Z = c(0, 0, 1)
+))
+fig_small <- plot3d(small)
+expect_true(fig_small$x$linewidth < 0.05 && fig_small$x$linewidth > 0)
+# degenerate (all-identical) scene clamps to a sane scale
+deg <- fiber::streamline(cbind(X = c(1, 1, 1), Y = c(1, 1, 1), Z = c(1, 1, 1)))
+fig_deg <- plot3d(deg)
+expect_equal(unclass(fig_deg$x$linewidth), 0.005)
 
 # scalar radius > 0 -> true 3D tube: per-point constant radii + tubeOffsets,
 # no `thickness` echo
@@ -300,9 +322,10 @@ cat("tooltip tests OK\n")
 # `bundleNames` (per-streamline bundle category for bundle_set objects),
 # `attrsPoint` (point-scoped attribute series, numeric packed as Float32 raw)
 # and `attrsSl` (streamline-scoped representative values) for live remapping,
-# and `ramp` (3x256 Uint8 colour ramp). No attribute column -> legendData is
-# NULL. `BundleName` is offered as a per-bundle visual key, never as a point
-# series.
+# and `ramp` (3x256 Uint8 colour ramp). A df with no attribute column ->
+# legendData is NULL. `BundleName` is never offered as an attribute series:
+# the renderer's dedicated 'Bundle' colour mode and per-bundle visibility list
+# already cover it.
 #
 # single streamline, line2 and tube modes both ship the payload
 fig <- plot3d(sl)
@@ -327,8 +350,12 @@ ld <- fig$x$legendData
 expect_equal(unclass(ld$n_pts), c(5L, 5L))
 expect_equal(ld$bundleNames, c("CST", "CC"))
 expect_equal(ld$bundlePerSl, c(1L, 2L)) # 1-based category index per streamline
-expect_equal(ld$attrsSl$BundleName, c("CST", "CC"))
-expect_false("BundleName" %in% names(ld$attrsPoint)) # bundle key is sl-scoped
+expect_false("BundleName" %in% names(ld$attrsPoint))
+expect_false("BundleName" %in% names(ld$attrsSl)) # never a redundant attribute
+# a BundleName-only bundle_set still ships a payload (per-bundle visibility)
+fig <- suppressMessages(plot3d(fiber::bundle_set(list(A = b1))))
+expect_true("legendData" %in% names(fig$x))
+expect_equal(fig$x$legendData$bundleNames, "A")
 # streamline-scoped attr absent on the second bundle pads to NA
 expect_equal(ld$attrsSl$mean_FA, c(0.5, NA))
 cat("legend tests OK\n")

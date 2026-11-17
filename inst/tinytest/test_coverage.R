@@ -139,6 +139,29 @@ sol <- rtists:::.threejs_radius(linewidth = 1, radius = -1, n_pts = c(5, 5))
 expect_equal(sol$mode, "line2")
 expect_null(sol$radii)
 
+# .auto_linewidth: 0.5% of the scene's bounding-box diagonal
+al_sl <- list(
+  cbind(X = c(0, 1, 2), Y = c(0, 0, 0), Z = c(0, 0, 0)), # X span 2
+  cbind(X = c(0, 0, 0), Y = c(0, 0, 3), Z = c(0, 0, 4)) # Y span 3, Z span 4
+)
+expect_equal(
+  rtists:::.auto_linewidth(al_sl),
+  0.005 * sqrt(2^2 + 3^2 + 4^2),
+  tolerance = 1e-6
+)
+# scale-invariant: doubling the scene doubles the width
+expect_equal(
+  rtists:::.auto_linewidth(lapply(al_sl, function(s) 2 * s)),
+  2 * rtists:::.auto_linewidth(al_sl),
+  tolerance = 1e-6
+)
+# degenerate all-identical scene clamps to a sane scale
+deg <- list(cbind(X = c(1, 1), Y = c(1, 1), Z = c(1, 1)))
+expect_equal(rtists:::.auto_linewidth(deg), 0.005)
+# single point per axis -> zero span clamps too
+single <- list(cbind(X = 5, Y = 5, Z = 5))
+expect_equal(rtists:::.auto_linewidth(single), 0.005)
+
 # .threejs_radius: per-streamline non-positive radius errors (129-130)
 expect_error(
   rtists:::.threejs_radius(1, c(0.2, -0.3), c(5, 5)),
@@ -337,6 +360,25 @@ expect_identical(lm$bundleNames, c("A", "B"))
 expect_identical(lm$bundlePerSl, c(1L, 2L))
 expect_identical(lm$attrsSl$fa, c(0.3, 0.9))
 expect_true(is.raw(lm$attrsPoint$pt)) # pack_series numeric branch
+# never offered as a redundancy of the dedicated per-bundle mode
+expect_false("BundleName" %in% names(lm$attrsSl))
+expect_false("BundleName" %in% names(lm$attrsPoint))
+# a BundleName-only df still ships a payload (per-bundle visibility list)
+lm_bn <- rtists:::.df_legend_meta(data.frame(
+  StreamlineId = c(1, 1, 2),
+  PointId = c(1, 2, 1),
+  X = 1:3,
+  Y = 1:3,
+  Z = 1:3,
+  .color = "red",
+  .hover = NA,
+  BundleName = c("A", "A", "B")
+))
+expect_identical(lm_bn$bundleNames, c("A", "B"))
+expect_identical(lm_bn$bundlePerSl, c(1L, 2L))
+# no attribute series available, but the lists are initialized empty (not NULL)
+expect_length(lm_bn$attrsPoint, 0L)
+expect_length(lm_bn$attrsSl, 0L)
 
 # no StreamlineId column -> ids defaults to rep(1L, nrow(df)) (line 422);
 # with a single implicit group the varied attr is non-constant, so it lands in
@@ -400,6 +442,11 @@ expect_identical(
   NULL
 )
 expect_identical(rtists:::.legend_color_by(c("FA", "region"), NULL), NULL)
+# an explicit `color = "BundleName"` request maps onto the 'Bundle' mode
+expect_identical(
+  rtists:::.legend_color_by(c("FA", "region"), "BundleName"),
+  "Bundle"
+)
 
 # .df_legend_meta palette payload: ramps for every curated palette, keyed by
 # name; the current palette is mirrored in `ramp` (back-compat) and named
@@ -435,6 +482,10 @@ expect_identical(
 expect_identical(
   rtists:::.df_legend_meta(dflm, color = "steelblue")$colorBy,
   NULL
+)
+expect_identical(
+  rtists:::.df_legend_meta(dflm, color = "BundleName")$colorBy,
+  "Bundle"
 )
 # a different palette is reflected in ramp/currentPalette and encoded as
 # expected (Viridis vs RdYlBu differ, so the back-compat ramp tracks the request)

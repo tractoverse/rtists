@@ -31,6 +31,24 @@
   `plot3d()`. The curated set defaults to the CVD-safe perceptual palettes
   (Viridis, Plasma, Inferno, Cividis, Mako, Rocket, Mint), each flagged as
   such in the picker, alongside the diverging RdYlBu and Spectral.
+* Thin-line rendering is no longer scale-blind: when no `radius` is supplied
+  (the fast line2 path), the default `linewidth` is auto-sized to
+  approximately 0.5% of the scene's bounding-box diagonal instead of a fixed
+  2 world units. A 2-unit slab was a hairline on a full-size DTI scene but
+  covered most of the viewport on unit-scale synthetic scenarios, drawing
+  giant overlapping quads and slowing rendering. Pass an explicit numeric
+  `linewidth` to keep exact world-unit widths; the plotly backend uses a
+  fixed width of 2 pixels when `linewidth` is left automatic.
+* Added `plot2d()`, an [S7](https://rconsortium.github.io/S7/) generic with
+  methods for `fiber::streamline`, `fiber::bundle`, and `fiber::bundle_set`
+  objects. It renders a static [ggplot2](https://ggplot2.tidyverse.org/)
+  arclength projection: each streamline is re-parametrized by distance
+  travelled along the fibre and the X/Y/Z coordinates are drawn against it in
+  three vertically stacked facets, making it easy to compare tract geometry
+  with per-point diffusion profiles (FA, MD). Geometries are downsampled into
+  equal-arclength chunks (`n_chunks`), and the same colour vocabulary as
+  `plot3d()` applies: orientation (DTI convention), any metadata key
+  (continuous or categorical), or a fixed colour.
 
 ## Bug fixes
 
@@ -45,3 +63,8 @@
   names recorded by `fiber::bundle_set()` are now read from the right slot
   (`@bundle_data`), so a `bundle_set` built from a named list keeps its names
   instead of falling back to sequential indices.
+* The three.js legend no longer lists the bundle name twice: for `bundle_set`
+  objects the dedicated per-bundle "Bundle" colour mode and visibility list
+  already cover `BundleName`, so the name is excluded from the attribute
+  "Color by" entries. A `bundle_set` with no other attributes still ships the
+  per-bundle payload so the legend can show and toggle bundles.

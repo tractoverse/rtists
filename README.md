@@ -23,9 +23,11 @@ The main function is `plot3d()`, an
 The default `backend = "threejs"` uses a self-contained three.js widget
 with real world-space line thickness and depth-sorted transparency;
 `backend = "plotly"` is retained as an interim fallback. Both are fully
-interactive (pan, rotate, zoom). The static figures below are captured
-from the three.js backend (regenerate them with
-`tools/capture-figures.R`).
+interactive (pan, rotate, zoom). For a static publication figure,
+`plot2d()` re-parametrizes each fibre by arclength and draws the X/Y/Z
+coordinates against it in three stacked ggplot2 facets. The static
+figures below are captured from the three.js backend (regenerate them
+with `tools/capture-figures.R`).
 
 ## Installation
 
@@ -144,6 +146,22 @@ plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 
 Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in `?plot3d`.
+
+### `plot2d()` — static arclength projections
+
+For a static publication figure, `plot2d()` re-parametrizes each fibre
+by arclength and draws the X/Y/Z coordinates against it in three
+vertically stacked ggplot2 facets. Geometries are downsampled into
+equal-arclength chunks so long tracts stay light, and the `color`
+vocabulary matches `plot3d()` (orientation, metadata key, or fixed
+colour):
+
+``` r
+plot2d(sl, color = "FA")
+```
+
+<img src="man/figures/README-plot2d-1.png" width="672"
+alt="Single streamline as an arclength projection coloured by FA." />
 
 ## Licensing
 

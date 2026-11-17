@@ -120,6 +120,25 @@
 
 # ---- threejs resolve -----------------------------------------------------------
 
+# Auto-scaled line width for the fast line2 path: a small fraction (0.5%) of
+# the scene's bounding-box diagonal. The line2 width is a world-unit quantity,
+# so a fixed default is scale-blind: 2 world units is a hairline on a ~200 mm
+# DTI scene but a huge slab on a unit-scale synthetic scenario. Sizing the
+# default to the data keeps thin lines reading as hairlines at any scale.
+.auto_linewidth <- function(streamlines) {
+  mins <- rep(Inf, 3L)
+  maxs <- rep(-Inf, 3L)
+  for (s in streamlines) {
+    mins <- pmin(mins, apply(s, 2L, min))
+    maxs <- pmax(maxs, apply(s, 2L, max))
+  }
+  diag <- sqrt(sum((maxs - mins)^2))
+  if (!is.finite(diag) || diag <= 0) {
+    diag <- 1 # degenerate all-identical scene: clamp to a sane scale
+  }
+  0.005 * diag
+}
+
 # Resolve the radius request into a render mode and a per-point radius vector.
 #
 # `radius` accepts any of:
@@ -185,7 +204,7 @@
 .threejs_widget <- function(
   streamlines,
   color = "orientation",
-  linewidth = 1,
+  linewidth = NULL,
   radius = NULL,
   opacity = 1,
   bg = "#111111",
@@ -200,6 +219,12 @@
   }
   streamlines <- lapply(streamlines, as.matrix)
   n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
+
+  # A NULL linewidth means "auto": size thin lines to the scene scale. Only
+  # meaningful on the line2 path (tubes ignore width), resolve it early.
+  if (is.null(linewidth)) {
+    linewidth <- .auto_linewidth(streamlines)
+  }
 
   rinfo <- .threejs_radius(linewidth, radius, n_pts)
   tube_mode <- identical(rinfo$mode, "tube")
@@ -475,7 +500,8 @@
 
 # Resolve the widget's initial "Color by" selection from the plot3d colour
 # request: the renderer's `'Bundle'` label when colouring per bundle, the
-# metadata key when `color` names a column present in the payload, otherwise
+# metadata key when `color` names a column present in the payload (except
+# `BundleName`, which is served by the dedicated `'Bundle'` mode), otherwise
 # NULL (the renderer keeps its base paint, `'default'`).
 .legend_color_by <- function(meta_keys, color, color_by_bundle = FALSE) {
   if (isTRUE(color_by_bundle)) {
@@ -483,6 +509,11 @@
   }
   if (length(color) == 1L && is.character(color) && color %in% meta_keys) {
     return(color)
+  }
+  # An explicit `color = "BundleName"` request is served by the same dedicated
+  # per-bundle mode (the column itself is never offered as an attribute).
+  if (identical(color, "BundleName")) {
+    return("Bundle")
   }
   NULL
 }
@@ -496,8 +527,10 @@
 # point-scoped otherwise.
 #
 # The bundle name, the coordinates and the internal bookkeeping columns are
-# never offered as aesthetics. `BundleName` is kept: it is the natural
-# per-bundle colour / visibility key for bundle_set() objects.
+# never offered as aesthetics. `BundleName` is excluded too: the renderer has
+# a dedicated 'Bundle' colour mode and visibility list built from
+# `bundleNames` / `bundlePerSl`, so offering the name again as an attribute
+# series would merely duplicate it in the legend's "Color by" dropdown.
 #
 # Returns a structured list consumed by the three.js renderer: `n_pts` the
 # per-streamline point counts, `bundlePerSl` a per-streamline bundle category
@@ -515,10 +548,16 @@
   color_by_bundle = FALSE
 ) {
   base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
-  meta <- setdiff(names(df), base)
-  if (length(meta) == 0L) {
+  # A df with no metadata at all carries nothing for the legend to remap, so
+  # ship no payload. `BundleName` does not count: it only feeds the dedicated
+  # per-bundle mode below.
+  if (length(setdiff(names(df), base)) == 0L) {
     return(NULL)
   }
+  # BundleName never appears as an attribute series: the renderer already has a
+  # dedicated 'Bundle' colour mode and per-bundle visibility list, so offering
+  # the name again would just duplicate it in the legend.
+  meta <- setdiff(names(df), c(base, "BundleName"))
 
   ids <- df$StreamlineId
   if (is.null(ids)) {

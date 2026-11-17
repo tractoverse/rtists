@@ -44,6 +44,11 @@
       call. = FALSE
     )
   }
+  # The three.js default (NULL = auto thin) has no meaning on plotly's
+  # pixel-width lines; keep the historical numeric default there.
+  if (is.null(linewidth)) {
+    linewidth <- 2
+  }
   meta_keys <- setdiff(names(df), c("StreamlineId", "PointId", "X", "Y", "Z"))
 
   # ---- resolve colour --------------------------------------------------------
@@ -175,12 +180,16 @@
 #'   line thickness (true 3D tubes) and object-level depth-sorted
 #'   transparency; the plotly backend is an opt-in alternative for interactive
 #'   plotly-style charts.
-#' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`. On the
-#'   three.js backend this is the `linewidth` uniform of three.js'
-#'   `LineMaterial` in world units (`worldUnits: true`): the width is measured
-#'   in scene units rather than pixels, so it is not capped at the browser's
-#'   1px line-width limit. For genuinely thick fibres, prefer `radius` (true 3D
-#'   tubes).
+#' @param linewidth Numeric. Width of the plotted lines. Defaults to `NULL`,
+#'   meaning "auto": the three.js backend sizes the fast line path to a thin
+#'   ~0.5% of the scene's bounding-box diagonal, so lines read as hairlines no
+#'   matter the data's spatial scale (millimetre-scale DTI scenes or unit-scale
+#'   synthetic scenarios alike). An explicit numeric value is used as-is in
+#'   world units (the three.js `linewidth` uniform of `LineMaterial`,
+#'   `worldUnits: true`, measured in scene units rather than pixels, so not
+#'   capped at the browser's 1px line-width limit). For genuinely thick fibres,
+#'   prefer `radius` (true 3D tubes). The plotly backend ignores the auto mode
+#'   and uses a fixed pixel width of `2` when `NULL`.
 #' @param radius Numeric radius in world units (three.js backend only). This is
 #'   the knob for **true 3D tubes**; there is no separate `thickness` argument.
 #'   radius is treated as data carried on the object: when `radius` is `NULL`
@@ -191,8 +200,9 @@
 #'   not rtists's). An explicit `radius` argument overrides any data. Accepts:
 #'
 #'   - `NULL` (default): draw at the object's own radius data if present,
-#'     otherwise thin lines (fast `Line2` at `linewidth`).
-#'   - A scalar `0`: fast flat `Line2` at `linewidth` (nothing needs a tube).
+#'     otherwise thin lines (fast `Line2` at the auto or explicit `linewidth`).
+#'   - A scalar `0`: fast flat `Line2` at the auto or explicit `linewidth`
+#'     (nothing needs a tube).
 #'   - A positive **scalar**: every streamline is drawn as a real 3D
 #'     `TubeGeometry` tube of this constant world radius, with genuine thickness,
 #'     Phong flat shading, and object-level depth-sorted transparency (each tube
@@ -321,7 +331,7 @@ plot3d <- S7::new_generic(
     color = "orientation",
     palette = "Viridis",
     backend = c("threejs", "plotly"),
-    linewidth = 2,
+    linewidth = NULL,
     radius = NULL,
     opacity = 0.5,
     bg = "#111111",
@@ -375,7 +385,7 @@ S7::method(plot3d, fiber::streamline) <- function(
   color = "orientation",
   palette = "Viridis",
   backend = c("threejs", "plotly"),
-  linewidth = 2,
+  linewidth = NULL,
   radius = NULL,
   opacity = 0.5,
   bg = "#111111",
@@ -480,7 +490,7 @@ S7::method(plot3d, fiber::bundle) <- function(
   color = "orientation",
   palette = "Viridis",
   backend = c("threejs", "plotly"),
-  linewidth = 2,
+  linewidth = NULL,
   radius = NULL,
   opacity = 0.5,
   bg = "#111111",
@@ -590,7 +600,7 @@ S7::method(plot3d, fiber::bundle_set) <- function(
   color = "orientation",
   palette = "Viridis",
   backend = c("threejs", "plotly"),
-  linewidth = 2,
+  linewidth = NULL,
   radius = NULL,
   opacity = 0.5,
   bg = "#111111",
