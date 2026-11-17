@@ -186,3 +186,6 @@ the upstream r186 release, unmodified. Vendored files:
 * `three.module.js` and `three.core.js`
 * `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2, LineSegmentsGeometry
 * `jsm/controls/`: OrbitControls.js
+
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which ships
+with the installed package.
