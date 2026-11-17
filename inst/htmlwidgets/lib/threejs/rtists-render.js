@@ -936,14 +936,18 @@ HTMLWidgets.widget({
     }
     // Distinct categorical colours for `k` levels. With a ramp the colours are
     // equal-spaced samples of it (so the palette picker re-colours categorical
-    // mappings too); without one the fixed CAT_COLORS hue set applies.
+    // mappings too); without one the fixed CAT_COLORS hue set applies. The
+    // single-level case samples the ramp midpoint — the end-points of most
+    // ramps are near-black, so an end-point sample would read as grey and
+    // palette changes would be imperceptible for one-category objects (e.g. a
+    // bundle_set with a single bundle).
     function categoricalColors(k, ramp) {
       const cs = [];
       if (ramp && k > 0) {
         // equal-spaced samples of the ramp: ramp channels are 0-1, so scale
         // to the 0-255 contract the call sites below divide by 255
         for (let i = 0; i < k; i++) {
-          const t = (k === 1) ? 0 : i / (k - 1);
+          const t = (k === 1) ? 0.5 : i / (k - 1);
           const j = Math.max(0, Math.min(255, Math.round(t * 255)));
           cs.push([255 * ramp[3*j], 255 * ramp[3*j+1], 255 * ramp[3*j+2]]);
         }
@@ -1072,10 +1076,18 @@ HTMLWidgets.widget({
       const out = new Float32Array(3 * n);
 
       if (colorBy === 'Bundle') {
-        const cats = categoricalColors(Math.max(1, st.bundleNames.length), ramp);
+        // When the payload carries no bundle categories (a plain `bundle`
+        // object, not a `bundle_set`), every streamline lands in the NA slot.
+        // Treat the whole object as one category instead of rendering the
+        // grey NA colour, so the palette picker still works; the visibility
+        // list still shows per-streamline rows in that case.
+        const noBundles = !st.bundleNames.length;
+        const nCat = noBundles ? 1 : st.bundleNames.length;
+        const cats = categoricalColors(nCat, ramp);
         let i = 0;
         for (let t = 0; t < st.nStreams; t++) {
-          const ci = st.slOfStreamline[t];
+          let ci = st.slOfStreamline[t];
+          if (noBundles) ci = 1;
           const c = (ci && ci > 0) ? cats[(ci - 1) % cats.length] : GREY;
           for (let k = 0; k < st.npts[t]; k++) {
             out[3*i] = c[0]/255; out[3*i+1] = c[1]/255; out[3*i+2] = c[2]/255; i++;
