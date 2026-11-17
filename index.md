@@ -13,10 +13,11 @@ an [S7](https://rconsortium.github.io/S7/) generic with methods for
 and
 [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
 objects. The default `backend = "threejs"` uses a self-contained
-three.js widget with real world-space line thickness (`thickness`) and
-depth-sorted transparency; `backend = "plotly"` is retained as an
-interim fallback. Both are fully interactive (pan, rotate, zoom). The
-static figures below are exported from the plotly backend.
+three.js widget with real world-space line thickness and depth-sorted
+transparency; `backend = "plotly"` is retained as an interim fallback.
+Both are fully interactive (pan, rotate, zoom). The static figures below
+are captured from the three.js backend (regenerate them with
+`tools/capture-figures.R`).
 
 ## Installation
 
@@ -96,10 +97,6 @@ using the standard DTI convention (left–right = red, anterior–posterior
 plot3d(bun)
 ```
 
-``` R
-#> list()
-```
-
 ![](reference/figures/README-orientation-1.png)
 
 #### Colour by per-point metadata
@@ -110,10 +107,6 @@ scale:
 ``` r
 
 plot3d(bun, color = "FA", palette = "Viridis")
-```
-
-``` R
-#> list()
 ```
 
 ![](reference/figures/README-point-fa-1.png)
@@ -128,10 +121,6 @@ streamline, giving every tract a single uniform colour:
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```
 
-``` R
-#> list()
-```
-
 ![](reference/figures/README-streamline-fa-1.png)
 
 #### Fixed colour
@@ -141,10 +130,6 @@ Any CSS colour name or hex code colours all lines identically:
 ``` r
 
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
-```
-
-``` R
-#> list()
 ```
 
 ![](reference/figures/README-fixed-1.png)
@@ -176,6 +161,3 @@ Vendored files:
 - `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
   LineSegmentsGeometry
 - `jsm/controls/`: OrbitControls.js
-
-The upstream MIT license text is also mirrored in `inst/NOTICE`, which
-ships with the installed package.

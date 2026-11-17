@@ -53,6 +53,11 @@ The exported API is small:
   an S7 generic that attaches a visible tube radius to streamlines that
   carry none.
 
+Plus Shiny plumbing
+([`rtistsOutput()`](https://tractoverse.github.io/rtists/reference/rtists-shiny.md),
+[`renderRtists()`](https://tractoverse.github.io/rtists/reference/rtists-shiny.md))
+and a demo launcher
+([`runDemo()`](https://tractoverse.github.io/rtists/reference/runDemo.md)).
 Everything else is internal. Because the fiber classes are namespaced
 ([`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
 and so on), plain S3 dispatch breaks on them, so rtists uses **S7

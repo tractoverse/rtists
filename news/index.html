@@ -42,7 +42,7 @@
 <li>Added <code><a href="../reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for <code><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">fiber::streamline</a></code>, <code><a href="https://tractoverse.github.io/fiber/reference/bundle.html" class="external-link">fiber::bundle</a></code>, and <code><a href="https://tractoverse.github.io/fiber/reference/bundle_set.html" class="external-link">fiber::bundle_set</a></code> objects.</li>
 <li>Two htmlwidget backends are available through <code>backend</code> (three.js is the default):
 <ul><li>
-<code>"threejs"</code>: a self-contained three.js renderer (no CDN). <code>thickness &gt; 0</code> draws real world-space tubes with per-point colour and object-level depth-sorted transparency; the fast line mode scales to large bundles.</li>
+<code>"threejs"</code>: a self-contained three.js renderer (no CDN). <code>radius &gt; 0</code> draws real world-space tubes with per-point colour and object-level depth-sorted transparency; the fast line mode scales to large bundles.</li>
 <li>
 <code>"plotly"</code>: a single <code>scatter3d</code> trace separated by <code>NA</code> break-points, retained as an interim fallback.</li>
 </ul></li>
