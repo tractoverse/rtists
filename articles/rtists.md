@@ -185,7 +185,7 @@ Figure 5: Bundle in a single fixed colour with reduced opacity.
 |----|----|----|
 | `color` | `"orientation"` | Colour mode: `"orientation"`, metadata key, or a CSS/hex string. |
 | `palette` | `"Viridis"` | Colour scale used for continuous numeric metadata (three.js resolves it via [`hcl.colors()`](https://rdrr.io/r/grDevices/palettes.html)). |
-| `linewidth` | `2` | Constant line width in world units (three.js `LineMaterial`). |
+| `linewidth` | `NULL` | Line width. When `NULL` (default), the three.js backend auto-sizes the fast line path to ~0.5% of the scene’s bounding-box diagonal, so lines read as hairlines at any spatial scale; an explicit numeric value is used as-is in world units. The plotly backend uses a fixed width of 2 px when left automatic. |
 | `opacity` | `0.5` | Global line opacity (0–1). |
 | `radius` | `NULL` | Tube radius. When `NULL` (default), rtists uses the radius carried in the object’s own data if present (`radius` in the per-streamline or per-point data), or falls back to thin `Line2` lines when the streamlines carry none. A positive scalar draws every streamline as a true 3D tube at that fixed radius and overrides any data radius; per-streamline or per-point vectors give variable radii. rtists never shrinks tubes or hides streamlines to dodge overlap: overlapping tubes are the generator’s business, not rtists’s. |
 
@@ -198,3 +198,46 @@ plot3d(bun, color = "steelblue", linewidth = 4, opacity = 0.6)
 ```
 
 Figure 6: Custom fixed colour, thicker lines, and reduced opacity.
+
+------------------------------------------------------------------------
+
+## Static arclength projections with `plot2d()`
+
+For a static publication figure,
+[`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+re-parametrizes each streamline by arc length — the distance travelled
+along the fibre — and draws the X, Y, and Z coordinates against it in
+three vertically stacked ggplot2 facets. This makes tract geometry
+directly comparable with per-point diffusion profiles: features that
+line up at the same arclength actually occur at the same place on the
+tract.
+
+Geometries are downsampled into equal-arclength chunks (`n_chunks`,
+default 100) with one mean point per chunk, keeping figures light for
+long fibres. The `color` argument accepts the same vocabulary as
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md):
+`"orientation"` (DTI convention), a metadata key (continuous or
+categorical), or a fixed CSS/hex colour.
+
+``` r
+
+plot2d(sl, color = "FA")
+```
+
+![](rtists_files/figure-html/fig-plot2d-1.png)
+
+Figure 7: Streamline arclength projection coloured by per-point FA.
+
+Pass a subset of `c("X", "Y", "Z")` as `facet` when only some
+coordinates are of interest; additional arguments
+(e.g. `scales = "free_y"`) are forwarded to `facet_wrap()`.
+
+``` r
+
+plot2d(bun, color = "mean_FA", palette = "RdYlBu")
+#> ℹ Rendering 4 streamlines...
+```
+
+![](rtists_files/figure-html/fig-plot2d-bundle-1.png)
+
+Figure 8: Bundle arclength projection, one line per streamline.

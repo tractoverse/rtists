@@ -46,6 +46,10 @@ The exported API is small:
 - [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md):
   an S7 generic with methods for the three fiber classes. Returns an
   htmlwidget.
+- [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md):
+  an S7 generic with methods for the three fiber classes. Returns a
+  static ggplot2 arclength projection (X/Y/Z stacked facets) for
+  publication figures.
 - [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md):
   an S7 generic that thins an overlapping bundle to a spread-out subset
   whose tubes do not touch.

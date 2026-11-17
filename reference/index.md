@@ -32,6 +32,37 @@
 - [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
   : Assign a visible tube radius to line-only streamlines
 
+- [`plot2d-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle-method.md)
+  [`plot2d,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle-method.md)
+  :
+
+  [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+  method for
+  [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
+  objects
+
+- [`plot2d-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle_set-method.md)
+  [`plot2d,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle_set-method.md)
+  :
+
+  [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+  method for
+  [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
+  objects
+
+- [`plot2d-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-streamline-method.md)
+  [`plot2d,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-streamline-method.md)
+  :
+
+  [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+  method for
+  [`fiber::streamline`](https://tractoverse.github.io/fiber/reference/streamline.html)
+  objects
+
+- [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+  : 2D arclength projection plots for tractography streamlines and
+  bundles
+
 - [`plot3d-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
   [`plot3d,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
   :

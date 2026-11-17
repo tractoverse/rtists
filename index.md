@@ -15,8 +15,12 @@ and
 objects. The default `backend = "threejs"` uses a self-contained
 three.js widget with real world-space line thickness and depth-sorted
 transparency; `backend = "plotly"` is retained as an interim fallback.
-Both are fully interactive (pan, rotate, zoom). The static figures below
-are captured from the three.js backend (regenerate them with
+Both are fully interactive (pan, rotate, zoom). For a static publication
+figure,
+[`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+re-parametrizes each fibre by arclength and draws the X/Y/Z coordinates
+against it in three stacked ggplot2 facets. The static figures below are
+captured from the three.js backend (regenerate them with
 `tools/capture-figures.R`).
 
 ## Installation
@@ -147,6 +151,25 @@ Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in
 [`?plot3d`](https://tractoverse.github.io/rtists/reference/plot3d.md).
 
+### `plot2d()` — static arclength projections
+
+For a static publication figure,
+[`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
+re-parametrizes each fibre by arclength and draws the X/Y/Z coordinates
+against it in three vertically stacked ggplot2 facets. Geometries are
+downsampled into equal-arclength chunks so long tracts stay light, and
+the `color` vocabulary matches
+[`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
+(orientation, metadata key, or fixed colour):
+
+``` r
+
+plot2d(sl, color = "FA")
+```
+
+![Single streamline as an arclength projection coloured by
+FA.](reference/figures/README-plot2d-1.png)
+
 ## Licensing
 
 rtists is released under the [MIT
@@ -161,3 +184,6 @@ Vendored files:
 - `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
   LineSegmentsGeometry
 - `jsm/controls/`: OrbitControls.js
+
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which
+ships with the installed package.

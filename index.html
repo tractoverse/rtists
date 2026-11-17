@@ -68,7 +68,7 @@
 <!-- badges: start -->
 
 <p><strong>rtists</strong> (<em>R for Tissue Integrity Superimposed on Tractography Streamlines</em>) provides interactive 3-D visualisation of tractography streamlines and bundles defined in the <a href="https://github.com/tractoverse/fiber" class="external-link">fiber</a> package.</p>
-<p>The main function is <code><a href="reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for <code><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">fiber::streamline</a></code>, <code><a href="https://tractoverse.github.io/fiber/reference/bundle.html" class="external-link">fiber::bundle</a></code>, and <code><a href="https://tractoverse.github.io/fiber/reference/bundle_set.html" class="external-link">fiber::bundle_set</a></code> objects. The default <code>backend = "threejs"</code> uses a self-contained three.js widget with real world-space line thickness and depth-sorted transparency; <code>backend = "plotly"</code> is retained as an interim fallback. Both are fully interactive (pan, rotate, zoom). The static figures below are captured from the three.js backend (regenerate them with <code>tools/capture-figures.R</code>).</p>
+<p>The main function is <code><a href="reference/plot3d.html">plot3d()</a></code>, an <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> generic with methods for <code><a href="https://tractoverse.github.io/fiber/reference/streamline.html" class="external-link">fiber::streamline</a></code>, <code><a href="https://tractoverse.github.io/fiber/reference/bundle.html" class="external-link">fiber::bundle</a></code>, and <code><a href="https://tractoverse.github.io/fiber/reference/bundle_set.html" class="external-link">fiber::bundle_set</a></code> objects. The default <code>backend = "threejs"</code> uses a self-contained three.js widget with real world-space line thickness and depth-sorted transparency; <code>backend = "plotly"</code> is retained as an interim fallback. Both are fully interactive (pan, rotate, zoom). For a static publication figure, <code><a href="reference/plot2d.html">plot2d()</a></code> re-parametrizes each fibre by arclength and draws the X/Y/Z coordinates against it in three stacked ggplot2 facets. The static figures below are captured from the three.js backend (regenerate them with <code>tools/capture-figures.R</code>).</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -193,6 +193,15 @@
 </tbody>
 </table>
 <p>Additional arguments (<code>palette</code>, <code>linewidth</code>, <code>opacity</code>, <code>...</code>) are documented in <code><a href="reference/plot3d.html">?plot3d</a></code>.</p>
+<div class="section level3">
+<h3 id="plot2d--static-arclength-projections">
+<code>plot2d()</code> — static arclength projections<a class="anchor" aria-label="anchor" href="#plot2d--static-arclength-projections"></a>
+</h3>
+<p>For a static publication figure, <code><a href="reference/plot2d.html">plot2d()</a></code> re-parametrizes each fibre by arclength and draws the X/Y/Z coordinates against it in three vertically stacked ggplot2 facets. Geometries are downsampled into equal-arclength chunks so long tracts stay light, and the <code>color</code> vocabulary matches <code><a href="reference/plot3d.html">plot3d()</a></code> (orientation, metadata key, or fixed colour):</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot2d.html">plot2d</a></span><span class="op">(</span><span class="va">sl</span>, color <span class="op">=</span> <span class="st">"FA"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-plot2d-1.png" width="672" alt="Single streamline as an arclength projection coloured by FA."></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="licensing">Licensing<a class="anchor" aria-label="anchor" href="#licensing"></a>
@@ -207,6 +216,7 @@
 <li>
 <code>jsm/controls/</code>: OrbitControls.js</li>
 </ul>
+<p>The upstream MIT license text is also mirrored in <code>inst/NOTICE</code>, which ships with the installed package.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

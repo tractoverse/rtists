@@ -934,8 +934,25 @@ HTMLWidgets.widget({
       const i = Math.max(0, Math.min(255, Math.round(t * 255)));
       return [ramp[3*i], ramp[3*i+1], ramp[3*i+2]];
     }
-    function categoricalColors(k) {
+    // Distinct categorical colours for `k` levels. With a ramp the colours are
+    // equal-spaced samples of it (so the palette picker re-colours categorical
+    // mappings too); without one the fixed CAT_COLORS hue set applies. The
+    // single-level case samples the ramp midpoint — the end-points of most
+    // ramps are near-black, so an end-point sample would read as grey and
+    // palette changes would be imperceptible for one-category objects (e.g. a
+    // bundle_set with a single bundle).
+    function categoricalColors(k, ramp) {
       const cs = [];
+      if (ramp && k > 0) {
+        // equal-spaced samples of the ramp: ramp channels are 0-1, so scale
+        // to the 0-255 contract the call sites below divide by 255
+        for (let i = 0; i < k; i++) {
+          const t = (k === 1) ? 0.5 : i / (k - 1);
+          const j = Math.max(0, Math.min(255, Math.round(t * 255)));
+          cs.push([255 * ramp[3*j], 255 * ramp[3*j+1], 255 * ramp[3*j+2]]);
+        }
+        return cs;
+      }
       for (let i = 0; i < k; i++) cs.push(CAT_COLORS[i % CAT_COLORS.length]);
       return cs;
     }
@@ -981,12 +998,26 @@ HTMLWidgets.widget({
         attrLevels:   {},
         bundleNames:  Array.isArray(ld.bundleNames) ? ld.bundleNames
                       : (ld.bundleNames == null ? [] : [ld.bundleNames]),
+        palSafe:      ld.palSafe || [],
         slOfStreamline: [],
         ramp:         (typeof ld.ramp === 'string') ? b64ToU8F32(ld.ramp) : defaultRamp(),
+        ramps:        ld.ramps || null,          // {name: base64 Uint8 ramp}
+        paletteNames: ld.palettes || [],         // ordered selector order
+        palSafeMap:   {},                        // name -> true when CVD-safe
+        currentPalette: (ld.palettes && ld.palettes[0]) || null,
         colorBy:      'default',
         radiusBy:     'default',
         visible:      npts.map(function () { return true; })
       };
+      if (state.ramps) {
+        for (const k in state.ramps) state.ramps[k] = b64ToU8F32(state.ramps[k]);
+        if (state.currentPalette && state.ramps[state.currentPalette]) {
+          state.ramp = state.ramps[state.currentPalette];
+        }
+      }
+      state.paletteNames.forEach(function (name, i) {
+        state.palSafeMap[name] = !!state.palSafe[i];
+      });
       const bp = Array.isArray(ld.bundlePerSl) ? ld.bundlePerSl
                 : (ld.bundlePerSl == null ? [] : [ld.bundlePerSl]);
       for (let t = 0; t < npts.length; t++) state.slOfStreamline[t] = bp[t] || 0;
@@ -1022,6 +1053,17 @@ HTMLWidgets.widget({
           else { state.attrIsNumeric[k] = false; state.attrLevels[k] = [v]; }
         }
       }
+      // Initial "Color by" selection from R (see .df_legend_meta / the `color`
+      // / `color_by_bundle` plot3d arguments). Guards against a stale or
+      // unknown value: only a real bundle label or a decoded attribute key is
+      // accepted, everything else keeps the neutral 'default' base paint.
+      if (ld.colorBy != null) {
+        const initial = String(ld.colorBy);
+        const known = initial === 'Bundle' ||
+          Object.prototype.hasOwnProperty.call(state.pointAttr, initial) ||
+          Object.prototype.hasOwnProperty.call(state.slAttr, initial);
+        if (known) state.colorBy = initial;
+      }
       return state;
     }
 
@@ -1034,10 +1076,18 @@ HTMLWidgets.widget({
       const out = new Float32Array(3 * n);
 
       if (colorBy === 'Bundle') {
-        const cats = categoricalColors(Math.max(1, st.bundleNames.length));
+        // When the payload carries no bundle categories (a plain `bundle`
+        // object, not a `bundle_set`), every streamline lands in the NA slot.
+        // Treat the whole object as one category instead of rendering the
+        // grey NA colour, so the palette picker still works; the visibility
+        // list still shows per-streamline rows in that case.
+        const noBundles = !st.bundleNames.length;
+        const nCat = noBundles ? 1 : st.bundleNames.length;
+        const cats = categoricalColors(nCat, ramp);
         let i = 0;
         for (let t = 0; t < st.nStreams; t++) {
-          const ci = st.slOfStreamline[t];
+          let ci = st.slOfStreamline[t];
+          if (noBundles) ci = 1;
           const c = (ci && ci > 0) ? cats[(ci - 1) % cats.length] : GREY;
           for (let k = 0; k < st.npts[t]; k++) {
             out[3*i] = c[0]/255; out[3*i+1] = c[1]/255; out[3*i+2] = c[2]/255; i++;
@@ -1057,7 +1107,7 @@ HTMLWidgets.widget({
           }
         } else {
           const levels = st.attrLevels[colorBy];
-          const cats = categoricalColors(levels.length);
+          const cats = categoricalColors(levels.length, ramp);
           const cmap = {};
           for (let l = 0; l < levels.length; l++) cmap[String(levels[l])] = cats[l % cats.length];
           for (let p = 0; p < n; p++) {
@@ -1077,9 +1127,16 @@ HTMLWidgets.widget({
           for (let k = 0; k < st.npts[t]; k++) { out[3*i]=c[0]; out[3*i+1]=c[1]; out[3*i+2]=c[2]; i++; }
         }
       } else {
+        // streamline-scoped categorical: equal-spaced disjoint samples of the
+        // ramp (instead of the old all-grey fallback) so string keys can be
+        // re-ramped by the palette picker like every other colouring mode
+        const levels = (st.attrLevels[colorBy] || []);
+        const cats = categoricalColors(Math.max(1, levels.length), ramp);
+        const cmap = {};
+        for (let l = 0; l < levels.length; l++) cmap[String(levels[l])] = cats[l % cats.length];
         let i = 0;
         for (let t = 0; t < st.nStreams; t++) {
-          const c = GREY;
+          const c = cmap[String(vals[t])] || GREY;
           for (let k = 0; k < st.npts[t]; k++) { out[3*i]=c[0]/255; out[3*i+1]=c[1]/255; out[3*i+2]=c[2]/255; i++; }
         }
       }
@@ -1270,10 +1327,20 @@ HTMLWidgets.widget({
       head.appendChild(hTitle); head.appendChild(hClose);
       panel.appendChild(head);
 
-      // colour-by dropdown
+      // colour-by dropdown. Rebuild the panel on change so the palette
+      // selector appears/disappears to match the selected attribute kind.
       panel.appendChild(selectRow('Color by', colorOptions(isTube), st.colorBy, function (v) {
-        st.colorBy = v; rebuildMesh();
+        st.colorBy = v;
+        rebuildMesh();
+        openLegendPanel();          // re-render to toggle the palette row
       }));
+
+      // palette selector: shown for any remapped colour source (ramps power
+      // both the continuous scale and the categorical hue set), hidden only
+      // when the base paint (orientation / fixed colour) is in use
+      if (st.ramps && st.colorBy !== 'default') {
+        panel.appendChild(paletteRow(st));
+      }
 
       // radius-by dropdown (tube mode only)
       if (isTube) {
@@ -1362,6 +1429,70 @@ HTMLWidgets.widget({
       Object.keys(st.pointAttr).forEach(function (k) { if (!seen[k]) { seen[k] = 1; out.push(k); } });
       Object.keys(st.slAttr).forEach(function (k) { if (!seen[k]) { seen[k] = 1; out.push(k); } });
       return out;
+    }
+
+    // Compact CSS gradient string for a 256-entry Float32 ramp (0-1 channels).
+    function rampCss(ramp) {
+      const stops = [];
+      for (let i = 0; i <= 255; i += 32) {
+        const r = Math.round(ramp[3*i] * 255);
+        const g = Math.round(ramp[3*i+1] * 255);
+        const b = Math.round(ramp[3*i+2] * 255);
+        stops.push('rgb(' + r + ',' + g + ',' + b + ') ' + (i / 2.55).toFixed(0) + '%');
+      }
+      return 'linear-gradient(to right, ' + stops.join(', ') + ')';
+    }
+
+    // Palette picker row: a labelled swatch strip where each entry is a small
+    // gradient of the ramp. Clicking one re-ramps the mesh live. A "CVD-safe"
+    // marker is shown when the palette is known colour-vision-deficiency safe.
+    function paletteRow(st) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin:8px 0 2px;';
+      const lab = document.createElement('div');
+      lab.textContent = 'Palette';
+      lab.style.cssText = 'font-weight:600;font-size:11px;margin-bottom:2px;';
+      wrap.appendChild(lab);
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:3px;';
+      st.paletteNames.forEach(function (name) {
+        const ramp = st.ramps[name];
+        if (!ramp) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = name + (st.palSafeMap[name] ? ' (CVD-safe)' : '');
+        btn.style.cssText =
+          'padding:4px 6px;border:1px solid rgba(241,238,230,0.25);' +
+          'border-radius:3px;background:#0e1512;cursor:pointer;display:flex;' +
+          'align-items:center;gap:4px;font:10px/1 system-ui;color:#f1eee6;';
+        const sw = document.createElement('span');
+        sw.style.cssText = 'flex:1;height:8px;border-radius:2px;background:' + rampCss(ramp) + ';';
+        btn.appendChild(sw);
+        const txt = document.createElement('span');
+        txt.textContent = name + (st.palSafeMap[name] ? ' ✓' : '');
+        txt.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        btn.appendChild(txt);
+        if (name === st.currentPalette) {
+          btn.style.borderColor = '#2E7D6B';
+          btn.style.boxShadow = '0 0 0 1px #2E7D6B';
+        }
+        btn.addEventListener('click', function () {
+          if (!st.ramps[name]) return;
+          st.ramp = st.ramps[name];
+          st.currentPalette = name;
+          rebuildMesh();
+          // update selection highlight without re-opening the panel
+          grid.querySelectorAll('button').forEach(function (b) {
+            const on = b.getAttribute('data-name') === name;
+            b.style.borderColor = on ? '#2E7D6B' : 'rgba(241,238,230,0.25)';
+            b.style.boxShadow = on ? '0 0 0 1px #2E7D6B' : 'none';
+          });
+        });
+        btn.setAttribute('data-name', name);
+        grid.appendChild(btn);
+      });
+      wrap.appendChild(grid);
+      return wrap;
     }
     function radiusOptions() {
       const st = legendState;
