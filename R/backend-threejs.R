@@ -427,6 +427,18 @@
   )
 }
 
+# Resolve the widget's initial "Color by" selection from the plot3d colour
+# request: the renderer's `'Bundle'` label when colouring per bundle, the
+# metadata key when `color` names a column present in the payload, otherwise
+# NULL (the renderer keeps its base paint, `'default'`).
+.legend_color_by <- function(meta_keys, color, color_by_bundle = FALSE) {
+  if (isTRUE(color_by_bundle)) return("Bundle")
+  if (length(color) == 1L && is.character(color) && color %in% meta_keys) {
+    return(color)
+  }
+  NULL
+}
+
 # Build the structured legend payload for the three.js widget: the per-
 # streamline point counts, the per-streamline bundle category, and the
 # attribute columns usable for live aesthetic remapping (colour, tube radius,
@@ -444,10 +456,13 @@
 # index (0 for the NA "no bundle" slot), `bundleNames` the category labels,
 # `attrsPoint` a named list of point-scoped attribute series (numeric series
 # packed as Float32 for compactness, anything else as a character vector),
-# `attrsSl` a named list of streamline-scoped representative values, and `ramp`
-# a 3x256 Uint8 colour ramp built from `palette`. Returns NULL when the object
-# carries no attribute column.
-.df_legend_meta <- function(df, palette = "Viridis") {  base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
+# `attrsSl` a named list of streamline-scoped representative values, `ramp`
+# a 3x256 Uint8 colour ramp built from `palette`, and `colorBy` the initial
+# "Color by" selection (see `.legend_color_by()`). Returns NULL when the
+# object carries no attribute column.
+.df_legend_meta <- function(df, palette = "Viridis", color = NULL,
+                            color_by_bundle = FALSE) {
+  base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
   meta <- setdiff(names(df), base)
   if (length(meta) == 0L) return(NULL)
 
@@ -508,7 +523,8 @@
     ramps          = ramps,
     currentPalette = palette,
     palettes       = .palette_names(),
-    palSafe        = .palette_is_cvd_safe()
+    palSafe        = .palette_is_cvd_safe(),
+    colorBy        = .legend_color_by(meta, color, color_by_bundle)
   )
 }
 
@@ -517,7 +533,7 @@
                             opacity = 1, bg = "#111111",
                             color_by_bundle = FALSE, tooltip = TRUE,
                             toolbar = TRUE, ...) {
-  legend_meta <- .df_legend_meta(df, palette)
+  legend_meta <- .df_legend_meta(df, palette, color, color_by_bundle)
   sls <- .df_to_streamlines(df)
   # Rely on the tube radius carried on the streamlines themselves: a `radius`
   # key in @point_data / @streamline_data is flattened into a df `radius`

@@ -319,6 +319,21 @@ expect_true(all(safe[1:7]))
 expect_false(any(safe[8:9]))
 expect_identical(names(safe), NULL)   # plain unnamed logical, no alignment traps
 
+# .legend_color_by: maps the plot3d colour request onto the renderer's
+# initial "Color by" selection (Bundle label for per-bundle colouring, the
+# metadata key when present, NULL for orientation / fixed colours)
+expect_identical(rtists:::.legend_color_by(c("FA", "region"), "FA"),
+                 "FA")
+expect_identical(rtists:::.legend_color_by(c("FA", "region"), "region",
+                                           color_by_bundle = TRUE),
+                 "Bundle")
+expect_identical(rtists:::.legend_color_by(c("FA", "region"), "orientation"),
+                 NULL)
+expect_identical(rtists:::.legend_color_by(c("FA", "region"), "steelblue"),
+                 NULL)
+expect_identical(rtists:::.legend_color_by(c("FA", "region"), NULL),
+                 NULL)
+
 # .df_legend_meta palette payload: ramps for every curated palette, keyed by
 # name; the current palette is mirrored in `ramp` (back-compat) and named
 # `currentPalette`; `palSafe` rides along index-aligned with `palettes`
@@ -336,6 +351,17 @@ expect_identical(
   unclass(lm_pal$palSafe),
   unclass(rtists:::.palette_is_cvd_safe())
 )
+# the initial "Color by" selection rides along: NULL by default when no colour
+# request is passed (back-compat), a metadata key or 'Bundle' when one is
+expect_identical(lm_pal$colorBy, NULL)
+expect_identical(rtists:::.df_legend_meta(dflm, color = "fa")$colorBy, "fa")
+expect_identical(rtists:::.df_legend_meta(dflm, color = "fa",
+                                          color_by_bundle = TRUE)$colorBy,
+                 "Bundle")
+expect_identical(rtists:::.df_legend_meta(dflm, color = "orientation")$colorBy,
+                 NULL)
+expect_identical(rtists:::.df_legend_meta(dflm, color = "steelblue")$colorBy,
+                 NULL)
 # a different palette is reflected in ramp/currentPalette and encoded as
 # expected (Viridis vs RdYlBu differ, so the back-compat ramp tracks the request)
 lm_rd <- rtists:::.df_legend_meta(dflm, palette = "RdYlBu")
