@@ -79,6 +79,37 @@
   rep_len(color, length(unique(df$StreamlineId)))
 }
 
+# Continuous colour-scale name for the three.js backend.
+#
+# The palette selector dropdown in the widget legend ships a curated set of
+# palettes (see `.palette_names()`), rendered as small swatch icons. `palette`
+# accepts any name `grDevices::hcl.colors()` understands; the widget's encoded
+# ramp is built with `hcl.colors(256, palette)` and the selector is built from
+# `.palette_names()`.
+#
+# All the entries are legitimate `hcl.colors()` palettes. The perceptual set
+# (Viridis through Mint) are colour-vision-deficiency (CVD) safe — perceptually
+# uniform and readable by viewers with red-green colour blindness, the most
+# common form — and Viridis is the default for that reason. The diverging
+# RdYlBu / Spectral fallbacks are offered for their familiar colouristic range
+# but are not CVD-safe, and this is flagged in the widget's palette picker.
+.palette_names <- function() {
+  c(
+    "Viridis", "Plasma", "Inferno", "Cividis", "Mako", "Rocket", "Mint",
+    # Diverging / figures-style palettes (valid hcl.colors names; NOT CVD-safe)
+    "RdYlBu", "Spectral"
+  )
+}
+
+# The subsets of `.palette_names()` that are considered colour-vision-deficiency
+# safe (deuteranopia/protanopia-tolerant for their primary purpose).
+.palette_is_cvd_safe <- function() {
+  .palette_names() %in%
+    c("Viridis", "Plasma", "Inferno", "Cividis", "Mako", "Rocket", "Mint")
+}
+
+# ---- threejs resolve -----------------------------------------------------------
+
 # Resolve the radius request into a render mode and a per-point radius vector.
 #
 # `radius` accepts any of:
@@ -416,8 +447,7 @@
 # `attrsSl` a named list of streamline-scoped representative values, and `ramp`
 # a 3x256 Uint8 colour ramp built from `palette`. Returns NULL when the object
 # carries no attribute column.
-.df_legend_meta <- function(df, palette = "Viridis") {
-  base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
+.df_legend_meta <- function(df, palette = "Viridis") {  base <- c("StreamlineId", "PointId", "X", "Y", "Z", ".color", ".hover")
   meta <- setdiff(names(df), base)
   if (length(meta) == 0L) return(NULL)
 
@@ -460,14 +490,25 @@
     }
   }
 
+  ## Precompute every palette ramp the widget legend can offer, keyed by name.
+  ## The selector swatches + live re-ramp need all candidates, not just the
+  ## current one. Ramps are 3x256 Uint8, base64-encoded by htmlwidgets.
   ramp_mat <- grDevices::col2rgb(grDevices::hcl.colors(256, palette))
+  ramps <- lapply(.palette_names(), function(p) {
+    as.raw(as.vector(grDevices::col2rgb(grDevices::hcl.colors(256, p))))
+  })
+  names(ramps) <- .palette_names()
   list(
-    n_pts       = n_pts,
-    bundlePerSl = bundlePerSl,
-    bundleNames = bundle_names,
-    attrsPoint  = attrs_point,
-    attrsSl     = attrs_sl,
-    ramp        = as.raw(as.vector(ramp_mat))
+    n_pts          = n_pts,
+    bundlePerSl    = bundlePerSl,
+    bundleNames    = bundle_names,
+    attrsPoint     = attrs_point,
+    attrsSl        = attrs_sl,
+    ramp           = as.raw(as.vector(ramp_mat)),   # current palette, kept for back-compat
+    ramps          = ramps,
+    currentPalette = palette,
+    palettes       = .palette_names(),
+    palSafe        = .palette_is_cvd_safe()
   )
 }
 

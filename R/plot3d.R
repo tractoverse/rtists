@@ -164,7 +164,11 @@
 #' @param palette A colour scale name applied when `color` is a numeric
 #'   metadata key. The three.js backend resolves it through
 #'   `grDevices::hcl.colors()` (e.g. `"Viridis"`, `"RdYlBu"`); the plotly
-#'   backend passes it to plotly's `colorscale`. Defaults to `"Viridis"`.
+#'   backend passes it to plotly's `colorscale`. Defaults to `"Viridis"`,
+#'   which — like the other perceptual palettes — is colour-vision-deficiency
+#'   (CVD) safe. In the three.js widget's legend panel, a palette picker lets
+#'   you switch the continuous colour scale live; CVD-safe palettes are
+#'   flagged there.
 #' @param backend Character. Which htmlwidget renderer to use: `"threejs"`
 #'   (default) or `"plotly"`. The three.js backend supports real world-space
 #'   line thickness (true 3D tubes) and object-level depth-sorted

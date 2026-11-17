@@ -304,6 +304,45 @@ lm3 <- rtists:::.df_legend_meta(data.frame(
   .color = "red", .hover = NA, tag = c("a", "b", "c")))
 expect_identical(lm3$attrsPoint$tag, c("a", "b", "c"))
 
+# .palette_names: curated set, all valid grDevices::hcl.colors palettes,
+# Viridis first (the package default)
+expect_identical(rtists:::.palette_names()[1L], "Viridis")
+expect_true(all(rtists:::.palette_names() %in% grDevices::hcl.pals()))
+expect_true(length(rtists:::.palette_names()) == 9L)
+expect_identical(anyDuplicated(rtists:::.palette_names()), 0L)
+
+# .palette_is_cvd_safe: index-aligned logical vector (same length as names),
+# Viridis family CVD-safe, diverging pair flagged
+safe <- rtists:::.palette_is_cvd_safe()
+expect_length(safe, length(rtists:::.palette_names()))
+expect_true(all(safe[1:7]))
+expect_false(any(safe[8:9]))
+expect_identical(names(safe), NULL)   # plain unnamed logical, no alignment traps
+
+# .df_legend_meta palette payload: ramps for every curated palette, keyed by
+# name; the current palette is mirrored in `ramp` (back-compat) and named
+# `currentPalette`; `palSafe` rides along index-aligned with `palettes`
+lm_pal <- rtists:::.df_legend_meta(dflm)
+expect_true(all(c("ramp", "ramps", "currentPalette", "palettes", "palSafe") %in%
+                  names(lm_pal)))
+expect_identical(names(lm_pal$ramps), rtists:::.palette_names())
+expect_true(all(vapply(lm_pal$ramps, is.raw, logical(1L))))
+expect_true(all(lengths(lm_pal$ramps) == 3L * 256L))
+expect_identical(lm_pal$currentPalette, "Viridis")
+expect_identical(lm_pal$palettes, rtists:::.palette_names())
+# the current ramp and the keyed ramp for the default agree byte-for-byte
+expect_identical(lm_pal$ramp, lm_pal$ramps[["Viridis"]])
+expect_identical(
+  unclass(lm_pal$palSafe),
+  unclass(rtists:::.palette_is_cvd_safe())
+)
+# a different palette is reflected in ramp/currentPalette and encoded as
+# expected (Viridis vs RdYlBu differ, so the back-compat ramp tracks the request)
+lm_rd <- rtists:::.df_legend_meta(dflm, palette = "RdYlBu")
+expect_identical(lm_rd$currentPalette, "RdYlBu")
+expect_false(identical(lm_rd$ramp, lm_pal$ramp))
+expect_identical(lm_rd$ramps[["RdYlBu"]], lm_rd$ramp)
+
 # ================= fatten.R =================
 
 # .fatten_dmin: fewer than two polylines -> +Inf (line 38, the < 2 guard)

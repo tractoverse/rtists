@@ -24,6 +24,11 @@
   choose an orbit mode (rotate / pan / zoom), zoom in and out, re-frame the
   view to the data, and reset the camera. Disable it with
   `plot3d(..., toolbar = FALSE)`.
+* The three.js legend panel includes a palette picker for continuous colour
+  scales: a swatch icon per available palette, clickable to re-ramp the
+  fibres live. The curated set defaults to the CVD-safe perceptual palettes
+  (Viridis, Plasma, Inferno, Cividis, Mako, Rocket, Mint), each flagged as
+  such in the picker, alongside the diverging RdYlBu and Spectral.
 
 ## Bug fixes
 

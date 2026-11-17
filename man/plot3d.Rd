@@ -39,7 +39,11 @@ lines are drawn in that fixed colour.
 \item{palette}{A colour scale name applied when \code{color} is a numeric
 metadata key. The three.js backend resolves it through
 \code{grDevices::hcl.colors()} (e.g. \code{"Viridis"}, \code{"RdYlBu"}); the plotly
-backend passes it to plotly's \code{colorscale}. Defaults to \code{"Viridis"}.}
+backend passes it to plotly's \code{colorscale}. Defaults to \code{"Viridis"},
+which — like the other perceptual palettes — is colour-vision-deficiency
+(CVD) safe. In the three.js widget's legend panel, a palette picker lets
+you switch the continuous colour scale live; CVD-safe palettes are
+flagged there.}
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
