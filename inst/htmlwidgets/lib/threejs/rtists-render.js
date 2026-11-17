@@ -356,27 +356,28 @@ HTMLWidgets.widget({
     }
     startLoop();
 
-    function frameCamera(positions) {
-      const n = positions.length;
+    // Axis-aligned bounds frame (center + half-max-extent radius) for a
+    // packed [x,y,z...] positions array.
+    function frameFor(positions) {
+      if (!positions || positions.length === 0) return null;
       let minX = Infinity, minY = Infinity, minZ = Infinity;
       let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-      for (let i = 0; i < n; i += 3) {
+      for (let i = 0; i < positions.length; i += 3) {
         const x = positions[i], y = positions[i+1], z = positions[i+2];
         if (x < minX) minX = x; if (x > maxX) maxX = x;
         if (y < minY) minY = y; if (y > maxY) maxY = y;
         if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
       }
-      const center = new THREE.Vector3(
-        (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
-      const radius = Math.max(maxX - minX, maxY - minY, maxZ - minZ) * 0.5;
-
-      cameraFrame = { center, radius: Math.max(radius, 1e-3) };
-      placeCamera();
+      return {
+        center: new THREE.Vector3(
+          (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2),
+        radius: Math.max(
+          Math.max(maxX - minX, maxY - minY, maxZ - minZ) * 0.5, 1e-3)
+      };
     }
 
-    function placeCamera() {
-      if (!cameraFrame) return;
-      const { center, radius } = cameraFrame;
+    function placeCamera(frame) {
+      const { center, radius } = frame;
       controls.target.copy(center);
       camera.near = radius / 1000;
       camera.far  = radius * 100;
@@ -388,11 +389,32 @@ HTMLWidgets.widget({
       controls.update();
     }
 
-    // Re-frame the camera to the full data extent. Used by the toolbar's
-    // autoscale button; deliberately does NOT touch OrbitControls' saved state,
-    // so reset() still returns to the view framed at render time.
+    function frameCamera(positions) {
+      const f = frameFor(positions);
+      if (!f) return;
+      cameraFrame = f;
+      placeCamera(f);
+    }
+
+    // Re-fit the camera to the full data extent while preserving the current
+    // viewing direction: keeps the angle the user has orbited to and only
+    // adjusts the distance so the data fits. Deliberately does NOT touch
+    // OrbitControls' saved state, so reset() still returns to the view framed
+    // at render time.
     function reframeToData() {
-      frameCamera(renderPositions);
+      if (!cameraFrame) return;
+      const f = frameFor(renderPositions);
+      if (!f) return;
+      cameraFrame = f;
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+      if (dir.lengthSq() < 1e-12) dir.set(1, 1, 1); // degenerate: fall back
+      dir.normalize();
+      controls.target.copy(f.center);
+      camera.position.copy(f.center).add(dir.multiplyScalar(f.radius * 1.6));
+      camera.near = f.radius / 1000;
+      camera.far  = f.radius * 100;
+      camera.updateProjectionMatrix();
+      controls.update();
     }
 
     // ---- toolbar ------------------------------------------------------------
