@@ -128,6 +128,21 @@
 #'
 #' @seealso [prune()], [plot3d()]
 #' @export
+#'
+#' @examples
+#' library(fiber)
+#'
+#' # A line-only helix strand: no radius data, so plot3d() would draw a thin
+#' # line. fatten() picks a visible tube radius for it.
+#' t <- seq(0, 4 * pi, length.out = 200)
+#' sl <- streamline(cbind(
+#'   X = seq_len(200) * 0.1,
+#'   Y = 0.5 * sin(t),
+#'   Z = 0.5 * cos(t)
+#' ))
+#' fattened <- fatten(sl)
+#' fattened@streamline_data$radius
+#' plot3d(fattened)
 fatten <- S7::new_generic(
   name = "fatten",
   dispatch_args = "x",

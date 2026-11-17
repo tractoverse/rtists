@@ -26,6 +26,25 @@ Prunes every \link[fiber:bundle]{fiber::bundle} in a \link[fiber:bundle_set]{fib
 returns a set holding the pruned (non-empty) bundles. See \code{\link[=prune]{prune()}} for the
 full parameter documentation.
 }
+\examples{
+library(fiber)
+
+# Two small bundles, each holding three offset helix strands.
+strand <- function(i) {
+  t <- seq(0, 4 * pi, length.out = 200)
+  streamline(cbind(
+    X = seq_len(200) * 0.1,
+    Y = 0.25 * sin(t + 1.3 * i) + (i - 1) * 1.2,
+    Z = 0.25 * cos(t)
+  ))
+}
+bun <- bundle(lapply(seq_len(3), strand))
+cs  <- bundle_set(list(bun, bun))
+
+# Pruning applies to each bundle independently.
+pruned <- prune(cs, radius = 0.3)
+length(pruned@bundles)
+}
 \seealso{
 \code{\link[=prune]{prune()}}
 }
