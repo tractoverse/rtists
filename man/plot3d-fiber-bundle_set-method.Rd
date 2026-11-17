@@ -90,6 +90,13 @@ bundle name and coordinates stay pinned and cannot be toggled off.
 The plotly backend ignores this argument (the plotly surface carries its
 own hover).}
 
+\item{toolbar}{Logical. Show the three.js on-scene toolbar (default \code{TRUE}).
+The toolbar overlays the top-left corner of the widget and provides
+plotly-style controls: toggle the coordinate axes on or off, download the
+current view as a PNG, choose an orbit mode (rotate / pan / zoom), zoom
+in and out, re-frame the view to the data (autoscale), and reset the
+camera. The plotly backend ignores this argument.}
+
 \item{...}{Additional named arguments. Only the plotly backend uses these,
 forwarding them to \code{\link[plotly:layout]{plotly::layout()}} (e.g. \code{title = "My bundle"}); the
 three.js backend (default) ignores them.}

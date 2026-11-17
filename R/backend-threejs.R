@@ -141,7 +141,8 @@
 .threejs_widget <- function(streamlines, color = "orientation",
                             linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111", border = 0,
-                            tooltip = NULL, legend = NULL, elementId = NULL) {
+                            tooltip = NULL, legend = NULL, toolbar = TRUE,
+                            elementId = NULL) {
   if (!is.list(streamlines) || length(streamlines) == 0L) {
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
@@ -202,7 +203,8 @@
       linewidth    = jsonlite::unbox(linewidth), # scalar (unused in tube mode)
       border       = jsonlite::unbox(border),    # outline as a fraction of scene radius
       opacity      = jsonlite::unbox(opacity),
-      bg           = jsonlite::unbox(bg)
+      bg           = jsonlite::unbox(bg),
+      toolbar      = jsonlite::unbox(toolbar)
     )
     if (!is.null(tooltip)) {
       x$tooltipData <- tooltip          # structured per-point metadata
@@ -267,7 +269,8 @@
       linewidth = jsonlite::unbox(rinfo$linewidth),   # world-units width
       n_pts     = n_pts,            # per-streamline point counts
       opacity   = jsonlite::unbox(opacity),           # scalar
-      bg        = jsonlite::unbox(bg)                 # scalar
+      bg        = jsonlite::unbox(bg),                # scalar
+      toolbar   = jsonlite::unbox(toolbar)            # scalar
     )
     if (!is.null(tooltip)) {
       # Map each line2 segment (raycast `faceIndex`) to the packed point index
@@ -471,7 +474,8 @@
 .plot3d_threejs <- function(df, color = "orientation", palette = "Viridis",
                             linewidth = 1, radius = NULL,
                             opacity = 1, bg = "#111111",
-                            color_by_bundle = FALSE, tooltip = TRUE, ...) {
+                            color_by_bundle = FALSE, tooltip = TRUE,
+                            toolbar = TRUE, ...) {
   legend_meta <- .df_legend_meta(df, palette)
   sls <- .df_to_streamlines(df)
   # Rely on the tube radius carried on the streamlines themselves: a `radius`
@@ -491,6 +495,7 @@
     bg          = bg,
     tooltip     = .df_tooltip_meta(df, tooltip),
     legend      = legend_meta,
+    toolbar     = toolbar,
     ...
   )
 }

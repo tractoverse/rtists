@@ -19,6 +19,11 @@
     mapped to a continuous (`palette`) or categorical colour scale.
   - Fixed colour: any CSS colour name or hex string.
 * Interactive figures support pan, rotate, and zoom.
+* The three.js backend now shows an on-scene toolbar (top-left, plotly-style)
+  with controls to toggle the coordinate axes, download the view as a PNG,
+  choose an orbit mode (rotate / pan / zoom), zoom in and out, re-frame the
+  view to the data, and reset the camera. Disable it with
+  `plot3d(..., toolbar = FALSE)`.
 
 ## Bug fixes
 

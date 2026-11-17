@@ -314,3 +314,35 @@ expect_false("BundleName" %in% names(ld$attrsPoint))   # bundle key is sl-scoped
 # streamline-scoped attr absent on the second bundle pads to NA
 expect_equal(ld$attrsSl$mean_FA, c(0.5, NA))
 cat("legend tests OK\n")
+
+# ---- three.js toolbar (toolbar= argument) ------------------------------------
+# The three.js backend ships a `toolbar` flag (default TRUE) that enables the
+# on-scene plotly-style button overlay (axes toggle, PNG download, orbit mode,
+# zoom, autoscale, reset). It is a scalar (jsonlite::unbox) and is present in
+# both line2 and tube payloads. The plotly backend ignores the argument.
+
+# default -> toolbar flag TRUE, scalar, in both render modes
+fig <- plot3d(sl)
+expect_true(fig$x$toolbar)
+expect_equal(unclass(fig$x$toolbar), TRUE)
+fig <- plot3d(sl, radius = 0.25)             # tube mode
+expect_true(fig$x$toolbar)
+
+# toolbar = FALSE -> flag off
+fig <- plot3d(sl, toolbar = FALSE)
+expect_false(fig$x$toolbar)
+
+# threaded through every S7 method (streamline / bundle / bundle_set)
+fig <- plot3d(bun)
+expect_true(fig$x$toolbar)
+fig <- suppressMessages(plot3d(bs_tt))
+expect_true(fig$x$toolbar)
+fig <- suppressMessages(plot3d(bs_tt, toolbar = FALSE))
+expect_false(fig$x$toolbar)
+
+# plotly backend ignores the argument and still renders
+if (requireNamespace("plotly", quietly = TRUE)) {
+  fig <- plot3d(sl, backend = "plotly", toolbar = FALSE)
+  expect_inherits(fig, "plotly")
+}
+cat("toolbar tests OK\n")

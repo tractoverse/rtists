@@ -214,6 +214,12 @@
 #'
 #'   The plotly backend ignores this argument (the plotly surface carries its
 #'   own hover).
+#' @param toolbar Logical. Show the three.js on-scene toolbar (default `TRUE`).
+#'   The toolbar overlays the top-left corner of the widget and provides
+#'   plotly-style controls: toggle the coordinate axes on or off, download the
+#'   current view as a PNG, choose an orbit mode (rotate / pan / zoom), zoom
+#'   in and out, re-frame the view to the data (autoscale), and reset the
+#'   camera. The plotly backend ignores this argument.
 #' @param ... Additional named arguments. Only the plotly backend uses these,
 #'   forwarding them to [plotly::layout()] (e.g. `title = "My bundle"`); the
 #'   three.js backend (default) ignores them.
@@ -304,7 +310,7 @@ plot3d <- S7::new_generic(
   fun = function(x, color = "orientation", palette = "Viridis",
                  backend = c("threejs", "plotly"), linewidth = 2,
                  radius = NULL, opacity = 0.5,
-                 bg = "#111111", tooltip = TRUE, ...) {
+                 bg = "#111111", tooltip = TRUE, toolbar = TRUE, ...) {
     S7::S7_dispatch()
   }
 )
@@ -356,6 +362,7 @@ S7::method(plot3d, fiber::streamline) <- function(
     opacity   = 0.5,
     bg        = "#111111",
     tooltip   = TRUE,
+    toolbar   = TRUE,
     ...) {
   backend <- match.arg(backend)
   df <- .streamline_to_df(x, streamline_id = 1L)
@@ -369,6 +376,7 @@ S7::method(plot3d, fiber::streamline) <- function(
       opacity   = opacity,
       bg        = bg,
       tooltip   = tooltip,
+      toolbar   = toolbar,
       ...
     )
   } else {
@@ -458,6 +466,7 @@ S7::method(plot3d, fiber::bundle) <- function(
     opacity   = 0.5,
     bg        = "#111111",
     tooltip   = TRUE,
+    toolbar   = TRUE,
     ...) {
   backend <- match.arg(backend)
   n <- length(x@streamlines)
@@ -473,6 +482,7 @@ S7::method(plot3d, fiber::bundle) <- function(
       opacity   = opacity,
       bg        = bg,
       tooltip   = tooltip,
+      toolbar   = toolbar,
       ...
     )
   } else {
@@ -566,6 +576,7 @@ S7::method(plot3d, fiber::bundle_set) <- function(
     bg              = "#111111",
     color_by_bundle = FALSE,
     tooltip         = TRUE,
+    toolbar         = TRUE,
     ...) {
   backend <- match.arg(backend)
   n_bundles <- x@n_bundles
@@ -585,6 +596,7 @@ S7::method(plot3d, fiber::bundle_set) <- function(
       bg              = bg,
       color_by_bundle = color_by_bundle,
       tooltip         = tooltip,
+      toolbar         = toolbar,
       ...
     )
   } else {
