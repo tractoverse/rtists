@@ -161,17 +161,21 @@
 #'   - A **CSS/hex colour string**: e.g. `"#E69F00"` or `"steelblue"`. All
 #'     lines are drawn in that fixed colour.
 #'
-#' @param palette A [plotly] / ColorBrewer colour scale name applied when
-#'   `color` is a numeric metadata key. Defaults to `"Viridis"`.
+#' @param palette A colour scale name applied when `color` is a numeric
+#'   metadata key. The three.js backend resolves it through
+#'   `grDevices::hcl.colors()` (e.g. `"Viridis"`, `"RdYlBu"`); the plotly
+#'   backend passes it to plotly's `colorscale`. Defaults to `"Viridis"`.
 #' @param backend Character. Which htmlwidget renderer to use: `"threejs"`
 #'   (default) or `"plotly"`. The three.js backend supports real world-space
 #'   line thickness (true 3D tubes) and object-level depth-sorted
 #'   transparency; the plotly backend is an opt-in alternative for interactive
 #'   plotly-style charts.
 #' @param linewidth Numeric. Width of the plotted lines. Defaults to `2`. On the
-#'   three.js backend this maps to `THREE.LineBasicMaterial.linewidth`, which
-#'   WebGL caps at `1` on most platforms; use `radius` for genuinely thick
-#'   fibres.
+#'   three.js backend this is the `linewidth` uniform of three.js'
+#'   `LineMaterial` in world units (`worldUnits: true`): the width is measured
+#'   in scene units rather than pixels, so it is not capped at the browser's
+#'   1px line-width limit. For genuinely thick fibres, prefer `radius` (true 3D
+#'   tubes).
 #' @param radius Numeric radius in world units (three.js backend only). This is
 #'   the knob for **true 3D tubes**; there is no separate `thickness` argument.
 #'   radius is treated as data carried on the object: when `radius` is `NULL`

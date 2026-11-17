@@ -66,9 +66,11 @@ The exported API is small:
 - `fatten()`: an S7 generic that attaches a visible tube radius to streamlines
   that carry none.
 
-Everything else is internal. Because the fiber classes are namespaced
-(`fiber::streamline` and so on), plain S3 dispatch breaks on them, so rtists
-uses **S7 generics** with methods declared on the S7 classes directly. The
+Plus Shiny plumbing (`rtistsOutput()`, `renderRtists()`) and a demo launcher
+(`runDemo()`). Everything else is internal. Because the fiber classes are
+namespaced (`fiber::streamline` and so on), plain S3 dispatch breaks on them,
+so rtists uses **S7 generics** with methods declared on the S7 classes
+directly. The
 per-class data-frame conversion helpers (`.streamline_to_df`, `.bundle_to_df`,
 `.bundle_set_to_df`) are plain internal functions rather than S3/S7 methods,
 precisely because the class names carry a `::` prefix that S3 dispatch cannot

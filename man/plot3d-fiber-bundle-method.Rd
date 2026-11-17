@@ -22,8 +22,10 @@ colour scale (\code{palette}); character values are coloured categorically.
 lines are drawn in that fixed colour.
 }}
 
-\item{palette}{A \link[plotly:plotly]{plotly} / ColorBrewer colour scale name applied when
-\code{color} is a numeric metadata key. Defaults to \code{"Viridis"}.}
+\item{palette}{A colour scale name applied when \code{color} is a numeric
+metadata key. The three.js backend resolves it through
+\code{grDevices::hcl.colors()} (e.g. \code{"Viridis"}, \code{"RdYlBu"}); the plotly
+backend passes it to plotly's \code{colorscale}. Defaults to \code{"Viridis"}.}
 
 \item{backend}{Character. Which htmlwidget renderer to use: \code{"threejs"}
 (default) or \code{"plotly"}. The three.js backend supports real world-space
@@ -32,9 +34,11 @@ transparency; the plotly backend is an opt-in alternative for interactive
 plotly-style charts.}
 
 \item{linewidth}{Numeric. Width of the plotted lines. Defaults to \code{2}. On the
-three.js backend this maps to \code{THREE.LineBasicMaterial.linewidth}, which
-WebGL caps at \code{1} on most platforms; use \code{radius} for genuinely thick
-fibres.}
+three.js backend this is the \code{linewidth} uniform of three.js'
+\code{LineMaterial} in world units (\code{worldUnits: true}): the width is measured
+in scene units rather than pixels, so it is not capped at the browser's
+1px line-width limit. For genuinely thick fibres, prefer \code{radius} (true 3D
+tubes).}
 
 \item{radius}{Numeric radius in world units (three.js backend only). This is
 the knob for \strong{true 3D tubes}; there is no separate \code{thickness} argument.

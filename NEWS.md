@@ -6,7 +6,7 @@
   objects.
 * Two htmlwidget backends are available through `backend` (three.js is the
   default):
-  - `"threejs"`: a self-contained three.js renderer (no CDN). `thickness > 0`
+  - `"threejs"`: a self-contained three.js renderer (no CDN). `radius > 0`
     draws real world-space tubes with per-point colour and object-level
     depth-sorted transparency; the fast line mode scales to large bundles.
   - `"plotly"`: a single `scatter3d` trace separated by `NA` break-points,

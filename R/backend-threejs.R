@@ -11,7 +11,7 @@
 #                  colours and `depthWrite:false`, giving true thickness and
 #                  object-level depth-sorted transparency.
 #
-# Verbatim vendored three.js (r128) + OrbitControls live under
+# Verbatim vendored three.js (r186) + OrbitControls lie under
 # inst/htmlwidgets/lib/threejs/ and are declared in rtists.yaml, so the widget
 # is fully self-contained (no CDN at render time).
 
@@ -147,14 +147,14 @@
     stop("`streamlines` must be a non-empty list.", call. = FALSE)
   }
   streamlines <- lapply(streamlines, as.matrix)
-  n_pts <- vapply(streamlines, nrow, integer(1L))
+  n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
 
   rinfo <- .threejs_radius(linewidth, radius, n_pts)
   tube_mode <- identical(rinfo$mode, "tube")
 
   if (tube_mode) {
     # ---- tube mode: per-streamline points + per-point RGB ------------------
-    n_pts <- vapply(streamlines, nrow, integer(1L))
+    n_pts <- unname(vapply(streamlines, nrow, integer(1L)))
     pos   <- numeric(3 * sum(n_pts))
     idx   <- 0L
     tubeOffsets <- integer(length(streamlines) + 1L)
