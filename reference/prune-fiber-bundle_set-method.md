@@ -8,6 +8,13 @@ independently and returns a set holding the pruned (non-empty) bundles.
 See [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md)
 for the full parameter documentation.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::bundle_set>
+prune(x, radius, overlap_margin = 1, ...)
+```
+
 ## Arguments
 
 - x:

@@ -6,6 +6,25 @@ as a single interactive 3D line plot. See
 [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
 for the full parameter documentation and examples.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::bundle>
+plot3d(
+  x,
+  color = "orientation",
+  palette = "Viridis",
+  backend = c("threejs", "plotly"),
+  linewidth = NULL,
+  radius = NULL,
+  opacity = 0.5,
+  bg = "#111111",
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+)
+```
+
 ## Arguments
 
 - x:

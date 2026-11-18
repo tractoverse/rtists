@@ -9,6 +9,13 @@ and returns a set of the resulting bundles. See
 [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
 for the full parameter documentation.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::bundle_set>
+fatten(x, visibility = NULL, ...)
+```
+
 ## Arguments
 
 - x:

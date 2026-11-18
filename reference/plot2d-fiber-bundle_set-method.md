@@ -10,6 +10,23 @@ for
 [fiber::bundle](https://tractoverse.github.io/fiber/reference/bundle.html)
 objects.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::bundle_set>
+plot2d(
+  x,
+  facet = c("X", "Y", "Z"),
+  color = "orientation",
+  palette = "Viridis",
+  n_chunks = 100L,
+  linewidth = 0.5,
+  alpha = 1,
+  color_by_bundle = FALSE,
+  ...
+)
+```
+
 ## Arguments
 
 - x:

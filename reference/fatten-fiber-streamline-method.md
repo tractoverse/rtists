@@ -7,6 +7,13 @@ a visible tube radius (the visibility floor) so
 draws it as a real 3D tube. A lone fibre has no other streamlines to
 collide with, so there is nothing to prune.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::streamline>
+fatten(x, visibility = NULL, ...)
+```
+
 ## Arguments
 
 - x:

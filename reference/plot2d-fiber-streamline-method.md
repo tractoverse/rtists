@@ -6,6 +6,22 @@ as a 2D arclength projection. See
 [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
 for the full parameter documentation and examples.
 
+## Usage
+
+``` r
+## S7 method for class <fiber::streamline>
+plot2d(
+  x,
+  facet = c("X", "Y", "Z"),
+  color = "orientation",
+  palette = "Viridis",
+  n_chunks = 100L,
+  linewidth = 0.5,
+  alpha = 1,
+  ...
+)
+```
+
 ## Arguments
 
 - x:

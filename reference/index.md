@@ -2,8 +2,7 @@
 
 ## All functions
 
-- [`fatten-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle-method.md)
-  [`fatten,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle-method.md)
+- [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle-method.md)
   :
 
   [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
@@ -11,8 +10,7 @@
   [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects
 
-- [`fatten-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle_set-method.md)
-  [`fatten,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle_set-method.md)
+- [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten-fiber-bundle_set-method.md)
   :
 
   [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
@@ -20,8 +18,7 @@
   [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
   objects
 
-- [`fatten-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-streamline-method.md)
-  [`fatten,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/fatten-fiber-streamline-method.md)
+- [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten-fiber-streamline-method.md)
   :
 
   [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
@@ -32,8 +29,7 @@
 - [`fatten()`](https://tractoverse.github.io/rtists/reference/fatten.md)
   : Assign a visible tube radius to line-only streamlines
 
-- [`plot2d-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle-method.md)
-  [`plot2d,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle-method.md)
+- [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle-method.md)
   :
 
   [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
@@ -41,8 +37,7 @@
   [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects
 
-- [`plot2d-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle_set-method.md)
-  [`plot2d,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle_set-method.md)
+- [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-bundle_set-method.md)
   :
 
   [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
@@ -50,8 +45,7 @@
   [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
   objects
 
-- [`plot2d-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-streamline-method.md)
-  [`plot2d,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-streamline-method.md)
+- [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d-fiber-streamline-method.md)
   :
 
   [`plot2d()`](https://tractoverse.github.io/rtists/reference/plot2d.md)
@@ -63,8 +57,7 @@
   : 2D arclength projection plots for tractography streamlines and
   bundles
 
-- [`plot3d-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
-  [`plot3d,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
+- [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle-method.md)
   :
 
   [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
@@ -72,8 +65,7 @@
   [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects
 
-- [`plot3d-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
-  [`plot3d,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
+- [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-bundle_set-method.md)
   :
 
   [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
@@ -81,8 +73,7 @@
   [`fiber::bundle_set`](https://tractoverse.github.io/fiber/reference/bundle_set.html)
   objects
 
-- [`plot3d-fiber-streamline-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
-  [`plot3d,fiber::streamline-method`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
+- [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d-fiber-streamline-method.md)
   :
 
   [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
@@ -93,8 +84,7 @@
 - [`plot3d()`](https://tractoverse.github.io/rtists/reference/plot3d.md)
   : Interactive 3D line plot for tractography streamlines and bundles
 
-- [`prune-fiber-bundle-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle-method.md)
-  [`prune,fiber::bundle-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle-method.md)
+- [`prune()`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle-method.md)
   :
 
   [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md)
@@ -102,8 +92,7 @@
   [`fiber::bundle`](https://tractoverse.github.io/fiber/reference/bundle.html)
   objects
 
-- [`prune-fiber-bundle_set-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle_set-method.md)
-  [`prune,fiber::bundle_set-method`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle_set-method.md)
+- [`prune()`](https://tractoverse.github.io/rtists/reference/prune-fiber-bundle_set-method.md)
   :
 
   [`prune()`](https://tractoverse.github.io/rtists/reference/prune.md)
