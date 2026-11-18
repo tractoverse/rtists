@@ -158,7 +158,6 @@ plot2d <- S7::new_generic(
 #' @seealso [plot2d()]
 #' @name plot2d-fiber-streamline-method
 #' @aliases plot2d,fiber::streamline-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -212,7 +211,6 @@ S7::method(plot2d, fiber::streamline) <- function(
 #' @seealso [plot2d()]
 #' @name plot2d-fiber-bundle-method
 #' @aliases plot2d,fiber::bundle-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -274,7 +272,6 @@ S7::method(plot2d, fiber::bundle) <- function(
 #' @seealso [plot2d()]
 #' @name plot2d-fiber-bundle_set-method
 #' @aliases plot2d,fiber::bundle_set-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'

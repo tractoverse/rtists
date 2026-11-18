@@ -4,6 +4,23 @@
 \alias{plot3d-fiber-bundle_set-method}
 \alias{plot3d,fiber::bundle_set-method}
 \title{\code{\link[=plot3d]{plot3d()}} method for \code{fiber::bundle_set} objects}
+\usage{
+## S7 method for class <fiber::bundle_set>
+\special{plot3d(
+  x,
+  color = "orientation",
+  palette = "Viridis",
+  backend = c("threejs", "plotly"),
+  linewidth = NULL,
+  radius = NULL,
+  opacity = 0.5,
+  bg = "#111111",
+  color_by_bundle = FALSE,
+  tooltip = TRUE,
+  toolbar = TRUE,
+  ...
+)}
+}
 \arguments{
 \item{x}{A \link[fiber:bundle_set]{fiber::bundle_set} object.}
 

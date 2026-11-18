@@ -4,6 +4,19 @@
 \alias{plot2d-fiber-streamline-method}
 \alias{plot2d,fiber::streamline-method}
 \title{\code{\link[=plot2d]{plot2d()}} method for \code{fiber::streamline} objects}
+\usage{
+## S7 method for class <fiber::streamline>
+\special{plot2d(
+  x,
+  facet = c("X", "Y", "Z"),
+  color = "orientation",
+  palette = "Viridis",
+  n_chunks = 100L,
+  linewidth = 0.5,
+  alpha = 1,
+  ...
+)}
+}
 \arguments{
 \item{x}{A \link[fiber:streamline]{fiber::streamline} object.}
 

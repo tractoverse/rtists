@@ -356,7 +356,6 @@ plot3d <- S7::new_generic(
 #' @seealso [plot3d()]
 #' @name plot3d-fiber-streamline-method
 #' @aliases plot3d,fiber::streamline-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -431,7 +430,6 @@ S7::method(plot3d, fiber::streamline) <- function(
 #' @seealso [plot3d()]
 #' @name plot3d-fiber-bundle-method
 #' @aliases plot3d,fiber::bundle-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -546,7 +544,6 @@ S7::method(plot3d, fiber::bundle) <- function(
 #' @seealso [plot3d()]
 #' @name plot3d-fiber-bundle_set-method
 #' @aliases plot3d,fiber::bundle_set-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'

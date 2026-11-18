@@ -4,6 +4,10 @@
 \alias{fatten-fiber-bundle-method}
 \alias{fatten,fiber::bundle-method}
 \title{\code{\link[=fatten]{fatten()}} method for \code{fiber::bundle} objects}
+\usage{
+## S7 method for class <fiber::bundle>
+\special{fatten(x, visibility = NULL, ...)}
+}
 \arguments{
 \item{x}{A \link[fiber:streamline]{fiber::streamline}, \link[fiber:bundle]{fiber::bundle}, or \link[fiber:bundle_set]{fiber::bundle_set}.}
 

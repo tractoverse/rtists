@@ -197,7 +197,6 @@ prune <- S7::new_generic(
 #' @seealso [prune()]
 #' @name prune-fiber-bundle-method
 #' @aliases prune,fiber::bundle-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -257,7 +256,6 @@ S7::method(prune, fiber::bundle) <- function(
 #' @seealso [prune()]
 #' @name prune-fiber-bundle_set-method
 #' @aliases prune,fiber::bundle_set-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'

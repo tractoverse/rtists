@@ -164,7 +164,6 @@ fatten <- S7::new_generic(
 #' @seealso [fatten()]
 #' @name fatten-fiber-streamline-method
 #' @aliases fatten,fiber::streamline-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -203,7 +202,6 @@ S7::method(fatten, fiber::streamline) <- function(
 #' @seealso [fatten()]
 #' @name fatten-fiber-bundle-method
 #' @aliases fatten,fiber::bundle-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
@@ -264,7 +262,6 @@ S7::method(fatten, fiber::bundle) <- function(
 #' @seealso [fatten()]
 #' @name fatten-fiber-bundle_set-method
 #' @aliases fatten,fiber::bundle_set-method
-#' @usage NULL
 #' @examples
 #' library(fiber)
 #'
