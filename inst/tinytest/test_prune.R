@@ -26,12 +26,20 @@ expect_identical(rtists:::.prune_indices(polys, 1.0), c(1L, 6L))
 
 # Keeping the non-overlap invariant: every pair of kept tubes is >= 2*radius.
 check <- function(indices, radius) {
-  if (length(indices) < 2L) return(TRUE)
-  for (a in seq_along(indices))
-    for (b in seq_along(indices))
-      if (a < b &&
-          rtists:::.min_sep_two(polys[[indices[a]]], polys[[indices[b]]]) < 2 * radius)
+  if (length(indices) < 2L) {
+    return(TRUE)
+  }
+  for (a in seq_along(indices)) {
+    for (b in seq_along(indices)) {
+      if (
+        a < b &&
+          rtists:::.min_sep_two(polys[[indices[a]]], polys[[indices[b]]]) <
+            2 * radius
+      ) {
         return(FALSE)
+      }
+    }
+  }
   TRUE
 }
 expect_true(check(rtists:::.prune_indices(polys, 0.6), 0.6))
@@ -48,10 +56,20 @@ expect_equal(length(pr@streamlines), 6L)
 pr <- prune(bun6, radius = 1.0)
 expect_equal(length(pr@streamlines), 2L)
 # The two kept strands are the bundle's extremes (widest lateral spacing).
-expect_true(check(vapply(pr@streamlines, function(s) {
-  which(vapply(polys, function(p) isTRUE(all.equal(as.matrix(s@points), p)),
-               logical(1)))
-}, integer(1)), 1.0))
+expect_true(check(
+  vapply(
+    pr@streamlines,
+    function(s) {
+      which(vapply(
+        polys,
+        function(p) isTRUE(all.equal(as.matrix(s@points), p)),
+        logical(1)
+      ))
+    },
+    integer(1)
+  ),
+  1.0
+))
 
 # Single-streamline bundle is returned unchanged.
 one <- fiber::bundle(list(fiber::streamline(polys[[1]])))
@@ -64,14 +82,26 @@ bs <- fiber::bundle_set(list(bun6, bun6))
 prs <- prune(bs, radius = 1.0)
 expect_inherits(prs, "fiber::bundle_set")
 expect_equal(length(prs@bundles), 2L)
-expect_equal(vapply(prs@bundles, function(b) length(b@streamlines), integer(1)),
-             c(2L, 2L))
+expect_equal(
+  vapply(prs@bundles, function(b) length(b@streamlines), integer(1)),
+  c(2L, 2L)
+)
 
 # ---- validation --------------------------------------------------------------
 
-expect_error(prune(bun6, radius = -1), "`radius` must be a single positive number")
-expect_error(prune(bun6, radius = "a"), "`radius` must be a single positive number")
-expect_error(prune(bun6, radius = 1, overlap_margin = -1),
-             "`overlap_margin` must be a single positive number")
-expect_error(prune(bun6, radius = 1, overlap_margin = "a"),
-             "`overlap_margin` must be a single positive number")
+expect_error(
+  prune(bun6, radius = -1),
+  "`radius` must be a single positive number"
+)
+expect_error(
+  prune(bun6, radius = "a"),
+  "`radius` must be a single positive number"
+)
+expect_error(
+  prune(bun6, radius = 1, overlap_margin = -1),
+  "`overlap_margin` must be a single positive number"
+)
+expect_error(
+  prune(bun6, radius = 1, overlap_margin = "a"),
+  "`overlap_margin` must be a single positive number"
+)

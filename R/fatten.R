@@ -25,22 +25,29 @@
 # consecutive points along the fibres. A stream sampling every 1 mm yields a
 # floor near 1 mm, the smallest tube radius considered visible here.
 .fatten_step <- function(polys) {
-  steps <- unlist(lapply(polys, function(P) {
-    d <- P[-1, , drop = FALSE] - P[-nrow(P), , drop = FALSE]
-    sqrt(rowSums(d^2))
-  }), use.names = FALSE)
+  steps <- unlist(
+    lapply(polys, function(P) {
+      d <- P[-1, , drop = FALSE] - P[-nrow(P), , drop = FALSE]
+      sqrt(rowSums(d^2))
+    }),
+    use.names = FALSE
+  )
   stats::median(steps)
 }
 
 # Minimal distance between any two streamlines across the whole bundle (closest
 # approach). Inf when there are fewer than two, so the sparse branch is skipped.
 .fatten_dmin <- function(polys) {
-  if (length(polys) < 2L) return(Inf)
+  if (length(polys) < 2L) {
+    return(Inf)
+  }
   m <- length(polys)
   dmin <- Inf
-  for (a in seq_len(m - 1L))
-    for (b in (a + 1L):m)
+  for (a in seq_len(m - 1L)) {
+    for (b in (a + 1L):m) {
       dmin <- min(dmin, .min_sep_two(polys[[a]], polys[[b]]))
+    }
+  }
   dmin
 }
 
@@ -50,8 +57,8 @@
   sd <- s@streamline_data
   sd$radius <- r
   fiber::streamline(
-    points          = s@points,
-    point_data      = s@point_data,
+    points = s@points,
+    point_data = s@point_data,
     streamline_data = sd
   )
 }
@@ -59,10 +66,16 @@
 # Resolve the visibility floor from the user override or the median step.
 .fatten_floor <- function(polys, visibility) {
   if (!is.null(visibility)) {
-    if (!is.numeric(visibility) || length(visibility) != 1L ||
-        is.na(visibility) || visibility <= 0) {
-      stop("`visibility` must be a single positive number (or NULL).",
-           call. = FALSE)
+    if (
+      !is.numeric(visibility) ||
+        length(visibility) != 1L ||
+        is.na(visibility) ||
+        visibility <= 0
+    ) {
+      stop(
+        "`visibility` must be a single positive number (or NULL).",
+        call. = FALSE
+      )
     }
     return(visibility)
   }
@@ -115,6 +128,21 @@
 #'
 #' @seealso [prune()], [plot3d()]
 #' @export
+#'
+#' @examples
+#' library(fiber)
+#'
+#' # A line-only helix strand: no radius data, so plot3d() would draw a thin
+#' # line. fatten() picks a visible tube radius for it.
+#' t <- seq(0, 4 * pi, length.out = 200)
+#' sl <- streamline(cbind(
+#'   X = seq_len(200) * 0.1,
+#'   Y = 0.5 * sin(t),
+#'   Z = 0.5 * cos(t)
+#' ))
+#' fattened <- fatten(sl)
+#' fattened@streamline_data$radius
+#' plot3d(fattened)
 fatten <- S7::new_generic(
   name = "fatten",
   dispatch_args = "x",
@@ -153,9 +181,10 @@ fatten <- S7::new_generic(
 #' fattened@streamline_data$radius
 #' plot3d(fattened)
 S7::method(fatten, fiber::streamline) <- function(
-    x,
-    visibility = NULL,
-    ...) {
+  x,
+  visibility = NULL,
+  ...
+) {
   f <- .fatten_floor(list(as.matrix(x@points)), visibility)
   .fatten_sl(x, f)
 }
@@ -196,20 +225,23 @@ S7::method(fatten, fiber::streamline) <- function(
 #' length(fattened@streamlines)
 #' plot3d(fattened)              # draws real 3D tubes
 S7::method(fatten, fiber::bundle) <- function(
-    x,
-    visibility = NULL,
-    ...) {
+  x,
+  visibility = NULL,
+  ...
+) {
   polys <- lapply(x@streamlines, function(s) as.matrix(s@points))
-  if (length(polys) == 0L) return(fiber::bundle(list()))
-  f    <- .fatten_floor(polys, visibility)
+  if (length(polys) == 0L) {
+    return(fiber::bundle(list()))
+  }
+  f <- .fatten_floor(polys, visibility)
   dmin <- .fatten_dmin(polys)
   if (dmin / 2 >= f) {
     # Sparse: tubes at half the minimal separation just touch; keep all fibres.
-    r    <- dmin / 2
+    r <- dmin / 2
     kept <- x@streamlines
   } else {
     # Dense: prune to a non-overlapping, hull-covering subset at the floor.
-    r    <- f
+    r <- f
     kept <- x@streamlines[.prune_indices(polys, f, 1)]
   }
   # fiber::bundle() hoists any per-streamline metadata to the bundle level as
@@ -263,9 +295,10 @@ S7::method(fatten, fiber::bundle) <- function(
 #' vapply(fattened@bundles, function(b) length(b@streamlines), integer(1L))
 #' plot3d(fattened)              # draws real 3D tubes per bundle
 S7::method(fatten, fiber::bundle_set) <- function(
-    x,
-    visibility = NULL,
-    ...) {
+  x,
+  visibility = NULL,
+  ...
+) {
   kept <- lapply(x@bundles, function(b) fatten(b, visibility = visibility))
   kept <- Filter(function(b) length(b@streamlines) > 0L, kept)
   fiber::bundle_set(kept)

@@ -1,15 +1,12 @@
 pts <- matrix(
-  c(0, 0, 0,
-    1, 1, 0,
-    2, 1, 1,
-    3, 2, 2,
-    4, 3, 2),
-  ncol = 3, byrow = TRUE,
+  c(0, 0, 0, 1, 1, 0, 2, 1, 1, 3, 2, 2, 4, 3, 2),
+  ncol = 3,
+  byrow = TRUE,
   dimnames = list(NULL, c("X", "Y", "Z"))
 )
 sl <- fiber::streamline(
-  points          = pts,
-  point_data      = list(FA = c(0.3, 0.5, 0.7, 0.6, 0.4)),
+  points = pts,
+  point_data = list(FA = c(0.3, 0.5, 0.7, 0.6, 0.4)),
   streamline_data = list(mean_FA = 0.5)
 )
 bun <- fiber::bundle(list(sl, sl))
@@ -80,6 +77,28 @@ expect_equal(length(fig$x$colors), 6L * (nrow(pts) - 1L))
 expect_true(is.null(fig$x$tubeOffsets))
 expect_true(is.null(fig$x$radii))
 expect_true(fig$x$linewidth > 0)
+# default linewidth is auto-scaled to the scene (a thin fraction of the
+# bounding-box diagonal), not the old scale-blind constant 2
+auto_expected <- 0.005 * sqrt(sum(apply(pts, 2L, function(v) diff(range(v)))^2))
+# the payload scalar is jsonlite-unboxed (class "scalar"), so strip the class
+# wrapper before comparing against the plain-double expectation
+expect_equal(unclass(fig$x$linewidth), auto_expected, tolerance = 1e-6)
+# an explicit numeric linewidth is honoured exactly
+fig <- plot3d(sl, linewidth = 2)
+expect_equal(unclass(fig$x$linewidth), 2)
+# a unit-scale scene with no radius data gets a thin auto width rather than
+# a world-unit 2 slab (the master-scenario "big tubes" bug)
+small <- fiber::streamline(cbind(
+  X = c(0, 1, 2),
+  Y = c(0, 0.5, 0),
+  Z = c(0, 0, 1)
+))
+fig_small <- plot3d(small)
+expect_true(fig_small$x$linewidth < 0.05 && fig_small$x$linewidth > 0)
+# degenerate (all-identical) scene clamps to a sane scale
+deg <- fiber::streamline(cbind(X = c(1, 1, 1), Y = c(1, 1, 1), Z = c(1, 1, 1)))
+fig_deg <- plot3d(deg)
+expect_equal(unclass(fig_deg$x$linewidth), 0.005)
 
 # scalar radius > 0 -> true 3D tube: per-point constant radii + tubeOffsets,
 # no `thickness` echo
@@ -87,7 +106,7 @@ fig <- plot3d(sl, radius = 0.25)
 expect_equal(unclass(fig$x$mode), "tube")
 # radii are per-point floats packed as IEEE float32 -> 4 raw bytes/float
 expect_true(is.raw(fig$x$positions))
-expect_equal(length(fig$x$positions), 12L * nrow(pts))  # 3 floats x 4 bytes/point
+expect_equal(length(fig$x$positions), 12L * nrow(pts)) # 3 floats x 4 bytes/point
 expect_true(is.raw(fig$x$radii))
 expect_equal(length(fig$x$radii), 4L * nrow(pts))
 expect_true(!("thickness" %in% names(fig$x)))
@@ -132,22 +151,33 @@ bun_r <- fiber::bundle(list(
 ))
 fig <- plot3d(bun_r)
 expect_equal(unclass(fig$x$mode), "tube")
-radii <- readBin(fig$x$radii, numeric(), size = 4L,
-                 n = length(fig$x$radii) / 4L)
+radii <- readBin(
+  fig$x$radii,
+  numeric(),
+  size = 4L,
+  n = length(fig$x$radii) / 4L
+)
 expect_equal(radii, rep(c(0.2, 0.8), each = nrow(pts)), tolerance = 1e-6)
 
 # per-point radius in @point_data -> radius varying along the fibre.
 sl_pp <- fiber::streamline(pts, point_data = list(radius = seq(0.1, 0.5, 0.1)))
 fig <- plot3d(sl_pp)
 expect_equal(unclass(fig$x$mode), "tube")
-expect_equal(readBin(fig$x$radii, numeric(), size = 4L, n = nrow(pts)),
-             seq(0.1, 0.5, 0.1), tolerance = 1e-6)
+expect_equal(
+  readBin(fig$x$radii, numeric(), size = 4L, n = nrow(pts)),
+  seq(0.1, 0.5, 0.1),
+  tolerance = 1e-6
+)
 
 # an explicit `radius` argument overrides any radius stored on the object.
 fig <- plot3d(bun_r, radius = 0.05)
 expect_equal(unclass(fig$x$mode), "tube")
-radii <- readBin(fig$x$radii, numeric(), size = 4L,
-                 n = length(fig$x$radii) / 4L)
+radii <- readBin(
+  fig$x$radii,
+  numeric(),
+  size = 4L,
+  n = length(fig$x$radii) / 4L
+)
 expect_equal(unique(round(radii, 5)), 0.05)
 
 # no radius anywhere and no argument -> fast thin Line2.
@@ -164,9 +194,13 @@ bs_same <- fiber::bundle_set(list(
 ))
 fig <- plot3d(bs_same, radius = 0.08)
 expect_equal(unclass(fig$x$mode), "tube")
-radii <- readBin(fig$x$radii, numeric(), size = 4L,
-                 n = length(fig$x$radii) / 4L)
-expect_true(all(abs(radii - 0.08) < 1e-5))   # requested radius left untouched
+radii <- readBin(
+  fig$x$radii,
+  numeric(),
+  size = 4L,
+  n = length(fig$x$radii) / 4L
+)
+expect_true(all(abs(radii - 0.08) < 1e-5)) # requested radius left untouched
 
 # ---- mixed-metadata bundle sets (CST/SLF/CC style) ---------------------------
 
@@ -176,13 +210,17 @@ expect_true(all(abs(radii - 0.08) < 1e-5))   # requested radius left untouched
 # of their columns (missing -> NA) instead of failing on an rbind mismatch.
 sl_no_meta <- fiber::streamline(
   points = matrix(
-    c(1, 0, 0, 2, 0, 0, 3, 0, 0), ncol = 3, byrow = TRUE,
+    c(1, 0, 0, 2, 0, 0, 3, 0, 0),
+    ncol = 3,
+    byrow = TRUE,
     dimnames = list(NULL, c("X", "Y", "Z"))
   )
 )
 sl_radius <- fiber::streamline(
   points = matrix(
-    c(0, 1, 0, 0, 2, 0), ncol = 3, byrow = TRUE,
+    c(0, 1, 0, 0, 2, 0),
+    ncol = 3,
+    byrow = TRUE,
     dimnames = list(NULL, c("X", "Y", "Z"))
   ),
   streamline_data = list(radius = 0.1)
@@ -193,7 +231,7 @@ bs_mixed <- fiber::bundle_set(list(CST = bun_rad, CC = bun_plain))
 
 mdf <- rtists:::.bundle_set_to_df(bs_mixed)
 expect_inherits(mdf, "data.frame")
-expect_true("radius" %in% names(mdf))            # union carries the radius column
+expect_true("radius" %in% names(mdf)) # union carries the radius column
 # only the CST streamlines actually hold a radius; the CC ones are NA
 expect_equal(sort(unique(mdf$BundleName)), c("CC", "CST"))
 expect_true(all(is.na(mdf$radius[mdf$BundleName == "CC"])))
@@ -218,8 +256,10 @@ cat("mixed-metadata bundle_set tests OK\n")
 fig <- plot3d(sl)
 expect_true("tooltipData" %in% names(fig$x))
 tt <- fig$x$tooltipData
-expect_true(all(c("bundle", "xyz", "columns", "shown", "values") %in% names(tt)))
-expect_null(tt$bundle)                    # a single streamline has no name
+expect_true(all(
+  c("bundle", "xyz", "columns", "shown", "values") %in% names(tt)
+))
+expect_null(tt$bundle) # a single streamline has no name
 expect_length(tt$xyz, nrow(pts))
 expect_true(all(c("FA", "mean_FA") %in% tt$columns))
 # default selects all toggleable columns
@@ -241,7 +281,7 @@ expect_equal(unclass(fig$x$mode), "tube")
 expect_true("tooltipData" %in% names(fig$x))
 tt <- fig$x$tooltipData
 expect_length(tt$xyz, nrow(pts))
-expect_null(fig$x$segToPoint)             # tube mode maps hits by streamline offset
+expect_null(fig$x$segToPoint) # tube mode maps hits by streamline offset
 
 # tooltip = FALSE -> the payload is dropped entirely
 fig <- plot3d(sl, tooltip = FALSE)
@@ -252,7 +292,7 @@ expect_false("segToPoint" %in% names(fig$x))
 fig <- plot3d(sl, tooltip = "FA")
 expect_true("tooltipData" %in% names(fig$x))
 tt <- fig$x$tooltipData
-expect_true(all(c("FA", "mean_FA") %in% tt$columns))  # both still toggleable
+expect_true(all(c("FA", "mean_FA") %in% tt$columns)) # both still toggleable
 expect_true(setequal(tt$shown, "FA"))
 # unknown column names are ignored rather than erroring
 fig <- plot3d(sl, tooltip = c("FA", "not_a_column"))
@@ -278,28 +318,29 @@ cat("tooltip tests OK\n")
 # ---- three.js legend (aesthetic-mapping panel) ------------------------------
 # The three.js widget ships a `legendData` payload driving the legend panel:
 # `n_pts` (per-streamline point counts, unnamed so jsonlite emits an array and
-# the renderer can index per-streamline visibility), `bundlePerSl` + 
+# the renderer can index per-streamline visibility), `bundlePerSl` +
 # `bundleNames` (per-streamline bundle category for bundle_set objects),
 # `attrsPoint` (point-scoped attribute series, numeric packed as Float32 raw)
 # and `attrsSl` (streamline-scoped representative values) for live remapping,
-# and `ramp` (3x256 Uint8 colour ramp). No attribute column -> legendData is
-# NULL. `BundleName` is offered as a per-bundle visual key, never as a point
-# series.
+# and `ramp` (3x256 Uint8 colour ramp). A df with no attribute column ->
+# legendData is NULL. `BundleName` is never offered as an attribute series:
+# the renderer's dedicated 'Bundle' colour mode and per-bundle visibility list
+# already cover it.
 #
 # single streamline, line2 and tube modes both ship the payload
 fig <- plot3d(sl)
 expect_true("legendData" %in% names(fig$x))
 ld <- fig$x$legendData
-expect_equal(unclass(ld$n_pts), 5L)          # 5 points
-expect_null(ld$bundlePerSl)                  # no BundleName on a plain streamline
+expect_equal(unclass(ld$n_pts), 5L) # 5 points
+expect_null(ld$bundlePerSl) # no BundleName on a plain streamline
 expect_null(ld$bundleNames)
-expect_true("FA" %in% names(ld$attrsPoint))  # point-scoped
-expect_equal(ld$attrsSl$mean_FA, 0.5)        # streamline-scoped
-expect_length(ld$attrsPoint$FA, 5L * 4L)     # numeric packed as Float32 raw
-expect_false("mean_FA" %in% names(ld$attrsPoint))   # constant within streamline
-expect_length(ld$ramp, 3L * 256L)            # 3x256 colour ramp
+expect_true("FA" %in% names(ld$attrsPoint)) # point-scoped
+expect_equal(ld$attrsSl$mean_FA, 0.5) # streamline-scoped
+expect_length(ld$attrsPoint$FA, 5L * 4L) # numeric packed as Float32 raw
+expect_false("mean_FA" %in% names(ld$attrsPoint)) # constant within streamline
+expect_length(ld$ramp, 3L * 256L) # 3x256 colour ramp
 
-fig <- plot3d(sl, radius = 0.25)             # tube mode
+fig <- plot3d(sl, radius = 0.25) # tube mode
 expect_true("legendData" %in% names(fig$x))
 expect_equal(unclass(fig$x$legendData$n_pts), 5L)
 
@@ -308,9 +349,57 @@ fig <- suppressMessages(plot3d(bs_tt))
 ld <- fig$x$legendData
 expect_equal(unclass(ld$n_pts), c(5L, 5L))
 expect_equal(ld$bundleNames, c("CST", "CC"))
-expect_equal(ld$bundlePerSl, c(1L, 2L))      # 1-based category index per streamline
-expect_equal(ld$attrsSl$BundleName, c("CST", "CC"))
-expect_false("BundleName" %in% names(ld$attrsPoint))   # bundle key is sl-scoped
+expect_equal(ld$bundlePerSl, c(1L, 2L)) # 1-based category index per streamline
+expect_false("BundleName" %in% names(ld$attrsPoint))
+expect_false("BundleName" %in% names(ld$attrsSl)) # never a redundant attribute
+# a BundleName-only bundle_set still ships a payload (per-bundle visibility)
+fig <- suppressMessages(plot3d(fiber::bundle_set(list(A = b1))))
+expect_true("legendData" %in% names(fig$x))
+expect_equal(fig$x$legendData$bundleNames, "A")
 # streamline-scoped attr absent on the second bundle pads to NA
 expect_equal(ld$attrsSl$mean_FA, c(0.5, NA))
 cat("legend tests OK\n")
+
+# ---- widget payload `n_pts` is an unnamed vector -----------------------------
+# The payload `n_pts` (per-streamline point counts) must stay unnamed so
+# jsonlite serializes it as a JSON array (the renderer indexes it numerically);
+# a named vector would emit `{"1":5,...}` and trip jsonlite's keep_vec_names
+# warning. line2 and tube modes both ship it.
+for (w in list(plot3d(sl), plot3d(sl, radius = 0.25))) {
+  expect_true("n_pts" %in% names(w$x))
+  expect_null(names(w$x$n_pts))
+  expect_equal(unclass(w$x$n_pts), 5L)
+}
+cat("payload n_pts tests OK\n")
+
+# ---- three.js toolbar (toolbar= argument) ------------------------------------
+# The three.js backend ships a `toolbar` flag (default TRUE) that enables the
+# on-scene plotly-style button overlay (axes toggle, PNG download, orbit mode,
+# zoom, autoscale, reset). It is a scalar (jsonlite::unbox) and is present in
+# both line2 and tube payloads. The plotly backend ignores the argument.
+
+# default -> toolbar flag TRUE, scalar, in both render modes
+fig <- plot3d(sl)
+expect_true(fig$x$toolbar)
+expect_equal(unclass(fig$x$toolbar), TRUE)
+fig <- plot3d(sl, radius = 0.25) # tube mode
+expect_true(fig$x$toolbar)
+
+# toolbar = FALSE -> flag off
+fig <- plot3d(sl, toolbar = FALSE)
+expect_false(fig$x$toolbar)
+
+# threaded through every S7 method (streamline / bundle / bundle_set)
+fig <- plot3d(bun)
+expect_true(fig$x$toolbar)
+fig <- suppressMessages(plot3d(bs_tt))
+expect_true(fig$x$toolbar)
+fig <- suppressMessages(plot3d(bs_tt, toolbar = FALSE))
+expect_false(fig$x$toolbar)
+
+# plotly backend ignores the argument and still renders
+if (requireNamespace("plotly", quietly = TRUE)) {
+  fig <- plot3d(sl, backend = "plotly", toolbar = FALSE)
+  expect_inherits(fig, "plotly")
+}
+cat("toolbar tests OK\n")

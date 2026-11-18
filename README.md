@@ -21,10 +21,13 @@ The main function is `plot3d()`, an
 [S7](https://rconsortium.github.io/S7/) generic with methods for
 `fiber::streamline`, `fiber::bundle`, and `fiber::bundle_set` objects.
 The default `backend = "threejs"` uses a self-contained three.js widget
-with real world-space line thickness (`thickness`) and depth-sorted
-transparency; `backend = "plotly"` is retained as an interim fallback.
-Both are fully interactive (pan, rotate, zoom). The static figures below
-are exported from the plotly backend.
+with real world-space line thickness and depth-sorted transparency;
+`backend = "plotly"` is retained as an interim fallback. Both are fully
+interactive (pan, rotate, zoom). For a static publication figure,
+`plot2d()` re-parametrizes each fibre by arclength and draws the X/Y/Z
+coordinates against it in three stacked ggplot2 facets. The static
+figures below are captured from the three.js backend (regenerate them
+with `tools/capture-figures.R`).
 
 ## Installation
 
@@ -98,8 +101,6 @@ using the standard DTI convention (left–right = red, anterior–posterior
 plot3d(bun)
 ```
 
-    #> list()
-
 ![](man/figures/README-orientation-1.png)
 
 #### Colour by per-point metadata
@@ -110,8 +111,6 @@ scale:
 ``` r
 plot3d(bun, color = "FA", palette = "Viridis")
 ```
-
-    #> list()
 
 ![](man/figures/README-point-fa-1.png)
 
@@ -124,8 +123,6 @@ streamline, giving every tract a single uniform colour:
 plot3d(bun, color = "mean_FA", palette = "RdYlBu")
 ```
 
-    #> list()
-
 ![](man/figures/README-streamline-fa-1.png)
 
 #### Fixed colour
@@ -135,8 +132,6 @@ Any CSS colour name or hex code colours all lines identically:
 ``` r
 plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 ```
-
-    #> list()
 
 ![](man/figures/README-fixed-1.png)
 
@@ -152,19 +147,36 @@ plot3d(bun, color = "steelblue", opacity = 0.7, linewidth = 3)
 Additional arguments (`palette`, `linewidth`, `opacity`, `...`) are
 documented in `?plot3d`.
 
+### `plot2d()` — static arclength projections
+
+For a static publication figure, `plot2d()` re-parametrizes each fibre
+by arclength and draws the X/Y/Z coordinates against it in three
+vertically stacked ggplot2 facets. Geometries are downsampled into
+equal-arclength chunks so long tracts stay light, and the `color`
+vocabulary matches `plot3d()` (orientation, metadata key, or fixed
+colour):
+
+``` r
+plot2d(sl, color = "FA")
+```
+
+<img src="man/figures/README-plot2d-1.png" width="672"
+alt="Single streamline as an arclength projection coloured by FA." />
+
 ## Licensing
 
-rtists is released under the [MIT license](LICENSE.md) and bundles a
-vendored copy of the [three.js](https://threejs.org/) library and its
-`examples/jsm` addons. Those files are distributed under the MIT license
-(“Copyright 2010-2026 Three.js Authors”; full SPDX header preserved) and
-are byte-identical copies of the upstream r186 release, unmodified.
-Vendored files:
+rtists is released under the [MIT
+license](https://github.com/tractoverse/rtists/blob/main/LICENSE.md) and
+bundles a vendored copy of the [three.js](https://threejs.org/) library
+and its `examples/jsm` addons. Those files are distributed under the MIT
+license (“Copyright 2010-2026 Three.js Authors”; full SPDX header
+preserved) and are byte-identical copies of the upstream r186 release,
+unmodified. Vendored files:
 
 - `three.module.js` and `three.core.js`
 - `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,
   LineSegmentsGeometry
 - `jsm/controls/`: OrbitControls.js
 
-The upstream MIT license text is also mirrored in `inst/NOTICE`, which ships
-with the installed package.
+The upstream MIT license text is also mirrored in `inst/NOTICE`, which
+ships with the installed package.

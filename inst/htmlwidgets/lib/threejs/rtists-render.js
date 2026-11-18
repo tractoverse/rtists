@@ -291,9 +291,19 @@ HTMLWidgets.widget({
     // destroy() can remove them and avoid leaking listeners across re-renders.
     function onDocPointerDown(e) {
       if (!ttMenu.contains(e.target)) closeTooltipMenu();
+      // Outside clicks close the orbit-mode menu / legend panel too, but the
+      // toggle buttons themselves are excluded so their click handlers can
+      // toggle instead of fight the pointerdown handler.
+      if (modeMenuEl && !modeMenuEl.contains(e.target) &&
+          !(modeBtnEl && modeBtnEl.contains(e.target))) closeModeMenu();
+      if (legendPanel && !legendPanel.contains(e.target) &&
+          !(legendBtn && legendBtn.contains(e.target))) closeLegendPanel();
     }
     function onDocKeyDown(e) {
-      if (e.key === 'Escape') closeTooltipMenu();
+      if (e.key !== 'Escape') return;
+      closeTooltipMenu();
+      closeModeMenu();
+      closeLegendPanel();
     }
     document.addEventListener('pointerdown', onDocPointerDown);
     document.addEventListener('keydown', onDocKeyDown);
@@ -304,6 +314,11 @@ HTMLWidgets.widget({
 
     // ---- controls ---------------------------------------------------------
     const controls = new OrbitControls(camera, renderer.domElement);
+
+    // Axis on/off + camera reset bookkeeping; updated per render.
+    let toolbarEnabled = true;   // `x.toolbar` from the R payload
+    let axesOn         = true;   // current visibility of the axes helper
+    let renderPositions = null;  // decoded positions of the current render
 
     // ---- lighting -----------------------------------------------------------
     // Phantomas-style illumination for the FlatShading fill tubes: a dim
@@ -341,27 +356,28 @@ HTMLWidgets.widget({
     }
     startLoop();
 
-    function frameCamera(positions) {
-      const n = positions.length;
+    // Axis-aligned bounds frame (center + half-max-extent radius) for a
+    // packed [x,y,z...] positions array.
+    function frameFor(positions) {
+      if (!positions || positions.length === 0) return null;
       let minX = Infinity, minY = Infinity, minZ = Infinity;
       let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-      for (let i = 0; i < n; i += 3) {
+      for (let i = 0; i < positions.length; i += 3) {
         const x = positions[i], y = positions[i+1], z = positions[i+2];
         if (x < minX) minX = x; if (x > maxX) maxX = x;
         if (y < minY) minY = y; if (y > maxY) maxY = y;
         if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
       }
-      const center = new THREE.Vector3(
-        (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
-      const radius = Math.max(maxX - minX, maxY - minY, maxZ - minZ) * 0.5;
-
-      cameraFrame = { center, radius: Math.max(radius, 1e-3) };
-      placeCamera();
+      return {
+        center: new THREE.Vector3(
+          (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2),
+        radius: Math.max(
+          Math.max(maxX - minX, maxY - minY, maxZ - minZ) * 0.5, 1e-3)
+      };
     }
 
-    function placeCamera() {
-      if (!cameraFrame) return;
-      const { center, radius } = cameraFrame;
+    function placeCamera(frame) {
+      const { center, radius } = frame;
       controls.target.copy(center);
       camera.near = radius / 1000;
       camera.far  = radius * 100;
@@ -371,6 +387,331 @@ HTMLWidgets.widget({
       );
       camera.updateProjectionMatrix();
       controls.update();
+    }
+
+    function frameCamera(positions) {
+      const f = frameFor(positions);
+      if (!f) return;
+      cameraFrame = f;
+      placeCamera(f);
+    }
+
+    // Re-fit the camera to the full data extent while preserving the current
+    // viewing direction: keeps the angle the user has orbited to and only
+    // adjusts the distance so the data fits. Deliberately does NOT touch
+    // OrbitControls' saved state, so reset() still returns to the view framed
+    // at render time.
+    function reframeToData() {
+      if (!cameraFrame) return;
+      const f = frameFor(renderPositions);
+      if (!f) return;
+      cameraFrame = f;
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+      if (dir.lengthSq() < 1e-12) dir.set(1, 1, 1); // degenerate: fall back
+      dir.normalize();
+      controls.target.copy(f.center);
+      camera.position.copy(f.center).add(dir.multiplyScalar(f.radius * 1.6));
+      camera.near = f.radius / 1000;
+      camera.far  = f.radius * 100;
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    // ---- toolbar ------------------------------------------------------------
+    // A plotly-style overlay of icon buttons in the top-left corner: toggle the
+    // axes, download the current view as PNG, pick an orbit mode (rotate / pan /
+    // zoom), zoom in, zoom out, re-frame to the data ("autoscale"), and reset
+    // the camera. Styled to match the tooltip / legend overlays and kept out of
+    // the way of the Legend button (top-right). Built lazily on first render and
+    // shown only when the payload asked for it (`x.toolbar`).
+    let toolbarEl   = null;   // the toolbar container, or null
+    let modeMenuEl  = null;   // the orbit-mode popup, or null
+    let orbitMode   = 'rotate'; // rotate | pan | zoom
+    let axesBtn     = null;   // kept for the toggled state glyph
+    let modeBtnEl   = null;   // mode button; tooltip shows the current mode
+    let barTip      = null;   // styled helper popup for toolbar/mode buttons
+
+    const TOOLBAR_BTN =
+      'background:none;border:none;color:#f1eee6;cursor:pointer;' +
+      'font:18px/1 system-ui,Segoe UI,sans-serif;line-height:22px;' +
+      'width:26px;height:26px;padding:0;text-align:center;border-radius:4px;';
+    const TOOLBAR_BTN_HOVER = 'background:rgba(241,238,230,0.16);';
+    const TOOLBAR_BTN_ACTIVE = 'background:rgba(241,238,230,0.30);';
+    const TOOLBAR_ROW = 'vertical-align:middle;';
+
+    // Inline SVG icons (stroke-based, 16px, tinted by `currentColor`) so the
+    // toolbar reads crisply at any DPI and matches the overlay text colour.
+    function svgIcon(inner) {
+      return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+    }
+    const ICONS = {
+      axes: svgIcon(
+        '<path d="M12 2v20M2 12h20"/>' +
+        '<path d="M9 5l3-3 3 3M5 9l-3 3 3 3M19 9l3 3-3 3M9 19l3 3 3-3"/>'
+      ),
+      png: svgIcon(
+        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+        '<path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>'
+      ),
+      rotate: svgIcon(
+        '<path d="M23 4v6h-6"/>' +
+        '<path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'
+      ),
+      pan: svgIcon(
+        '<path d="M15 19l-3-3 3-3M18 16l3-3-3-3"/>' +
+        '<path d="M5 9L2 12l3 3M9 5l3-3 3 3"/>' +
+        '<path d="M2 12h20M12 2v20"/>'
+      ),
+      zoom: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/>'
+      ),
+      zoomIn: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/>'
+      ),
+      zoomOut: svgIcon(
+        '<circle cx="11" cy="11" r="7"/>' +
+        '<path d="M21 21l-4.35-4.35"/><path d="M8 11h6"/>'
+      ),
+      autoscale: svgIcon(
+        '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/>' +
+        '<path d="M21 3l-7 7"/><path d="M3 21l7-7"/>'
+      ),
+      reset: svgIcon(
+        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+        '<path d="M9 22V12h6v10"/>'
+      )
+    };
+
+    // Show the named helper popup near `btn`, flipping across the edges so it
+    // stays onscreen; shared by the toolbar and mode-menu buttons.
+    function showBarTip(btn, text) {
+      if (!barTip) return;
+      barTip.textContent = text;
+      barTip.style.display = 'block';
+      const tw = barTip.offsetWidth, th = barTip.offsetHeight;
+      const r = btn.getBoundingClientRect();
+      let left = r.left + r.width / 2 - tw / 2;
+      if (left < 4) left = 4;
+      if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
+      let top = r.bottom + 8;
+      if (top + th > window.innerHeight - 4) top = r.top - th - 8;
+      barTip.style.left = left + 'px';
+      barTip.style.top  = top + 'px';
+    }
+    function hideBarTip() {
+      if (barTip) barTip.style.display = 'none';
+    }
+
+    function makeToolbarButton(glyph, title, onClick) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.title = title;
+      b.innerHTML = '<span style="' + TOOLBAR_ROW + '">' + glyph + '</span>';
+      b.style.cssText = TOOLBAR_BTN;
+      b.addEventListener('mouseenter', function() {
+        b.style.cssText = TOOLBAR_BTN +
+          (b.classList.contains('active') ? TOOLBAR_BTN_ACTIVE : TOOLBAR_BTN_HOVER);
+        showBarTip(b, b.title);  // read the live title: axes/mode update it
+      });
+      b.addEventListener('mouseleave', function() {
+        b.style.cssText = TOOLBAR_BTN +
+          (b.classList.contains('active') ? TOOLBAR_BTN_ACTIVE : '');
+        hideBarTip();
+      });
+      b.addEventListener('click', function(e) { e.stopPropagation(); onClick(e); });
+      return b;
+    }
+
+    function modeLabel(mode) {
+      if (mode === 'rotate') return 'Rotate';
+      if (mode === 'pan') return 'Pan';
+      return 'Zoom';
+    }
+    function modeGlyph(mode) {
+      if (mode === 'rotate') return ICONS.rotate;
+      if (mode === 'pan') return ICONS.pan;
+      return ICONS.zoom;
+    }
+
+    function renderModeMenu() {
+      if (!modeMenuEl) return;
+      const current = orbitMode;
+      const items = [
+        ['rotate', ICONS.rotate, 'Rotate'],
+        ['pan',    ICONS.pan, 'Pan'],
+        ['zoom',   ICONS.zoom, 'Zoom']
+      ];
+      modeMenuEl.innerHTML = items.map(function(it) {
+        const on = it[0] === current ? 'background:rgba(241,238,230,0.22);' : '';
+        return '<button type="button" data-mode="' + it[0] + '" title="' +
+          it[2] + '" style="' +
+          TOOLBAR_BTN + on + 'font-size:15px;">' + it[1] + '</button>';
+      }).join('');
+      // bind after innerHTML so the listeners see fresh nodes
+      Array.prototype.forEach.call(modeMenuEl.querySelectorAll('button'), function(b) {
+        b.addEventListener('click', function(e) {
+          e.stopPropagation();
+          setOrbitMode(b.getAttribute('data-mode'));
+          closeModeMenu();
+        });
+      });
+    }
+
+    function closeModeMenu() {
+      if (modeMenuEl) modeMenuEl.style.display = 'none';
+      hideBarTip();
+    }
+
+    // Toggle the mouse interaction model. "rotate" (default) maps the left
+    // button to orbit / middle to zoom / right to pan; "pan" also pans with the
+    // left button (zoom still via the wheel / middle); "zoom" uses the left
+    // button for dollying. Zooming remains possible with the scroll wheel in
+    // every mode, so dollyIn()/dollyOut() and the wheel stay usable.
+    function setOrbitMode(mode) {
+      orbitMode = mode;
+      applyControlsForMode();
+      if (modeBtnEl) {
+        modeBtnEl.title = 'Orbit mode: ' + modeLabel(mode);
+        modeBtnEl.innerHTML =
+          '<span style="' + TOOLBAR_ROW + '">' + modeGlyph(mode) + '</span>';
+      }
+    }
+
+    function applyControlsForMode() {
+      const r = controls.mouseButtons;
+      const ROTATE = THREE.MOUSE.ROTATE, PAN = THREE.MOUSE.PAN, DOLLY = THREE.MOUSE.DOLLY;
+      if (orbitMode === 'pan') {
+        r.LEFT = PAN; r.MIDDLE = PAN; r.RIGHT = ROTATE;
+      } else if (orbitMode === 'zoom') {
+        r.LEFT = DOLLY; r.MIDDLE = DOLLY; r.RIGHT = PAN;
+      } else { // rotate (default)
+        r.LEFT = ROTATE; r.MIDDLE = DOLLY; r.RIGHT = PAN;
+      }
+      // pan and zoom stay available in every mode (the mode only remaps the
+      // left button, and the wheel always zooms); rotate is the mode's own.
+      controls.enableRotate = (orbitMode === 'rotate');
+      controls.enablePan    = true;
+      controls.enableZoom   = true;
+    }
+
+    function toggleAxes() {
+      axesOn = !axesOn;
+      axes.visible = axesOn;
+      if (axesBtn) {
+        axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
+        axesBtn.classList.toggle('active', axesOn);   // highlight = axes shown
+        axesBtn.style.cssText = TOOLBAR_BTN +
+          (axesOn ? TOOLBAR_BTN_ACTIVE : '');
+        if (axesOn) showBarTip(axesBtn, 'Hide axes');
+      }
+    }
+
+    function buildToolbar() {
+      if (toolbarEl) return;
+      const container = document.createElement('div');
+      container.style.cssText =
+        'position:absolute;top:8px;left:8px;z-index:20;display:flex;' +
+        'flex-direction:column;gap:2px;padding:4px;' +
+        'background:rgba(18,24,21,0.9);' +
+        'border:1px solid rgba(241,238,230,0.3);border-radius:4px;';
+      toolbarEl = container;
+
+      axesBtn = makeToolbarButton(ICONS.axes, 'Hide axes', toggleAxes);
+      axesBtn.classList.toggle('active', axesOn);   // axes are shown by default
+      if (axesOn) axesBtn.style.cssText = TOOLBAR_BTN + TOOLBAR_BTN_ACTIVE;
+      const pngBtn = makeToolbarButton(ICONS.png, 'Download as PNG', function() {
+        renderer.domElement.toBlob(function(blob) {
+          if (!blob) return;
+          const a = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          a.href = url;
+          a.download = 'rtists.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        }, 'image/png');
+      });
+
+      const modeBtn = makeToolbarButton(ICONS.rotate, 'Orbit mode', function(e) {
+        e.stopPropagation();
+        hideBarTip();
+        if (modeMenuEl.style.display === 'block') { closeModeMenu(); return; }
+        renderModeMenu();
+        modeMenuEl.style.display = 'block';
+        const mw = modeMenuEl.offsetWidth, mh = modeMenuEl.offsetHeight;
+        const r = modeBtn.getBoundingClientRect();
+        let left = r.left - 26 - mw + 4;
+        if (left < 0) left = 4;
+        let top = r.top;
+        if (top + mh > window.innerHeight) top = window.innerHeight - mh - 4;
+        modeMenuEl.style.left = left + 'px';
+        modeMenuEl.style.top  = top + 'px';
+      });
+      modeBtnEl = modeBtn;
+
+      const zinBtn = makeToolbarButton(ICONS.zoomIn, 'Zoom in', function() {
+        controls.dollyIn(0.85);
+      });
+      const zoutBtn = makeToolbarButton(ICONS.zoomOut, 'Zoom out', function() {
+        controls.dollyOut(0.85);
+      });
+      const autoBtn = makeToolbarButton(ICONS.autoscale, 'Autoscale', function() {
+        reframeToData();
+      });
+      const resetBtn = makeToolbarButton(ICONS.reset, 'Reset camera', function() {
+        // restores the target/position/zoom saved at render time
+        controls.reset();
+      });
+
+      [axesBtn, pngBtn, modeBtn, zinBtn, zoutBtn, autoBtn, resetBtn].forEach(function(b) {
+        container.appendChild(b);
+      });
+
+      modeMenuEl = document.createElement('div');
+      modeMenuEl.style.cssText =
+        'position:fixed;z-index:22;display:none;padding:3px;' +
+        'background:rgba(18,24,21,0.97);color:#f1eee6;' +
+        'border:1px solid rgba(241,238,230,0.3);border-radius:4px;' +
+        'box-shadow:0 4px 14px rgba(0,0,0,0.6);';
+      document.body.appendChild(modeMenuEl);
+      renderModeMenu();
+      closeModeMenu();
+
+      // Helper popup for the toolbar / mode-menu buttons (styled like the hover
+      // tooltip, shown on mouseenter and hidden on mouseleave / menu close).
+      barTip = document.createElement('div');
+      barTip.style.cssText =
+        'position:fixed;pointer-events:none;z-index:25;display:none;' +
+        'background:rgba(10,14,12,0.92);color:#f1eee6;' +
+        'font:12px/1.4 system-ui,Segoe UI,sans-serif;padding:4px 8px;' +
+        'border:1px solid rgba(241,238,230,0.25);border-radius:4px;' +
+        'white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+      document.body.appendChild(barTip);
+
+      if (!el.style.position || el.style.position === 'static') el.style.position = 'relative';
+      el.appendChild(container);
+      toolbarEl.style.display = 'none';
+    }
+
+    // Show/hide the toolbar (and keep the orbit mode + axes map in sync).
+    function refreshToolbar() {
+      const want = toolbarEnabled && stateX;
+      if (!want) {
+        if (toolbarEl) toolbarEl.style.display = 'none';
+        closeModeMenu();
+        return;
+      }
+      buildToolbar();
+      applyControlsForMode();
+      if (axesBtn) axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
+      if (modeBtnEl) modeBtnEl.title = 'Orbit mode: ' + modeLabel(orbitMode);
+      axes.visible = axesOn;
+      toolbarEl.style.display = 'block';
     }
 
     // Dispose a mesh or a Group of meshes, releasing GPU geometry/material.
@@ -593,8 +934,25 @@ HTMLWidgets.widget({
       const i = Math.max(0, Math.min(255, Math.round(t * 255)));
       return [ramp[3*i], ramp[3*i+1], ramp[3*i+2]];
     }
-    function categoricalColors(k) {
+    // Distinct categorical colours for `k` levels. With a ramp the colours are
+    // equal-spaced samples of it (so the palette picker re-colours categorical
+    // mappings too); without one the fixed CAT_COLORS hue set applies. The
+    // single-level case samples the ramp midpoint — the end-points of most
+    // ramps are near-black, so an end-point sample would read as grey and
+    // palette changes would be imperceptible for one-category objects (e.g. a
+    // bundle_set with a single bundle).
+    function categoricalColors(k, ramp) {
       const cs = [];
+      if (ramp && k > 0) {
+        // equal-spaced samples of the ramp: ramp channels are 0-1, so scale
+        // to the 0-255 contract the call sites below divide by 255
+        for (let i = 0; i < k; i++) {
+          const t = (k === 1) ? 0.5 : i / (k - 1);
+          const j = Math.max(0, Math.min(255, Math.round(t * 255)));
+          cs.push([255 * ramp[3*j], 255 * ramp[3*j+1], 255 * ramp[3*j+2]]);
+        }
+        return cs;
+      }
       for (let i = 0; i < k; i++) cs.push(CAT_COLORS[i % CAT_COLORS.length]);
       return cs;
     }
@@ -640,12 +998,26 @@ HTMLWidgets.widget({
         attrLevels:   {},
         bundleNames:  Array.isArray(ld.bundleNames) ? ld.bundleNames
                       : (ld.bundleNames == null ? [] : [ld.bundleNames]),
+        palSafe:      ld.palSafe || [],
         slOfStreamline: [],
         ramp:         (typeof ld.ramp === 'string') ? b64ToU8F32(ld.ramp) : defaultRamp(),
+        ramps:        ld.ramps || null,          // {name: base64 Uint8 ramp}
+        paletteNames: ld.palettes || [],         // ordered selector order
+        palSafeMap:   {},                        // name -> true when CVD-safe
+        currentPalette: (ld.palettes && ld.palettes[0]) || null,
         colorBy:      'default',
         radiusBy:     'default',
         visible:      npts.map(function () { return true; })
       };
+      if (state.ramps) {
+        for (const k in state.ramps) state.ramps[k] = b64ToU8F32(state.ramps[k]);
+        if (state.currentPalette && state.ramps[state.currentPalette]) {
+          state.ramp = state.ramps[state.currentPalette];
+        }
+      }
+      state.paletteNames.forEach(function (name, i) {
+        state.palSafeMap[name] = !!state.palSafe[i];
+      });
       const bp = Array.isArray(ld.bundlePerSl) ? ld.bundlePerSl
                 : (ld.bundlePerSl == null ? [] : [ld.bundlePerSl]);
       for (let t = 0; t < npts.length; t++) state.slOfStreamline[t] = bp[t] || 0;
@@ -681,6 +1053,17 @@ HTMLWidgets.widget({
           else { state.attrIsNumeric[k] = false; state.attrLevels[k] = [v]; }
         }
       }
+      // Initial "Color by" selection from R (see .df_legend_meta / the `color`
+      // / `color_by_bundle` plot3d arguments). Guards against a stale or
+      // unknown value: only a real bundle label or a decoded attribute key is
+      // accepted, everything else keeps the neutral 'default' base paint.
+      if (ld.colorBy != null) {
+        const initial = String(ld.colorBy);
+        const known = initial === 'Bundle' ||
+          Object.prototype.hasOwnProperty.call(state.pointAttr, initial) ||
+          Object.prototype.hasOwnProperty.call(state.slAttr, initial);
+        if (known) state.colorBy = initial;
+      }
       return state;
     }
 
@@ -693,10 +1076,18 @@ HTMLWidgets.widget({
       const out = new Float32Array(3 * n);
 
       if (colorBy === 'Bundle') {
-        const cats = categoricalColors(Math.max(1, st.bundleNames.length));
+        // When the payload carries no bundle categories (a plain `bundle`
+        // object, not a `bundle_set`), every streamline lands in the NA slot.
+        // Treat the whole object as one category instead of rendering the
+        // grey NA colour, so the palette picker still works; the visibility
+        // list still shows per-streamline rows in that case.
+        const noBundles = !st.bundleNames.length;
+        const nCat = noBundles ? 1 : st.bundleNames.length;
+        const cats = categoricalColors(nCat, ramp);
         let i = 0;
         for (let t = 0; t < st.nStreams; t++) {
-          const ci = st.slOfStreamline[t];
+          let ci = st.slOfStreamline[t];
+          if (noBundles) ci = 1;
           const c = (ci && ci > 0) ? cats[(ci - 1) % cats.length] : GREY;
           for (let k = 0; k < st.npts[t]; k++) {
             out[3*i] = c[0]/255; out[3*i+1] = c[1]/255; out[3*i+2] = c[2]/255; i++;
@@ -716,7 +1107,7 @@ HTMLWidgets.widget({
           }
         } else {
           const levels = st.attrLevels[colorBy];
-          const cats = categoricalColors(levels.length);
+          const cats = categoricalColors(levels.length, ramp);
           const cmap = {};
           for (let l = 0; l < levels.length; l++) cmap[String(levels[l])] = cats[l % cats.length];
           for (let p = 0; p < n; p++) {
@@ -736,9 +1127,16 @@ HTMLWidgets.widget({
           for (let k = 0; k < st.npts[t]; k++) { out[3*i]=c[0]; out[3*i+1]=c[1]; out[3*i+2]=c[2]; i++; }
         }
       } else {
+        // streamline-scoped categorical: equal-spaced disjoint samples of the
+        // ramp (instead of the old all-grey fallback) so string keys can be
+        // re-ramped by the palette picker like every other colouring mode
+        const levels = (st.attrLevels[colorBy] || []);
+        const cats = categoricalColors(Math.max(1, levels.length), ramp);
+        const cmap = {};
+        for (let l = 0; l < levels.length; l++) cmap[String(levels[l])] = cats[l % cats.length];
         let i = 0;
         for (let t = 0; t < st.nStreams; t++) {
-          const c = GREY;
+          const c = cmap[String(vals[t])] || GREY;
           for (let k = 0; k < st.npts[t]; k++) { out[3*i]=c[0]/255; out[3*i+1]=c[1]/255; out[3*i+2]=c[2]/255; i++; }
         }
       }
@@ -876,7 +1274,11 @@ HTMLWidgets.widget({
       legendBtn.style.display = 'none';
       legendBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        openLegendPanel();
+        if (legendPanel && legendPanel.style.display === 'block') {
+          closeLegendPanel();
+        } else {
+          openLegendPanel();
+        }
       });
       el.appendChild(legendBtn);
 
@@ -925,10 +1327,20 @@ HTMLWidgets.widget({
       head.appendChild(hTitle); head.appendChild(hClose);
       panel.appendChild(head);
 
-      // colour-by dropdown
+      // colour-by dropdown. Rebuild the panel on change so the palette
+      // selector appears/disappears to match the selected attribute kind.
       panel.appendChild(selectRow('Color by', colorOptions(isTube), st.colorBy, function (v) {
-        st.colorBy = v; rebuildMesh();
+        st.colorBy = v;
+        rebuildMesh();
+        openLegendPanel();          // re-render to toggle the palette row
       }));
+
+      // palette selector: shown for any remapped colour source (ramps power
+      // both the continuous scale and the categorical hue set), hidden only
+      // when the base paint (orientation / fixed colour) is in use
+      if (st.ramps && st.colorBy !== 'default') {
+        panel.appendChild(paletteRow(st));
+      }
 
       // radius-by dropdown (tube mode only)
       if (isTube) {
@@ -977,7 +1389,6 @@ HTMLWidgets.widget({
       }
 
       panel.style.display = 'block';
-      legendBtn.textContent = 'Legend \u00d7';
     }
 
     // Visibility for every streamline in bundle index ci (0-based).
@@ -1019,6 +1430,70 @@ HTMLWidgets.widget({
       Object.keys(st.slAttr).forEach(function (k) { if (!seen[k]) { seen[k] = 1; out.push(k); } });
       return out;
     }
+
+    // Compact CSS gradient string for a 256-entry Float32 ramp (0-1 channels).
+    function rampCss(ramp) {
+      const stops = [];
+      for (let i = 0; i <= 255; i += 32) {
+        const r = Math.round(ramp[3*i] * 255);
+        const g = Math.round(ramp[3*i+1] * 255);
+        const b = Math.round(ramp[3*i+2] * 255);
+        stops.push('rgb(' + r + ',' + g + ',' + b + ') ' + (i / 2.55).toFixed(0) + '%');
+      }
+      return 'linear-gradient(to right, ' + stops.join(', ') + ')';
+    }
+
+    // Palette picker row: a labelled swatch strip where each entry is a small
+    // gradient of the ramp. Clicking one re-ramps the mesh live. A "CVD-safe"
+    // marker is shown when the palette is known colour-vision-deficiency safe.
+    function paletteRow(st) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin:8px 0 2px;';
+      const lab = document.createElement('div');
+      lab.textContent = 'Palette';
+      lab.style.cssText = 'font-weight:600;font-size:11px;margin-bottom:2px;';
+      wrap.appendChild(lab);
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:3px;';
+      st.paletteNames.forEach(function (name) {
+        const ramp = st.ramps[name];
+        if (!ramp) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = name + (st.palSafeMap[name] ? ' (CVD-safe)' : '');
+        btn.style.cssText =
+          'padding:4px 6px;border:1px solid rgba(241,238,230,0.25);' +
+          'border-radius:3px;background:#0e1512;cursor:pointer;display:flex;' +
+          'align-items:center;gap:4px;font:10px/1 system-ui;color:#f1eee6;';
+        const sw = document.createElement('span');
+        sw.style.cssText = 'flex:1;height:8px;border-radius:2px;background:' + rampCss(ramp) + ';';
+        btn.appendChild(sw);
+        const txt = document.createElement('span');
+        txt.textContent = name + (st.palSafeMap[name] ? ' ✓' : '');
+        txt.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        btn.appendChild(txt);
+        if (name === st.currentPalette) {
+          btn.style.borderColor = '#2E7D6B';
+          btn.style.boxShadow = '0 0 0 1px #2E7D6B';
+        }
+        btn.addEventListener('click', function () {
+          if (!st.ramps[name]) return;
+          st.ramp = st.ramps[name];
+          st.currentPalette = name;
+          rebuildMesh();
+          // update selection highlight without re-opening the panel
+          grid.querySelectorAll('button').forEach(function (b) {
+            const on = b.getAttribute('data-name') === name;
+            b.style.borderColor = on ? '#2E7D6B' : 'rgba(241,238,230,0.25)';
+            b.style.boxShadow = on ? '0 0 0 1px #2E7D6B' : 'none';
+          });
+        });
+        btn.setAttribute('data-name', name);
+        grid.appendChild(btn);
+      });
+      wrap.appendChild(grid);
+      return wrap;
+    }
     function radiusOptions() {
       const st = legendState;
       const out = ['default'];
@@ -1044,6 +1519,10 @@ HTMLWidgets.widget({
         if (legendBtn && legendBtn.parentNode) legendBtn.parentNode.removeChild(legendBtn);
         if (legendPanel && legendPanel.parentNode) legendPanel.parentNode.removeChild(legendPanel);
         legendBtn = null; legendPanel = null; legendState = null; stateX = null;
+        if (toolbarEl && toolbarEl.parentNode) toolbarEl.parentNode.removeChild(toolbarEl);
+        if (modeMenuEl && modeMenuEl.parentNode) modeMenuEl.parentNode.removeChild(modeMenuEl);
+        if (barTip && barTip.parentNode) barTip.parentNode.removeChild(barTip);
+        toolbarEl = null; modeMenuEl = null; axesBtn = null; modeBtnEl = null; barTip = null;
         renderer.dispose();
         controls.dispose();
         if (renderer.domElement.parentNode) {
@@ -1055,6 +1534,13 @@ HTMLWidgets.widget({
 
       renderValue: function(x) {
         scene.background = new THREE.Color(x.bg);
+
+        // options that carry state across renders reset to their defaults each
+        // time (matches how the legend panel re-reads every renderValue)
+        toolbarEnabled = x.toolbar !== false;
+        axesOn = true;
+        orbitMode = 'rotate';
+        closeModeMenu();
 
         if (mesh) {
           scene.remove(mesh);
@@ -1100,7 +1586,15 @@ HTMLWidgets.widget({
           mesh = buildLine2(x, transparent);
           scene.add(mesh);
         }
-        frameCamera(b64ToF32(x.positions));
+        // Keep the decoded positions for the toolbar's autoscale / reset-camera
+        // actions, which re-frame even when the tooltip is disabled (hoverData
+        // is null then, so its positions cannot be relied on).
+        renderPositions = b64ToF32(x.positions);
+        frameCamera(renderPositions);
+        // Baseline for the toolbar's reset button: the *initial* framed view only.
+        // Autoscale must not overwrite it, or reset would degenerate to autoscale.
+        controls.saveState();
+        refreshToolbar();
       },
 
       sizing: {},

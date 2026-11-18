@@ -6,7 +6,9 @@
 \alias{rtists-package}
 \title{rtists: Tissue Integrity Superimposed on Tractography Streamlines}
 \description{
-Provides interactive 3-D visualisation of tractography streamlines, bundles, and bundle sets defined in the 'fiber' package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation. See Dell'Acqua, F., Descoteaux, M. and Leemans, A. (2024) "Handbook of Diffusion MR Tractography" \doi{10.1016/C2018-0-02520-7} for more about the mathematical and computational underpinnings of diffusion MRI tractography.
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
+Interactive 3-D visualisation of tractography streamlines, bundles, and bundle sets defined in the 'fiber' package. Aesthetics such as line colour can be mapped to per-point, per-streamline, or per-bundle metadata, or derived from the local fibre orientation. The 'three.js' backend renders scalable tube and line geometries with legends and tooltips, while the 'ggplot2' backend produces static arclength plots; both share a common colour vocabulary. See Dell'Acqua, F., Descoteaux, M. and Leemans, A. (2024) "Handbook of Diffusion MR Tractography" \doi{10.1016/C2018-0-02520-7} for more about the mathematical and computational underpinnings of diffusion magnetic resonance imaging (MRI) tractography.
 }
 \seealso{
 Useful links:
