@@ -4,6 +4,20 @@
 \alias{plot2d-fiber-bundle_set-method}
 \alias{plot2d,fiber::bundle_set-method}
 \title{\code{\link[=plot2d]{plot2d()}} method for \code{fiber::bundle_set} objects}
+\usage{
+## S7 method for class <fiber::bundle_set>
+\special{plot2d(
+  x,
+  facet = c("X", "Y", "Z"),
+  color = "orientation",
+  palette = "Viridis",
+  n_chunks = 100L,
+  linewidth = 0.5,
+  alpha = 1,
+  color_by_bundle = FALSE,
+  ...
+)}
+}
 \arguments{
 \item{x}{A \link[fiber:bundle_set]{fiber::bundle_set} object.}
 

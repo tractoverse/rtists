@@ -4,6 +4,10 @@
 \alias{prune-fiber-bundle_set-method}
 \alias{prune,fiber::bundle_set-method}
 \title{\code{\link[=prune]{prune()}} method for \code{fiber::bundle_set} objects}
+\usage{
+## S7 method for class <fiber::bundle_set>
+\special{prune(x, radius, overlap_margin = 1, ...)}
+}
 \arguments{
 \item{x}{A \link[fiber:bundle]{fiber::bundle} or \link[fiber:bundle_set]{fiber::bundle_set} to prune.}
 
