@@ -165,12 +165,13 @@ alt="Single streamline as an arclength projection coloured by FA." />
 
 ## Licensing
 
-rtists is released under the [MIT license](LICENSE.md) and bundles a
-vendored copy of the [three.js](https://threejs.org/) library and its
-`examples/jsm` addons. Those files are distributed under the MIT license
-(“Copyright 2010-2026 Three.js Authors”; full SPDX header preserved) and
-are byte-identical copies of the upstream r186 release, unmodified.
-Vendored files:
+rtists is released under the [MIT
+license](https://github.com/tractoverse/rtists/blob/main/LICENSE.md) and
+bundles a vendored copy of the [three.js](https://threejs.org/) library
+and its `examples/jsm` addons. Those files are distributed under the MIT
+license (“Copyright 2010-2026 Three.js Authors”; full SPDX header
+preserved) and are byte-identical copies of the upstream r186 release,
+unmodified. Vendored files:
 
 - `three.module.js` and `three.core.js`
 - `jsm/lines/`: Line2, LineGeometry, LineMaterial, LineSegments2,

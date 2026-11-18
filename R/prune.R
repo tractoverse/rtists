@@ -157,6 +157,25 @@
 #' @seealso [fatten()], [plot3d()]. `fatten()` is the convenience
 #'   wrapper that derives the radius for you and calls this engine internally.
 #' @export
+#'
+#' @examples
+#' library(fiber)
+#'
+#' # Three offset helix strands packed into a bundle, sampled at a 0.1 mm step.
+#' strand <- function(i) {
+#'   t <- seq(0, 4 * pi, length.out = 200)
+#'   streamline(cbind(
+#'     X = seq_len(200) * 0.1,
+#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 1) * 1.2,
+#'     Z = 0.25 * cos(t)
+#'   ))
+#' }
+#' bun <- bundle(lapply(seq_len(3), strand))
+#'
+#' # At radius 0.3 the kept tubes stay clear of each other and still cover the
+#' # bundle's convex hull.
+#' pruned <- prune(bun, radius = 0.3)
+#' length(pruned@streamlines)
 prune <- S7::new_generic(
   name = "prune",
   dispatch_args = "x",
@@ -239,6 +258,24 @@ S7::method(prune, fiber::bundle) <- function(
 #' @name prune-fiber-bundle_set-method
 #' @aliases prune,fiber::bundle_set-method
 #' @usage NULL
+#' @examples
+#' library(fiber)
+#'
+#' # Two small bundles, each holding three offset helix strands.
+#' strand <- function(i) {
+#'   t <- seq(0, 4 * pi, length.out = 200)
+#'   streamline(cbind(
+#'     X = seq_len(200) * 0.1,
+#'     Y = 0.25 * sin(t + 1.3 * i) + (i - 1) * 1.2,
+#'     Z = 0.25 * cos(t)
+#'   ))
+#' }
+#' bun <- bundle(lapply(seq_len(3), strand))
+#' cs  <- bundle_set(list(bun, bun))
+#'
+#' # Pruning applies to each bundle independently.
+#' pruned <- prune(cs, radius = 0.3)
+#' length(pruned@bundles)
 S7::method(prune, fiber::bundle_set) <- function(
   x,
   radius,
