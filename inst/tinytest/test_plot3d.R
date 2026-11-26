@@ -283,10 +283,26 @@ tt <- fig$x$tooltipData
 expect_length(tt$xyz, nrow(pts))
 expect_null(fig$x$segToPoint) # tube mode maps hits by streamline offset
 
-# tooltip = FALSE -> the payload is dropped entirely
+# tooltip = FALSE -> no tooltip payload. segToPoint must still be shipped
+# whenever a legend is present: the legend's live rebuild
+# (rebuildMesh -> buildLine2Mapped) needs the segment map even without the
+# tooltip. Regression for the deck bug where tooltip=FALSE + a colour legend
+# dropped segToPoint, crashing renderValue and aborting the staticRender sweep
+# (later widgets never bound).
 fig <- plot3d(sl, tooltip = FALSE)
 expect_false("tooltipData" %in% names(fig$x))
-expect_false("segToPoint" %in% names(fig$x))
+expect_true("segToPoint" %in% names(fig$x))
+expect_equal(fig$x$segToPoint, seq_len(nrow(pts) - 1L) - 1L) # same map as tooltip mode
+
+# no metadata at all -> no legend, no tooltip, no segment map
+plain <- fiber::streamline(
+  matrix(runif(15, -10, 10), ncol = 3,
+         dimnames = list(NULL, c("X", "Y", "Z")))
+)
+fig_plain <- plot3d(plain, tooltip = FALSE)
+expect_false("tooltipData" %in% names(fig_plain$x))
+expect_false("legendData" %in% names(fig_plain$x))
+expect_false("segToPoint" %in% names(fig_plain$x))
 
 # tooltip = character vector -> all columns offered, only the request selected
 fig <- plot3d(sl, tooltip = "FA")

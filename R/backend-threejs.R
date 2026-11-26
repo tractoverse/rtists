@@ -353,25 +353,29 @@
       bg = jsonlite::unbox(bg), # scalar
       toolbar = jsonlite::unbox(toolbar) # scalar
     )
-    if (!is.null(tooltip)) {
-      # Map each line2 segment (raycast `faceIndex`) to the packed point index
-      # of its START vertex. Consecutive points within a streamline sit next to
-      # each other in packed order, so the segment's end vertex is start + 1.
-      pt_start <- c(0L, cumsum(n_pts)[-length(n_pts)])
-      seg_to <- integer(sum(n_seg))
-      g <- 0L
-      for (j in seq_along(streamlines)) {
-        nj <- nrow(streamlines[[j]]) - 1L
-        if (nj >= 1L) {
-          seg_to[g + seq_len(nj)] <- pt_start[j] + seq_len(nj) - 1L
-        }
-        g <- g + nj
+    # Map each line2 segment (raycast `faceIndex`) to the packed point index
+    # of its START vertex. Consecutive points within a streamline sit next to
+    # each other in packed order, so the segment's end vertex is start + 1.
+    # Needed by both the tooltip (per-point metadata) and the legend (aesthetic
+    # remapping of a filtered mesh).
+    pt_start <- c(0L, cumsum(n_pts)[-length(n_pts)])
+    seg_to <- integer(sum(n_seg))
+    g <- 0L
+    for (j in seq_along(streamlines)) {
+      nj <- nrow(streamlines[[j]]) - 1L
+      if (nj >= 1L) {
+        seg_to[g + seq_len(nj)] <- pt_start[j] + seq_len(nj) - 1L
       }
+      g <- g + nj
+    }
+    if (!is.null(tooltip)) {
       x$tooltipData <- tooltip # structured per-point metadata
-      x$segToPoint <- seg_to # line2 segment index -> point index
     }
     if (!is.null(legend)) {
       x$legendData <- legend # aesthetic-remapping metadata
+    }
+    if (!is.null(tooltip) || !is.null(legend)) {
+      x$segToPoint <- seg_to # line2 segment index -> point index
     }
   }
 
