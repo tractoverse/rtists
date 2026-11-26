@@ -1180,10 +1180,23 @@ HTMLWidgets.widget({
     function buildLine2Mapped(x, visible, pointColors) {
       const fullPos = b64ToF32(x.positions);
       const fullCol = b64ToU8F32(x.colors);
-      const baseSeg = x.segToPoint;
       const npts = legendState.npts;
-      // skip all when legend unavailable (fallback: simple build)
       const nStreams = npts.length;
+      // segToPoint maps packed segment index -> packed start-vertex point
+      // index. The R backend emits it whenever a tooltip or legend is present;
+      // derive it from the per-streamline point counts when a payload omits it
+      // so the legend rebuild never crashes on an undefined length.
+      const baseSeg = x.segToPoint || (() => {
+        const seg = new Int32Array(
+          nStreams ? npts.reduce((a, n) => a + Math.max(n - 1, 0), 0) : 0
+        );
+        let o = 0, g = 0;
+        for (let t = 0; t < nStreams; t++) {
+          for (let s = 0; s < npts[t] - 1; s++) seg[g++] = o + s;
+          o += npts[t];
+        }
+        return seg;
+      })();
 
       function streamlineOf(p0) {
         let acc = 0;

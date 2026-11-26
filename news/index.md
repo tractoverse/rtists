@@ -92,3 +92,11 @@
   from the attribute “Color by” entries. A `bundle_set` with no other
   attributes still ships the per-bundle payload so the legend can show
   and toggle bundles.
+- The three.js legend rebuild no longer crashes when `tooltip = FALSE`
+  is combined with a colour legend. The segment -\> point map
+  (`segToPoint`) is now shipped whenever a tooltip *or* a legend is
+  present (previously only with a tooltip), so the legend’s live
+  `buildLine2Mapped()` rebuild finds the map it needs. The renderer also
+  derives the map from the per-streamline point counts when a payload
+  omits it, so older serialized payloads degrade gracefully instead of
+  throwing mid-render.
