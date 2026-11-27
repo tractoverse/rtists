@@ -66,8 +66,15 @@ HTMLWidgets.widget({
 
   factory: function(el, width, height) {
 
+    // Size the canvas from the widget's untransformed layout box:
+    // htmlwidgets passes getBoundingClientRect() dimensions, which are
+    // already shrunk by Reveal's slide transform (e.g. 0.9), leaving the
+    // canvas 10% short of the widget box and floating overlays (legend,
+    // toolbar) beyond its edges.
+    const w = el.offsetWidth || width;
+    const h = el.offsetHeight || height;
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
+    renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
 
     // ---- hover tooltip -----------------------------------------------------
@@ -311,6 +318,10 @@ HTMLWidgets.widget({
 
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 10000);
+    // Brain-imaging convention: superior-inferior (Z) is the vertical axis, so
+    // long tracts (CST, pyramidal tract) stand upright on screen. OrbitControls
+    // follows camera.up, so orbiting keeps Z vertical.
+    camera.up.set(0, 0, 1);
 
     // ---- controls ---------------------------------------------------------
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -711,7 +722,7 @@ HTMLWidgets.widget({
       if (axesBtn) axesBtn.title = axesOn ? 'Hide axes' : 'Show axes';
       if (modeBtnEl) modeBtnEl.title = 'Orbit mode: ' + modeLabel(orbitMode);
       axes.visible = axesOn;
-      toolbarEl.style.display = 'block';
+      toolbarEl.style.display = 'flex';
     }
 
     // Dispose a mesh or a Group of meshes, releasing GPU geometry/material.
@@ -1518,9 +1529,12 @@ HTMLWidgets.widget({
     return {
 
       resize: function(width, height) {
-        camera.aspect = width / height;
+        // Same untransformed sizing as the factory (see note there).
+        const w = el.offsetWidth || width;
+        const h = el.offsetHeight || height;
+        camera.aspect = w / h;
         camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
+        renderer.setSize(w, h);
       },
 
       destroy: function() {
